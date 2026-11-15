@@ -1,0 +1,12 @@
+{
+  "image": "arrow.png",
+  "shadow": "arrow_shadow.png",
+  "frameWidth": 32,
+  "frameHeight": 31,
+  "columns": 1,
+  "rows": 8,
+  "anchor": {"x": 16, "y": 22},
+  "animations": {
+    "idle": [{"frame": 0}, {"wait": 60}, {"jump": "idle"}]
+  }
+}

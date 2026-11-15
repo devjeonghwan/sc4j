@@ -1,0 +1,372 @@
+public interface org.fogofwarlabs.sc4j.engine.client.app.ClientScene extends org.fogofwarlabs.sc4j.engine.client.scene.Scene<org.fogofwarlabs.sc4j.engine.client.app.SceneClient, org.fogofwarlabs.sc4j.engine.client.render.Canvas> {
+  public default int getMinimumHeight();
+  public default int getMinimumWidth();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.app.FirstSceneFactory {
+  public abstract org.fogofwarlabs.sc4j.engine.client.app.ClientScene createFirstScene(org.fogofwarlabs.sc4j.engine.client.app.SceneClient) throws org.fogofwarlabs.sc4j.engine.mod.ModException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry {
+  public int getPlayerCount();
+  public java.lang.String getFormatName();
+  public java.lang.String getMapName();
+  public java.nio.file.Path getPath();
+  public java.time.Instant getModifiedTime();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.game.PlayerSlot> getPlayers();
+  public long getFrameCount();
+  public org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry(java.nio.file.Path, java.lang.String, java.time.Instant, java.lang.String, long, int, java.util.List<org.fogofwarlabs.sc4j.engine.game.PlayerSlot>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene implements org.fogofwarlabs.sc4j.engine.client.app.ClientScene,org.fogofwarlabs.sc4j.engine.client.dialog.DialogListener {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public int getMinimumHeight();
+  public int getMinimumWidth();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry> getEntries();
+  public org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry getSelectedEntry();
+  public org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Backdrop getBackdrop();
+  public org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene(java.lang.String, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Source, long, org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Listener);
+  public org.fogofwarlabs.sc4j.engine.client.community.TableBox getTable();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Dialog getDialog();
+  public static final int BACK_ID = 5;
+  public static final int LIST_ID = 2;
+  public static final int OPEN_ID = 4;
+  public static final int STATUS_ID = 3;
+  public static final int TITLE_ID = 1;
+  public static final java.util.List<java.lang.String> HEADERS;
+  public static java.util.List<java.lang.String> describe(org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry, long, java.util.function.Function<org.fogofwarlabs.sc4j.engine.game.PlayerSlot, java.lang.String>);
+  public static org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene createReplayList(java.lang.String, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, java.lang.String, long, org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Listener);
+  public static org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene createSaveList(java.lang.String, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, java.lang.String, long, org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Listener);
+  public void close();
+  public void draw(java.lang.Object) throws java.io.IOException;
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas) throws java.io.IOException;
+  public void onActivated(org.fogofwarlabs.sc4j.engine.client.dialog.Dialog, org.fogofwarlabs.sc4j.engine.client.dialog.Control);
+  public void open(java.lang.Object) throws java.io.IOException;
+  public void open(org.fogofwarlabs.sc4j.engine.client.app.SceneClient) throws java.io.IOException;
+  public void setBackdrop(org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Backdrop);
+  public void setPlayerNames(java.util.function.Function<org.fogofwarlabs.sc4j.engine.game.PlayerSlot, java.lang.String>);
+  public void update(long);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Backdrop {
+  public abstract void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas) throws java.io.IOException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Listener {
+  public abstract void onCancelled();
+  public abstract void onChosen(org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.app.GameFileListScene$Source {
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry> list(org.fogofwarlabs.sc4j.engine.client.app.SceneClient) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.app.GameFileListUtils {
+  public static java.util.List<org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry> listReplays(java.nio.file.Path, java.util.List<org.fogofwarlabs.sc4j.engine.replay.ReplayFormat>) throws java.io.IOException;
+  public static java.util.List<org.fogofwarlabs.sc4j.engine.client.app.GameFileEntry> listSaves(java.nio.file.Path, java.util.List<org.fogofwarlabs.sc4j.engine.save.SaveFormat>) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.app.SceneClient implements java.lang.AutoCloseable {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean isQuitRequested();
+  public int getHeight();
+  public int getWidth();
+  public long getTime();
+  public org.fogofwarlabs.sc4j.engine.client.app.SceneClient(org.fogofwarlabs.sc4j.engine.mod.ModLaunch, org.fogofwarlabs.sc4j.engine.mod.ModStorage, org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.audio.AudioMixer);
+  public org.fogofwarlabs.sc4j.engine.client.app.SceneClient(org.fogofwarlabs.sc4j.engine.mod.ModLaunch, org.fogofwarlabs.sc4j.engine.mod.ModStorage, org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.audio.AudioMixer, org.fogofwarlabs.sc4j.engine.client.cursor.CursorSurface);
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioMixer getAudio();
+  public org.fogofwarlabs.sc4j.engine.client.audio.MusicPlaylist getMusic();
+  public org.fogofwarlabs.sc4j.engine.client.cursor.CursorSurface getCursor();
+  public org.fogofwarlabs.sc4j.engine.client.display.DisplayScale getDisplayScale();
+  public org.fogofwarlabs.sc4j.engine.client.display.UiSurface getSurface();
+  public org.fogofwarlabs.sc4j.engine.client.host.FrameResult runFrame(long, int, int) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.engine.client.render.Canvas getCanvas();
+  public org.fogofwarlabs.sc4j.engine.client.scene.SceneStack<org.fogofwarlabs.sc4j.engine.client.app.SceneClient, org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.app.ClientScene> getScenes();
+  public org.fogofwarlabs.sc4j.engine.mod.ModLaunch getLaunch();
+  public org.fogofwarlabs.sc4j.engine.mod.ModStorage getStorage();
+  public void close();
+  public void requestQuit();
+  public void setDisplayScale(org.fogofwarlabs.sc4j.engine.client.display.DisplayScale);
+  public void setUserScale(float);
+  public void start(org.fogofwarlabs.sc4j.engine.client.app.FirstSceneFactory) throws org.fogofwarlabs.sc4j.engine.mod.ModException, java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.app.WindowClient implements org.fogofwarlabs.sc4j.engine.client.host.HostApplication {
+  public int getFrameRateLimit();
+  public org.fogofwarlabs.sc4j.engine.client.host.FrameResult runFrame() throws java.io.IOException;
+  public static void run(org.fogofwarlabs.sc4j.engine.mod.ModLaunch, org.fogofwarlabs.sc4j.engine.mod.ModStorage, org.fogofwarlabs.sc4j.engine.client.host.WindowSettings, float, org.fogofwarlabs.sc4j.engine.client.app.FirstSceneFactory) throws org.fogofwarlabs.sc4j.engine.mod.ModException, java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.ChannelChat implements org.fogofwarlabs.sc4j.engine.net.beaconlink.community.CommunityListener {
+  public boolean addFriend(java.lang.String);
+  public boolean isAway();
+  public boolean isBlocked(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public boolean isFriend(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence);
+  public boolean isSelf(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence);
+  public java.lang.String createWhisperStart(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public java.lang.String describeMod(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence);
+  public java.lang.String describeStatus(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence);
+  public java.lang.String getInputPrefix();
+  public java.lang.String getStatusText(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence);
+  public java.lang.String getTaggedName(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public java.lang.String takeWhisperStart(java.lang.String);
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom> listUnblockedRooms(java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom>);
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer> getFriends();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChannelSummary> listChannels();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence> getMembers();
+  public org.fogofwarlabs.sc4j.engine.client.community.ChannelChat(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.CommunitySession, java.util.Locale, java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer getWhisperTarget();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatChannel getChannel();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence findPlayer(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence findPresence(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public static final int DEFAULT_CHANNEL_CAPACITY = 64;
+  public static final int HISTORY = 100;
+  public static final java.lang.String SHARED_CHANNEL = "SC4J";
+  public static java.lang.String findDefaultChannel(java.lang.String, java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChannelSummary>);
+  public void block(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public void close();
+  public void join(java.lang.String);
+  public void onChatLine(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatChannel, org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLine);
+  public void onMembersChanged(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatChannel);
+  public void onWhisper(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.Whisper);
+  public void onWhisperResult(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.Whisper, org.fogofwarlabs.sc4j.engine.net.beaconlink.community.WhisperResult);
+  public void open();
+  public void removeFriend(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public void removeLog(java.util.function.Consumer<org.fogofwarlabs.sc4j.engine.client.community.ChatEntry>);
+  public void setAway(boolean);
+  public void setLog(java.util.function.Consumer<org.fogofwarlabs.sc4j.engine.client.community.ChatEntry>);
+  public void setWhisperTarget(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public void showAvailable();
+  public void submit(java.lang.String);
+  public void unblock(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.ChatEntry {
+  public java.lang.String getPrefix();
+  public java.lang.String getText();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.client.community.ChatEntry(org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind, java.lang.String, java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind getKind();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind> {
+  public static final org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind EMOTE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind ERROR;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind INFO;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind SAY;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind WHISPER;
+  public static org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.community.ChatEntryKind[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.ChatLogBox extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  public boolean activate();
+  public boolean handleWheel(int);
+  public boolean isPressable();
+  public int getScrolledRows();
+  public java.util.List<java.lang.String> getTexts();
+  public org.fogofwarlabs.sc4j.engine.client.community.ChatLogBox(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl, int);
+  public void addLine(java.lang.String, int);
+  public void clear();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.CommunityText extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.community.CommunityText> {
+  public java.lang.String format(java.util.Locale, java.lang.Object...);
+  public java.lang.String get(java.util.Locale);
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText ANY;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText AWAY_OFF;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText AWAY_ON;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText BLOCK;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText BLOCKED;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText CHANNEL;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText CHANNEL_LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText CLOSED_GAMES;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText FRIENDS;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText FRIEND_ADDED;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText FRIEND_REMOVED;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_AWAY;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_EMOTE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_FRIENDS;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_HELP;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_IGNORE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_JOIN;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_LEAVE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_REPLY;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_TITLE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_UNIGNORE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_WHISPER;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_WHO;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HELP_WHOIS;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText HIDE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText IGNORED;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText INPUT_CHANNEL;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText INVALID_NAME;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText IS_AWAY;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText IS_AWAY_TEXT;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText JOINED;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText LATENCY;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText LATENCY_FAIR;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText LATENCY_GOOD;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText LIMIT;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText MAXIMUM_PLAYERS;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText NEEDS_ACCOUNT;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText NOT_ONLINE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText NO_CHANNEL;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText NO_GAMES;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText NO_REPLY;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText OTHER_VERSION;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText OTHER_VERSIONS;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText SHOW;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText STATUS_AVAILABLE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText STATUS_AWAY;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText STATUS_AWAY_TEXT;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText STATUS_IN_GAME;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText STATUS_IN_ROOM;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText STATUS_OFFLINE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText TOO_FAST;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText TOO_LONG;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText UNBLOCK;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText UNBLOCKED;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText UNIGNORED;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText UNKNOWN;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText UNKNOWN_COMMAND;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText UNKNOWN_PLAYER;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText USAGE;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText USERS;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText USER_INFO;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText WHISPER_FROM;
+  public static final org.fogofwarlabs.sc4j.engine.client.community.CommunityText WHISPER_TO;
+  public static org.fogofwarlabs.sc4j.engine.client.community.CommunityText valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.community.CommunityText[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.RecentMaps {
+  public java.util.List<java.lang.String> getMaps();
+  public static final int MAXIMUM_COUNT = 10;
+  public static org.fogofwarlabs.sc4j.engine.client.community.RecentMaps read(java.nio.file.Path);
+  public void add(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.RoomFilter {
+  public boolean isClosedRoomsShown();
+  public int getMaximumCapacity();
+  public java.lang.String getQuery();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom> select(java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom>);
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom> select(java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom>, org.fogofwarlabs.sc4j.engine.client.community.RoomFilter$ModFilter);
+  public org.fogofwarlabs.sc4j.engine.client.community.RoomFilter();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass getWorstLatency();
+  public static final int ANY_CAPACITY = 0;
+  public void copy(org.fogofwarlabs.sc4j.engine.client.community.RoomFilter);
+  public void reset();
+  public void setClosedRoomsShown(boolean);
+  public void setMaximumCapacity(int);
+  public void setQuery(java.lang.String);
+  public void setWorstLatency(org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.community.RoomFilter$ModFilter {
+  public default boolean accepts(org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom);
+  public default java.util.List<java.lang.String> getSearchTexts(org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.TableBox extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected boolean onReleased(float, float);
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  protected void onPressed(float, float);
+  public boolean activate();
+  public boolean handleKey(org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey);
+  public boolean handleWheel(int);
+  public boolean isFocusable();
+  public boolean isPressable();
+  public int getSelection();
+  public int getVisibleRowCount();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.client.community.TableRow> getRows();
+  public org.fogofwarlabs.sc4j.engine.client.community.TableBox(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl, int, float[], java.util.List<java.lang.String>, boolean);
+  public static final int NO_SELECTION = -1;
+  public void setRows(java.util.List<org.fogofwarlabs.sc4j.engine.client.community.TableRow>);
+  public void setSelection(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.community.TableRow {
+  public boolean equals(java.lang.Object);
+  public int getColor();
+  public int hashCode();
+  public java.lang.String toString();
+  public java.util.List<java.lang.String> getCells();
+  public org.fogofwarlabs.sc4j.engine.client.community.TableRow(java.util.List<java.lang.String>, int, org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass getLatency();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.mod.HeadlessRunner {
+  public abstract void run(org.fogofwarlabs.sc4j.engine.mod.ModLaunch) throws org.fogofwarlabs.sc4j.engine.mod.ModException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.mod.Mod {
+  public abstract void close();
+  public abstract void initialize(org.fogofwarlabs.sc4j.engine.mod.ModContext) throws org.fogofwarlabs.sc4j.engine.mod.ModException;
+  public abstract void register(org.fogofwarlabs.sc4j.engine.mod.ModRegistration) throws org.fogofwarlabs.sc4j.engine.mod.ModException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.mod.ModApplication {
+  public abstract boolean isHeadlessCapable();
+  public abstract void run(org.fogofwarlabs.sc4j.engine.mod.ModLaunch) throws org.fogofwarlabs.sc4j.engine.mod.ModException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.mod.ModContext {
+  public abstract java.nio.file.Path getInstallDirectory();
+  public abstract java.util.List<java.lang.String> getArguments();
+  public abstract org.fogofwarlabs.sc4j.base.log.Logger getLogger();
+  public abstract org.fogofwarlabs.sc4j.engine.mod.ModSettings getSettings();
+  public abstract org.fogofwarlabs.sc4j.engine.mod.ModStorage getStorage();
+  public abstract org.fogofwarlabs.sc4j.manifest.ModManifest getManifest();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.mod.ModException extends java.lang.Exception {
+  public static org.fogofwarlabs.sc4j.engine.mod.ModException create(java.lang.String, java.lang.Object...);
+  public static org.fogofwarlabs.sc4j.engine.mod.ModException create(java.lang.Throwable, java.lang.String, java.lang.Object...);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.mod.ModLaunch {
+  public boolean isHeadless();
+  public java.lang.String getJoin();
+  public java.nio.file.Path getReplay();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.replay.ReplayFormat> getReplayFormats();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.save.SaveFormat> getSaveFormats();
+  public org.fogofwarlabs.sc4j.engine.game.GameDefinition getGameDefinition();
+  public org.fogofwarlabs.sc4j.engine.mod.ModLaunch(boolean, java.nio.file.Path, org.fogofwarlabs.sc4j.engine.replay.ReplayFormat, java.lang.String, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, org.fogofwarlabs.sc4j.engine.game.GameDefinition, org.fogofwarlabs.sc4j.engine.resource.ResourceProvider, java.util.List<org.fogofwarlabs.sc4j.engine.replay.ReplayFormat>, java.util.List<org.fogofwarlabs.sc4j.engine.save.SaveFormat>, org.fogofwarlabs.sc4j.engine.net.beaconlink.BeaconLink);
+  public org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity getIdentity();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.BeaconLink getBeaconLink();
+  public org.fogofwarlabs.sc4j.engine.replay.ReplayFormat getReplayFormat();
+  public org.fogofwarlabs.sc4j.engine.resource.ResourceProvider getResourceProvider();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.mod.ModRegistration {
+  public abstract org.fogofwarlabs.sc4j.engine.game.GameDefinition$Builder getSimulation();
+  public abstract void addIdentityData(byte[]);
+  public abstract void registerApplication(org.fogofwarlabs.sc4j.engine.mod.ModApplication);
+  public abstract void registerFirstScene(org.fogofwarlabs.sc4j.engine.client.app.FirstSceneFactory);
+  public abstract void registerHeadlessRunner(org.fogofwarlabs.sc4j.engine.mod.HeadlessRunner);
+  public abstract void registerReplayFormat(org.fogofwarlabs.sc4j.engine.replay.ReplayFormatFactory);
+  public abstract void registerResourceProvider(org.fogofwarlabs.sc4j.engine.resource.ResourceProvider);
+  public abstract void registerSaveFormat(org.fogofwarlabs.sc4j.engine.save.SaveFormatFactory);
+  public default org.fogofwarlabs.sc4j.engine.content.registry.ContentRegistry getContent();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.mod.ModSettings {
+  public abstract boolean getBoolean(java.lang.String);
+  public abstract boolean hasValue(java.lang.String);
+  public abstract int getInteger(java.lang.String);
+  public abstract java.lang.String getChoice(java.lang.String);
+  public abstract java.lang.String getString(java.lang.String);
+  public abstract java.nio.file.Path getDirectory(java.lang.String);
+  public abstract java.nio.file.Path getFile(java.lang.String);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.mod.ModStorage {
+  public abstract java.nio.file.Path getRoot();
+  public abstract java.nio.file.Path resolve(java.lang.String);
+  public default java.nio.file.Path getSettingsFile();
+  public default org.fogofwarlabs.sc4j.engine.net.lobby.MapFolders getMapFolders();
+}

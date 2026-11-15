@@ -1,0 +1,12 @@
+plugins {
+    id 'java-library'
+    // The manual protocol clock of the protocol, node and client tests (org.fogofwarlabs.sc4j.beaconlink.protocol.test).
+    id 'java-test-fixtures'
+}
+
+// The Beacon.Link wire protocol: Ed25519 identities and their key file, the bounded wire reader and writer, the signed room
+// advertisement, the signed message envelope with its bodies, and the replay guard. The node and the client share it; it uses the JDK
+// cryptography and the generic base only (no engine).
+dependencies {
+    api project(':sc4j-base')
+}

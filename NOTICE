@@ -1,0 +1,127 @@
+SC4J
+Copyright 2026 Fog of War Labs (https://fogofwarlabs.org)
+
+This product is licensed under the Apache License, Version 2.0 (LICENSE).
+
+StarCraft is a trademark of Blizzard Entertainment, Inc. SC4J is not affiliated with or endorsed by Blizzard Entertainment.
+The SC:R mod reads the game data of a user-owned StarCraft: Remastered installation; its distributions carry no such data.
+
+Third-party material
+====================
+
+The repository and its distributions carry the following third-party material. Each entry names its licence and where its full
+licence text lives.
+
+Art and models
+--------------
+
+Unity-chan sprite frames (mods/scr-demo/third-party/unity-chan, carried in the demo 2 mod jar)
+  (c) Unity Technologies Japan/UCL. Unity-Chan License Terms 3.0 (Unity-chan License 3.0).
+  Licence texts: mods/scr-demo/third-party/unity-chan/license/ (EN and JP terms, license indication, logos);
+  notice: mods/scr-demo/third-party/unity-chan/NOTICE.txt.
+
+AssaultRifle2_1 of the Ultimate Guns Pack by Quaternius (quaternius.com), rendered into the Unity-chan frames
+  CC0 1.0 Universal (public domain dedication).
+  Licence text: mods/scr-demo/third-party/unity-chan/license/CC0-License-Quaternius.txt and THIRD-PARTY-GUN.txt.
+
+Myriarch frames (mods/scr-demo/third-party/myriarch, carried in the demo 2 mod jar)
+  This work is based on "DRAGO 3D MODEL FREE BY Oscar Creativo"
+  (https://sketchfab.com/3d-models/drago-3d-model-free-by-oscar-creativo-4173249254954513bfa1e5785fb40dd5) by OSCAR CREATIVO
+  (https://sketchfab.com/oscar_creativo) licensed under CC-BY-4.0 (Creative Commons Attribution 4.0 International; the
+  link to the licence is in the notice).
+  Rendered and adapted (changes listed in the notice). Licence text: mods/scr-demo/third-party/myriarch/license/CC-BY-4.0.txt;
+  notice: mods/scr-demo/third-party/myriarch/NOTICE.txt.
+
+KayKit Character Pack: Adventures 1.0 and KayKit Medieval Hexagon Pack 1.0 by Kay Lousberg; Poly Haven textures
+(rendered into the pictures of the demo 1 mod jar)
+  CC0 1.0 Universal (public domain dedication).
+  Sources and licence references: mods/demo/THIRD-PARTY.md (carried in demo.jar).
+
+Fonts
+-----
+
+The repository and its distributions ship no third-party font. The demo font is drawn for the project (mods/demo/src/assets/svg/fonts);
+the SC:R mod uses the fonts of the user's own installation.
+
+Libraries in the distributions
+------------------------------
+
+Each distribution (the launcher, the runtime, the SC:R client, the Beacon.Link node, the development install) carries LICENSE, this
+NOTICE and the folder licenses/ with the licence texts named below; the mod jars carry LICENSE and NOTICE in META-INF/. Which
+distribution carries which library is given in brackets.
+
+LWJGL 3.3.6 (org.lwjgl: lwjgl, lwjgl-glfw, lwjgl-opengl, lwjgl-openal, lwjgl-stb, with their Windows natives; runtime, SC:R client,
+development install)
+  BSD 3-Clause License. Text: licenses/LWJGL-BSD-3-Clause.txt.
+  lwjgl-opengl: Khronos OpenGL registry licence (MIT style). Text: licenses/Khronos-OpenGL-MIT.txt.
+  The natives contain third-party libraries under their own licences:
+  - GLFW 3.5.0 (glfw.dll): zlib/libpng License. Text: licenses/GLFW-zlib.txt.
+  - OpenAL Soft 1.24.1 (OpenAL.dll): GNU Library General Public License 2 or later, taken under the GNU Lesser General Public
+    License 2.1. Text: licenses/LGPL-2.1.txt. Sources: https://github.com/kcat/openal-soft.
+  - stb (lwjgl_stb.dll): MIT License or public domain (Unlicense); SC4J takes it under the MIT License. Text: licenses/stb-MIT.txt.
+  - libffi 3.4.6 (lwjgl.dll): MIT License. Text: licenses/libffi-MIT.txt.
+
+JavaCPP 1.5.11 (org.bytedeco:javacpp, with its windows-x86_64 natives; runtime, SC:R client, development install)
+  Apache License 2.0 (LICENSE) or GNU General Public License 2 or later, or GPL 2 with the Classpath Exception
+  (licenses/GPL-2.0-with-Classpath-Exception.txt); SC4J takes it under the Apache License 2.0.
+  Its natives include the Microsoft Visual C++ and Universal C runtime libraries (msvcp140, vcruntime140, concrt140, vcomp140,
+  libomp140, ucrtbase, api-ms-win-*.dll), redistributable under the Microsoft Visual Studio licence terms.
+
+JavaCPP Presets for FFmpeg 7.1-1.5.11 (org.bytedeco:ffmpeg, the LGPL build, with its windows-x86_64 natives; runtime, SC:R client,
+development install)
+  Presets: Apache License 2.0 (LICENSE) or GNU General Public License 2 with the Classpath Exception; SC4J takes them under the Apache
+  License 2.0.
+  FFmpeg 7.1 libraries (avcodec, avdevice, avfilter, avformat, avutil, swresample, swscale): GNU Lesser General Public License 3 or
+  later (the build's own licence string). Text: licenses/LGPL-3.0.txt with licenses/GPL-3.0.txt.
+  Sources: https://ffmpeg.org and https://github.com/bytedeco/javacpp-presets (ffmpeg, 1.5.11).
+  Built into the FFmpeg libraries (versions from ffmpeg/cppbuild.sh of javacpp-presets 1.5.11):
+  - zlib 1.3.1: zlib License. Text: licenses/zlib.txt.
+  - LAME 3.100 (www.mp3dev.org): GNU Library General Public License 2 or later, taken under the GNU Lesser General Public License
+    2.1. Text: licenses/LGPL-2.1.txt.
+  - Speex 1.2.1: BSD 3-Clause License. Text: licenses/Speex-BSD-3-Clause.txt.
+  - Opus 1.3.1: BSD 3-Clause License. Text: licenses/Opus-BSD-3-Clause.txt.
+  - libvpx 1.14.1: BSD 3-Clause License. Text: licenses/libvpx-BSD-3-Clause.txt.
+  - libwebp 1.4.0: BSD 3-Clause License. Text: licenses/libwebp-BSD-3-Clause.txt.
+  - OpenH264 2.4.1: BSD 2-Clause License. Text: licenses/OpenH264-BSD-2-Clause.txt.
+  - libaom 3.9.1: BSD 2-Clause License. Text: licenses/libaom-BSD-2-Clause.txt.
+  - SVT-AV1 2.2.1: BSD 3-Clause Clear License. Text: licenses/SVT-AV1-BSD-3-Clause-Clear.txt.
+  - OpenCORE AMR 0.1.6: Apache License 2.0 (LICENSE). Its notice file: licenses/opencore-amr-NOTICE.txt.
+  - VisualOn AMR-WB encoder 0.1.3: Apache License 2.0 (LICENSE). Its notice: "Additional Codecs. These files are Copyright
+    2003-2010 VisualOn, but released under the Apache2 License."
+  - OpenSSL 3.3.2: Apache License 2.0 (LICENSE).
+  - FreeType 2.13.3: FreeType License. Text: licenses/FreeType-FTL.txt.
+    Portions of this software are copyright (C) 2024 The FreeType Project (www.freetype.org). All rights reserved.
+  - libxml2 2.9.12: MIT License. Text: licenses/libxml2-MIT.txt.
+  - Intel Media SDK dispatcher (mfx_dispatch 1.35.1): BSD 3-Clause License. Text: licenses/mfx_dispatch-BSD-3-Clause.txt.
+  - SRT 1.5.3: Mozilla Public License 2.0. Text: licenses/MPL-2.0.txt. Sources: https://github.com/Haivision/srt (v1.5.3).
+  - zimg 3.0.5: WTFPL 2. Text: licenses/zimg-WTFPL.txt.
+  - nv-codec-headers 12.2.72.0 (NVIDIA codec API headers): MIT License. Text: licenses/nv-codec-headers-MIT.txt.
+  - Vulkan headers (1.3.277 or later, from the build system): Apache License 2.0 (LICENSE). Copyright 2015-2024 The Khronos
+    Group Inc.
+  - GCC runtime (libgcc, libstdc++): GNU General Public License 3 with the GCC Runtime Library Exception 3.1. Texts:
+    licenses/GPL-3.0.txt and licenses/GCC-Runtime-Library-Exception-3.1.txt.
+
+OpenJFX 25.0.2 (javafx-base, javafx-graphics, javafx-controls, with their Windows natives; launcher, development install)
+  GNU General Public License 2 with the Classpath Exception. Text: licenses/GPL-2.0-with-Classpath-Exception.txt.
+
+OpenJDK Java runtime (an image of the JDK that builds the package, made with its jlink; user package, folder java/)
+  GNU General Public License 2 with the Classpath Exception. Text: licenses/GPL-2.0-with-Classpath-Exception.txt. The image carries
+  the licence texts and notices of the JDK and of its third-party parts in java/legal/, and its vendor and version in java/release.
+
+JetBrains Java Annotations 23.0.0 (org.jetbrains:annotations; every distribution with a Java class path)
+  Apache License 2.0 (LICENSE).
+
+Build and test tools (not in the distributions)
+-----------------------------------------------
+
+Gradle Wrapper (gradle/wrapper/gradle-wrapper.jar)
+  Apache License 2.0 (LICENSE of this repository holds the text).
+
+Apache Batik 1.19 (build of the demo's assets only)
+  Apache License 2.0 (LICENSE of this repository holds the text).
+
+JUnit 5 (tests only)
+  Eclipse Public License 2.0.
+
+JMH 1.37 (benchmarks only)
+  GNU General Public License 2 with the Classpath Exception.

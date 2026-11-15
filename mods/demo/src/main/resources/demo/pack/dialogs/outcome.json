@@ -1,0 +1,10 @@
+{"width": 480, "height": 300, "controls": [
+  {"id": 1, "kind": "panel", "x": 0, "y": 0, "width": 480, "height": 300, "children": [
+    {"id": 2, "kind": "label", "x": 20, "y": 40, "width": 440, "height": 32, "align": "center"},
+    {"id": 3, "kind": "label", "x": 20, "y": 100, "width": 440, "height": 24, "align": "center"},
+    {"id": 4, "kind": "label", "x": 20, "y": 136, "width": 440, "height": 24, "align": "center"},
+    {"id": 5, "kind": "label", "x": 20, "y": 172, "width": 440, "height": 24, "align": "center"},
+    {"id": 10, "kind": "button", "x": 140, "y": 228, "width": 200, "height": 44, "text": "Continue", "align": "center",
+     "attributes": {"hotkey": "c", "default": "true", "cancel": "true"}}
+  ]}
+]}

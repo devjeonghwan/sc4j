@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':mods:scr:scr-game')
+
+    testImplementation testFixtures(project(':mods:scr:scr-data'))
+    // The SC:R Storm games over Beacon.Link run with real nodes and clients on 127.0.0.1 behind emulated NATs.
+    testImplementation testFixtures(project(':sc4j-beaconlink'))
+}
+
+// The EUD maps of LanEudSessionMapsTest hold more than the default 512 MB (뱀서류 also in single player).
+tasks.withType(Test).configureEach {
+    maxHeapSize = '2g'
+}
+
+// Live LAN discovery check against SC:R: gradlew :mods:scr:scr-net:lanProbe --args="browse|host [toon] [game]"
+tasks.register('lanProbe', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.fogofwarlabs.sc4j.scr.net.lan.LanProbeScenario'
+    standardInput = System.in
+}

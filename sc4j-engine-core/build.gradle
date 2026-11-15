@@ -1,0 +1,13 @@
+plugins {
+    id 'java-library'
+}
+
+// The engine core: the leaves that every other engine module uses (JSON, fixed-point math, the map grid, terrain, players, the state hash,
+// content type identities, the mod identity and the resource models of pictures, sounds and text). No simulation, client, network or mod API.
+dependencies {
+    api project(':sc4j-base')
+    api project(':sc4j-mod-manifest')
+
+    // Test mod jars (org.fogofwarlabs.sc4j.manifest.test.TestJarUtils).
+    testImplementation testFixtures(project(':sc4j-mod-manifest'))
+}

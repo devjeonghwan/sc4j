@@ -1,0 +1,586 @@
+public interface org.fogofwarlabs.sc4j.engine.net.DatagramEndpoint extends org.fogofwarlabs.sc4j.engine.net.DatagramLink<java.net.InetSocketAddress> {
+  public abstract java.net.InetSocketAddress getLocalAddress() throws java.io.IOException;
+  public abstract java.net.InetSocketAddress receive(java.nio.ByteBuffer) throws java.io.IOException;
+  public abstract void close() throws java.io.IOException;
+  public abstract void send(java.nio.ByteBuffer, java.net.InetSocketAddress) throws java.io.IOException;
+  public default java.lang.Object receive(java.nio.ByteBuffer) throws java.io.IOException;
+  public default void send(java.nio.ByteBuffer, java.lang.Object) throws java.io.IOException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.DatagramLink<A> extends java.io.Closeable {
+  public abstract A receive(java.nio.ByteBuffer) throws java.io.IOException;
+  public abstract void close() throws java.io.IOException;
+  public abstract void send(java.nio.ByteBuffer, A) throws java.io.IOException;
+}
+
+public abstract class org.fogofwarlabs.sc4j.engine.net.DatagramLockstepTransport<A> implements org.fogofwarlabs.sc4j.engine.lockstep.LockstepTransport {
+  protected org.fogofwarlabs.sc4j.engine.net.DatagramLockstepTransport(org.fogofwarlabs.sc4j.engine.net.DatagramLink<A>, int, org.fogofwarlabs.sc4j.engine.net.NetworkClock, org.fogofwarlabs.sc4j.engine.net.TransportTimeouts, int, java.util.List<? extends org.fogofwarlabs.sc4j.engine.net.PeerRoute<A>>, org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer);
+  public boolean isDepartureComplete();
+  public boolean isLocalDropped();
+  public int getTurnsInTransit();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.lockstep.PeerDeparture> takeDepartures();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.lockstep.PeerTurn> receiveTurns();
+  public org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer getLocalPeer();
+  public org.fogofwarlabs.sc4j.engine.lockstep.WaitingPeers getWaitingPeers();
+  public static final int MAGIC = 21300;
+  public static final int PROTOCOL_VERSION = 1;
+  public void leave(int);
+  public void poll();
+  public void sendTurn(byte[]);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.NetworkClock {
+  public abstract long getMillis();
+  public static final org.fogofwarlabs.sc4j.engine.net.NetworkClock SYSTEM;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.PeerAddress implements org.fogofwarlabs.sc4j.engine.net.PeerRoute<java.net.InetSocketAddress> {
+  public java.lang.Object getAddress();
+  public java.lang.String toString();
+  public java.net.InetSocketAddress getAddress();
+  public org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer getPeer();
+  public org.fogofwarlabs.sc4j.engine.net.PeerAddress(org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer, java.net.InetSocketAddress);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.PeerRoute<A> {
+  public abstract A getAddress();
+  public abstract org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer getPeer();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.TransportTimeouts {
+  public java.lang.String toString();
+  public long getDropMillis();
+  public long getOverdueMillis();
+  public long getResendMillis();
+  public org.fogofwarlabs.sc4j.engine.net.TransportTimeouts(long, long, long);
+  public static final long DEFAULT_DROP_MILLIS = 60000l;
+  public static final long DEFAULT_OVERDUE_MILLIS = 2000l;
+  public static final long DEFAULT_RESEND_MILLIS = 100l;
+  public static final org.fogofwarlabs.sc4j.engine.net.TransportTimeouts DEFAULTS;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.UdpDatagramEndpoint implements org.fogofwarlabs.sc4j.engine.net.DatagramEndpoint {
+  public java.lang.Object receive(java.nio.ByteBuffer) throws java.io.IOException;
+  public java.net.InetSocketAddress getLocalAddress() throws java.io.IOException;
+  public java.net.InetSocketAddress receive(java.nio.ByteBuffer) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.net.UdpDatagramEndpoint open(java.net.InetSocketAddress) throws java.io.IOException;
+  public void close() throws java.io.IOException;
+  public void send(java.nio.ByteBuffer, java.lang.Object) throws java.io.IOException;
+  public void send(java.nio.ByteBuffer, java.net.InetSocketAddress) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.UdpLockstepTransport extends org.fogofwarlabs.sc4j.engine.net.DatagramLockstepTransport<java.net.InetSocketAddress> {
+  public org.fogofwarlabs.sc4j.engine.net.UdpLockstepTransport(org.fogofwarlabs.sc4j.engine.net.DatagramEndpoint, org.fogofwarlabs.sc4j.engine.net.NetworkClock, org.fogofwarlabs.sc4j.engine.net.TransportTimeouts, int, java.util.List<org.fogofwarlabs.sc4j.engine.net.PeerAddress>, org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer);
+  public static final int MAXIMUM_DATAGRAM_LENGTH = 1200;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.BeaconLink {
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.BeaconLinkSession open() throws java.io.IOException;
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkAccount getAccount();
+  public static final java.lang.String GUEST_NAME = "Guest";
+  public static final java.lang.String LAUNCHER_MOD_ID = "sc4j-launcher";
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.BeaconLinkSession extends java.io.Closeable {
+  public abstract java.net.InetSocketAddress getObservedAddress();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNode> getNodes();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoom publishRoom(org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings, java.lang.String);
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure getFailure();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkOverlay getOverlay();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant getParticipant();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.ParticipantChannel joinRoom(org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom, java.lang.String);
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.ParticipantChannel openChannel(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant);
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSearch searchRooms();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.community.CommunitySession getCommunity();
+  public abstract void close();
+  public abstract void poll() throws java.io.IOException;
+  public abstract void signOutOtherDevices();
+  public default org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoom publishRoom(org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings);
+  public default org.fogofwarlabs.sc4j.engine.net.beaconlink.ParticipantChannel joinRoom(org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure> {
+  public java.lang.String getDescription();
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure CLOSED_BY_PEER;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure CONNECTION_LOST;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure JOIN_REFUSED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure NO_ANSWER;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure PAIR_CANNOT_CONNECT;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure PEER_NOT_FOUND;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure ROOM_NOT_FOUND;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelState extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelState> {
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelState CLOSED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelState CONNECTING;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelState OPEN;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelState valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelState[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom {
+  public boolean isJoinable();
+  public boolean isPrivate();
+  public byte[] getJoinKey();
+  public java.lang.String getModId();
+  public java.lang.String getModVersion();
+  public java.lang.String toString();
+  public long getNumber();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant, long, org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant, long, org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings, java.lang.String, java.lang.String, byte[], org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal, org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant, long, org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings, org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant, long, org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings, org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal, org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate getLatencyEstimate();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant getHost();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings getSettings();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal getJoinRefusal();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoom {
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState getState();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure getFailure();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.ParticipantChannel acceptChannel();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings getSettings();
+  public abstract void update(org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings);
+  public abstract void withdraw();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState> {
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState FAILED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState PUBLISHED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState PUBLISHING;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState WITHDRAWN;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoomState[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass> {
+  public long getMaximumMillis();
+  public static final long FAIR_MILLIS = 200l;
+  public static final long GOOD_MILLIS = 100l;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass FAIR;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass GOOD;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass POOR;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass UNKNOWN;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass of(long);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate implements java.lang.Comparable<org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate> {
+  public boolean equals(java.lang.Object);
+  public boolean isKnown();
+  public boolean isWithin(org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass);
+  public int compareTo(java.lang.Object);
+  public int compareTo(org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate);
+  public int hashCode();
+  public java.lang.String toString();
+  public long getRoundTripMillis();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyClass getLatencyClass();
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate UNKNOWN;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate of(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkAccount {
+  public java.lang.String getId();
+  public java.lang.String getName();
+  public java.lang.String getTaggedName();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkAccount(java.lang.String, java.lang.String, org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer getPlayer();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure> {
+  public java.lang.String getDescription();
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure ALL_NODES_REFUSED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure NO_NODES_CONFIGURED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure NO_NODE_ANSWERED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure ROOM_REFUSED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure SIGNED_OUT;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure TOO_MANY_CONNECTIONS;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkLockstepTransport extends org.fogofwarlabs.sc4j.engine.net.DatagramLockstepTransport<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant> {
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkLockstepTransport(org.fogofwarlabs.sc4j.engine.net.DatagramLink<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant>, org.fogofwarlabs.sc4j.engine.net.NetworkClock, org.fogofwarlabs.sc4j.engine.net.TransportTimeouts, int, java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPeer>, org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNode {
+  public abstract java.lang.String getAddress();
+  public abstract java.net.InetSocketAddress getObservedAddress();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState getState();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState> {
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState CONNECTING;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState NOT_ANSWERING;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState REFUSED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState REGISTERED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState SIGNED_OUT;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState TOO_MANY_CONNECTIONS;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState UNRESOLVED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState WRONG_KEY;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkNodeState[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkOverlay extends java.io.Closeable {
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant> getParticipants();
+  public abstract org.fogofwarlabs.sc4j.engine.net.DatagramLink<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant> openPort(int);
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant getParticipant();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.ParticipantChannel addParticipant(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant);
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.ParticipantChannel getChannel(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant);
+  public abstract void close();
+  public abstract void removeParticipant(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant);
+  public static final int FIRST_MOD_PORT = 16;
+  public static final int GAME_PORT = 2;
+  public static final int LOBBY_PORT = 1;
+  public static final int MAXIMUM_DATAGRAM_LENGTH = 1023;
+  public static final int MAXIMUM_PORT = 255;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant {
+  public boolean equals(java.lang.Object);
+  public byte[] getBytes();
+  public int hashCode();
+  public java.lang.String toString();
+  public long getConnection();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer getPlayer();
+  public static final int LENGTH = 40;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant of(byte[]);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant of(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer, long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPeer implements org.fogofwarlabs.sc4j.engine.net.PeerRoute<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant> {
+  public java.lang.Object getAddress();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer getPeer();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant getAddress();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPeer(org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer, org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer {
+  public boolean equals(java.lang.Object);
+  public byte[] getKey();
+  public int hashCode();
+  public java.lang.String getTag();
+  public java.lang.String toString();
+  public static final int KEY_LENGTH = 32;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer of(byte[]);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.ParticipantChannel extends java.io.Closeable {
+  public abstract boolean send(java.nio.ByteBuffer);
+  public abstract int receive(java.nio.ByteBuffer);
+  public abstract long getDelayMillis();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelFailure getFailure();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.ChannelState getState();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant getPeer();
+  public abstract org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal getJoinRefusal();
+  public abstract void close();
+  public static final int MAXIMUM_PAYLOAD_LENGTH = 1024;
+  public static final int NO_DATAGRAM = -1;
+  public static final long UNKNOWN_DELAY = -1l;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSearch {
+  public abstract boolean isComplete();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom> getOtherRooms();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.FoundRoom> getRooms();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure getFailure();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings {
+  public boolean isStarted();
+  public byte[] getModData();
+  public int getCapacity();
+  public int getPlayers();
+  public java.lang.String getMapName();
+  public java.lang.String getRoomName();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings(java.lang.String, java.lang.String, int, int);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings(java.lang.String, java.lang.String, int, int, boolean, byte[]);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.RoomSettings(java.lang.String, java.lang.String, int, int, byte[]);
+  public static final int MAXIMUM_MOD_DATA_LENGTH = 64;
+  public static final int MAXIMUM_NAME_LENGTH = 48;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChannelSummary {
+  public int getMemberCount();
+  public java.lang.String getName();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChannelSummary(java.lang.String, int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatChannel {
+  public abstract boolean emote(java.lang.String);
+  public abstract boolean isJoined();
+  public abstract boolean say(java.lang.String);
+  public abstract java.lang.String getName();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLine> getLines();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence> getMembers();
+  public abstract void leave();
+  public static final int MAXIMUM_TEXT_LENGTH = 255;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLine {
+  public java.lang.String getAuthorName();
+  public java.lang.String getTaggedAuthorName();
+  public java.lang.String getText();
+  public java.lang.String toString();
+  public long getTimestampMillis();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer getAuthor();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLine(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer, java.lang.String, org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLineKind, java.lang.String, long);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLineKind getKind();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLineKind extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLineKind> {
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLineKind EMOTE;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLineKind SAY;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLineKind valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLineKind[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.community.CommunityListener {
+  public default void onChatLine(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatChannel, org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatLine);
+  public default void onMembersChanged(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatChannel);
+  public default void onWhisper(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.Whisper);
+  public default void onWhisperResult(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.Whisper, org.fogofwarlabs.sc4j.engine.net.beaconlink.community.WhisperResult);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.beaconlink.community.CommunitySession {
+  public abstract boolean isIgnored(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer> getFriends();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer> getIgnored();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChannelSummary> listChannels();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatChannel> getChannels();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.community.ChatChannel joinChannel(java.lang.String);
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence getPresence(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence getSelf();
+  public abstract org.fogofwarlabs.sc4j.engine.net.beaconlink.community.Whisper whisper(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer, java.lang.String);
+  public abstract void addFriend(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public abstract void addListener(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.CommunityListener);
+  public abstract void ignore(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public abstract void removeFriend(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public abstract void removeListener(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.CommunityListener);
+  public abstract void setAppearOffline(boolean);
+  public abstract void setAwayText(java.lang.String);
+  public abstract void setStatus(org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus);
+  public abstract void unignore(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer);
+  public static final int MAXIMUM_AWAY_TEXT_LENGTH = 32;
+  public static final int MAXIMUM_CHANNELS = 4;
+  public static final int MAXIMUM_FRIENDS = 16;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence {
+  public boolean canPlayTogether();
+  public int getDeviceCount();
+  public java.lang.String getAwayText();
+  public java.lang.String getChannel();
+  public java.lang.String getModId();
+  public java.lang.String getModVersion();
+  public java.lang.String getName();
+  public java.lang.String getTaggedName();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate getLatencyEstimate();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer getPlayer();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer, java.lang.String, java.lang.String, java.lang.String, boolean, org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus, java.lang.String, java.lang.String, org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate, int);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerPresence(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer, java.lang.String, java.lang.String, java.lang.String, boolean, org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus, java.lang.String, org.fogofwarlabs.sc4j.engine.net.beaconlink.LatencyEstimate);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus getStatus();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus> {
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus AVAILABLE;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus AWAY;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus IN_GAME;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus IN_ROOM;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.community.PlayerStatus[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.community.Whisper {
+  public boolean isIncoming();
+  public java.lang.String getOtherName();
+  public java.lang.String getTaggedOtherName();
+  public java.lang.String getText();
+  public java.lang.String toString();
+  public long getTimestampMillis();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer getOther();
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.community.Whisper(org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer, java.lang.String, boolean, java.lang.String, long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.beaconlink.community.WhisperResult extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.beaconlink.community.WhisperResult> {
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.community.WhisperResult DELIVERED;
+  public static final org.fogofwarlabs.sc4j.engine.net.beaconlink.community.WhisperResult NOT_ONLINE;
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.community.WhisperResult valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.beaconlink.community.WhisperResult[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.discovery.DiscoveredRoom {
+  public boolean isJoinable();
+  public java.lang.String toString();
+  public java.net.InetSocketAddress getLobbyAddress();
+  public long getSeenTime();
+  public org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch getMismatch();
+  public org.fogofwarlabs.sc4j.engine.net.discovery.DiscoveredRoom(org.fogofwarlabs.sc4j.engine.net.discovery.LanRoom, java.net.InetSocketAddress, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch, long);
+  public org.fogofwarlabs.sc4j.engine.net.discovery.LanRoom getRoom();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.discovery.LanRoom {
+  public boolean isOpen();
+  public int getCapacity();
+  public int getLobbyPort();
+  public int getMemberCount();
+  public java.lang.String getHostName();
+  public java.lang.String getName();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity getIdentity();
+  public org.fogofwarlabs.sc4j.engine.net.discovery.LanRoom(java.lang.String, java.lang.String, int, int, int, boolean, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity);
+  public static final int MAXIMUM_MEMBERS = 255;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.discovery.LanRoomDiscovery {
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.discovery.DiscoveredRoom> getRooms();
+  public org.fogofwarlabs.sc4j.engine.net.discovery.LanRoom getRoom();
+  public org.fogofwarlabs.sc4j.engine.net.discovery.LanRoomDiscovery(org.fogofwarlabs.sc4j.engine.net.DatagramEndpoint, org.fogofwarlabs.sc4j.engine.net.NetworkClock, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity);
+  public static final int DEFAULT_PORT = 6120;
+  public static final int MAGIC = 21316;
+  public static final int PROTOCOL_VERSION = 1;
+  public static final long ROOM_EXPIRY_MILLIS = 10000l;
+  public void announce(java.net.InetSocketAddress) throws java.io.IOException;
+  public void poll() throws java.io.IOException;
+  public void query(java.net.InetSocketAddress) throws java.io.IOException;
+  public void setRoom(org.fogofwarlabs.sc4j.engine.net.discovery.LanRoom);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.lobby.FolderLobbyMaps implements org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMaps {
+  public boolean hasMap(org.fogofwarlabs.sc4j.engine.game.MapReference);
+  public byte[] readMap(org.fogofwarlabs.sc4j.engine.game.MapReference) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.engine.net.lobby.FolderLobbyMaps(org.fogofwarlabs.sc4j.engine.net.lobby.MapFolders, java.lang.String);
+  public void addMap(org.fogofwarlabs.sc4j.engine.game.MapReference, byte[]) throws java.io.IOException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.lobby.GameLobby {
+  public abstract boolean isHost();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMember> getMembers();
+  public abstract org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMember getLocalMember();
+  public abstract org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState getLobbyState();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal> {
+  public int getCode();
+  public java.lang.String getDescription();
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal ENGINE_VERSION;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal GAME_STARTED;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal IDENTITY_DATA;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal MOD_CONTENT;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal MOD_ID;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal MOD_VERSION;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal PROTOCOL_VERSION;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal ROOM_FULL;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal WRONG_PASSWORD;
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal find(int);
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal of(org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch);
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState> {
+  public int getCode();
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState MISSING;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState PRESENT;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState TRANSFERRING;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState UNKNOWN;
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState find(int);
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMaps {
+  public abstract boolean hasMap(org.fogofwarlabs.sc4j.engine.game.MapReference);
+  public abstract byte[] readMap(org.fogofwarlabs.sc4j.engine.game.MapReference) throws java.io.IOException;
+  public abstract void addMap(org.fogofwarlabs.sc4j.engine.game.MapReference, byte[]) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMember {
+  public boolean isObserver();
+  public boolean isReady();
+  public int getSlotIndex();
+  public java.lang.String getName();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.content.faction.Faction getFaction();
+  public org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer getPeer();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState getMapState();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMember(org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer, java.lang.String, int);
+  public org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMember(org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer, java.lang.String, int, org.fogofwarlabs.sc4j.engine.content.faction.Faction, boolean, org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMapState);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState> {
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState CLOSED;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState JOINING;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState OPEN;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState REFUSED;
+  public static final org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState STARTED;
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.net.lobby.MapFileMatch {
+  public abstract boolean matches(java.nio.file.Path) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.lobby.MapFolders {
+  public java.nio.file.Path findFile(org.fogofwarlabs.sc4j.engine.net.lobby.MapFileMatch);
+  public java.nio.file.Path getSaveFolder();
+  public java.nio.file.Path saveFile(java.lang.String, byte[]) throws java.io.IOException;
+  public java.util.List<java.nio.file.Path> getReadFolders();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.MapFolders(java.util.List<java.nio.file.Path>, java.nio.file.Path);
+  public static final java.lang.String DOWNLOAD_FOLDER = "downloads";
+  public static final java.lang.String STORAGE_FOLDER = "maps";
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.MapFolders of(java.util.List<java.nio.file.Path>, java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.lobby.NetworkGameStart {
+  public boolean isOverBeaconLink();
+  public int getSessionId();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.PeerAddress> getAddresses();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPeer> getLinkPeers();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMember> getMembers();
+  public org.fogofwarlabs.sc4j.engine.game.GameSetup getSetup();
+  public org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer getLocalPeer();
+  public org.fogofwarlabs.sc4j.engine.lockstep.LockstepSession createSession(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.lockstep.LockstepTransport, org.fogofwarlabs.sc4j.engine.command.CommandRegistry<? extends org.fogofwarlabs.sc4j.engine.command.CommandType<?>>, org.fogofwarlabs.sc4j.engine.lockstep.DesyncListener, org.fogofwarlabs.sc4j.engine.lockstep.PeerDepartureListener);
+  public org.fogofwarlabs.sc4j.engine.lockstep.TurnSchedule getSchedule();
+  public org.fogofwarlabs.sc4j.engine.net.UdpLockstepTransport createTransport(org.fogofwarlabs.sc4j.engine.net.DatagramEndpoint, org.fogofwarlabs.sc4j.engine.net.NetworkClock, org.fogofwarlabs.sc4j.engine.net.TransportTimeouts);
+  public org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkLockstepTransport createTransport(org.fogofwarlabs.sc4j.engine.net.DatagramLink<org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkParticipant>, org.fogofwarlabs.sc4j.engine.net.NetworkClock, org.fogofwarlabs.sc4j.engine.net.TransportTimeouts);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.net.lobby.NetworkLobby implements org.fogofwarlabs.sc4j.engine.net.lobby.GameLobby,java.io.Closeable {
+  public boolean assignSlot(org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer, int) throws java.io.IOException;
+  public boolean isHost();
+  public boolean isReadyToStart();
+  public java.lang.String getRefusalText();
+  public java.net.InetSocketAddress getLocalAddress() throws java.io.IOException;
+  public java.util.List<org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMember> getMembers();
+  public org.fogofwarlabs.sc4j.engine.game.MapReference getMap();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.JoinRefusal getRefusal();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMember getLocalMember();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.LobbyState getLobbyState();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.NetworkGameStart getStart();
+  public org.fogofwarlabs.sc4j.engine.net.lobby.NetworkGameStart start(org.fogofwarlabs.sc4j.engine.game.GameSetup, org.fogofwarlabs.sc4j.engine.lockstep.TurnSchedule) throws java.io.IOException;
+  public static final int DEFAULT_PORT = 6121;
+  public static final int MAXIMUM_MAP_LENGTH = 4194304;
+  public static final int OBSERVER_SLOT = -1;
+  public static final int PROTOCOL_VERSION = 1;
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.NetworkLobby host(java.net.InetSocketAddress, java.net.InetSocketAddress, java.lang.String, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, org.fogofwarlabs.sc4j.engine.game.GameSetupCodec, org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMaps, org.fogofwarlabs.sc4j.engine.game.MapReference, int[], int) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.NetworkLobby host(org.fogofwarlabs.sc4j.engine.net.beaconlink.HostedRoom, org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkOverlay, org.fogofwarlabs.sc4j.engine.net.NetworkClock, java.lang.String, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, org.fogofwarlabs.sc4j.engine.game.GameSetupCodec, org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMaps, org.fogofwarlabs.sc4j.engine.game.MapReference, int[], int);
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.NetworkLobby join(java.net.InetSocketAddress, int, java.lang.String, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, org.fogofwarlabs.sc4j.engine.game.GameSetupCodec, org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMaps) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.net.lobby.NetworkLobby join(org.fogofwarlabs.sc4j.engine.net.beaconlink.ParticipantChannel, org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkOverlay, org.fogofwarlabs.sc4j.engine.net.NetworkClock, java.lang.String, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, org.fogofwarlabs.sc4j.engine.game.GameSetupCodec, org.fogofwarlabs.sc4j.engine.net.lobby.LobbyMaps);
+  public void close();
+  public void poll() throws java.io.IOException;
+  public void requestSlot(int) throws java.io.IOException;
+  public void setFaction(org.fogofwarlabs.sc4j.engine.content.faction.Faction) throws java.io.IOException;
+  public void setMap(org.fogofwarlabs.sc4j.engine.game.MapReference) throws java.io.IOException;
+  public void setReady(boolean) throws java.io.IOException;
+}

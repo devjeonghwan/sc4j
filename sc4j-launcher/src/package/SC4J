@@ -1,0 +1,3 @@
+#!/bin/sh
+# Starts the SC4J launcher with the Java runtime of this package.
+exec "$(dirname "$0")/launcher/bin/sc4j-launcher" "$@"

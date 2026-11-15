@@ -1,0 +1,46 @@
+rootProject.name = "sc4j"
+
+// Engine-side modules: the repository root holds only these.
+include 'sc4j-base'
+include 'sc4j-mod-manifest'
+// The engine modules: core (leaf models), sim (simulation), net (network layer), client (client framework), and sc4j-engine
+// (the mod API and the client application) that mods compile against.
+include 'sc4j-engine-core'
+include 'sc4j-engine-sim'
+include 'sc4j-engine-net'
+include 'sc4j-engine-client'
+include 'sc4j-engine'
+include 'sc4j-runtime'
+include 'sc4j-launcher'
+// Beacon.Link: the wire protocol shared by the peers and the client, the peer library that the launcher, the runtime and the
+// node executable run, and the node executable (no engine).
+include 'sc4j-beaconlink-protocol'
+include 'sc4j-beaconlink-peer'
+include 'sc4j-beaconlink-node'
+// The Beacon.Link client that the runtime gives a mod, with the loopback NAT emulator of the network tests (test fixtures).
+include 'sc4j-beaconlink'
+
+// The mods: each lives in mods/<mod> (project :mods:<mod>).
+// The SC:R mod: every module lives in mods/scr/scr-<part> (project :mods:scr:scr-<part>).
+List<String> scrModules = [
+    'data',
+    'game',
+    'render',
+    'net',
+    'client',
+    // JMH benchmarks (the frame benchmark of the replay simulation).
+    'benchmark'
+]
+
+for (item in scrModules) {
+    include(":mods:scr:scr-" + item)
+}
+
+// Demo 1, a mod made only of the engine: one module in mods/demo/.
+include ':mods:demo'
+// Demo 2, a clone of the SC:R mod with its own identity: one module in mods/scr-demo/ that builds the clone from mods/scr.
+include ':mods:scr-demo'
+
+include ':tools:sc-recorder'
+// The API tools of the engine (apiDump, apiCheck, checkApiUse; docs/api-policy.md).
+include ':tools:api-check'

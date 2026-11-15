@@ -1,0 +1,46 @@
+plugins {
+    id 'java-library'
+    // The loopback NAT emulator (org.fogofwarlabs.sc4j.beaconlink.test.nat) and the scenario of nodes and clients on 127.0.0.1
+    // (org.fogofwarlabs.sc4j.beaconlink.test.client) of the client tests and of the tests of protocols over Beacon.Link (the demo's).
+    id 'java-test-fixtures'
+}
+
+// The Beacon.Link client: node sessions with registration, observed addresses, room publishing and listing by mod identity,
+// participant channels and the overlay over them (the engine's lobby and lockstep transport run on it), and the engine's Beacon.Link
+// interface (engine.net.beaconlink) that the runtime gives a mod.
+dependencies {
+    api project(':sc4j-engine-net')
+    api project(':sc4j-beaconlink-protocol')
+    // The peer that a session runs on its socket (the node roles, no engine).
+    api project(':sc4j-beaconlink-peer')
+
+    // The emulator's endpoints are engine datagram endpoints driven by the protocol clock.
+    testFixturesApi project(':sc4j-engine-net')
+    testFixturesApi project(':sc4j-beaconlink-protocol')
+    // The scenario runs real peers and the clients of this module on the manual protocol clock.
+    testFixturesApi project(':sc4j-beaconlink-peer')
+    testFixturesApi testFixtures(project(':sc4j-beaconlink-protocol'))
+
+    // Real peers started in the test JVM on 127.0.0.1, and the manual protocol clock.
+    testImplementation project(':sc4j-beaconlink-peer')
+    testImplementation testFixtures(project(':sc4j-beaconlink-protocol'))
+}
+
+// The simulations of about a thousand peers (@LargeSimulation, tag simulation) run minutes of signature work each: they run only in their own
+// task, never in test, check or integrationTest (integrationTest includes the tag integration only).
+tasks.named('test') {
+    options {
+        excludeTags 'simulation'
+    }
+}
+
+tasks.register('simulationTest', Test) {
+    description = 'Runs the large Beacon.Link simulations (@LargeSimulation) on the in-memory network.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'simulation'
+    }
+    shouldRunAfter tasks.named('test')
+}

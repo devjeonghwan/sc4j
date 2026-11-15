@@ -1,0 +1,15 @@
+{
+  "image": "hearthstead.png",
+  "teamMask": "hearthstead_team.png",
+  "shadow": "hearthstead_shadow.png",
+  "frameWidth": 194,
+  "frameHeight": 155,
+  "columns": 5,
+  "rows": 1,
+  "anchor": {"x": 97, "y": 93},
+  "animations": {
+    "construct": [{"frame": 0}, {"wait": 40}, {"frame": 1}, {"wait": 40}, {"frame": 2}, {"label": "rising"}, {"wait": 40}, {"jump": "rising"}],
+    "idle": [{"frame": 3}, {"wait": 60}, {"jump": "idle"}],
+    "death": [{"frame": 4}, {"wait": 240}, {"end": true}]
+  }
+}

@@ -1,0 +1,61 @@
+plugins {
+    id 'java-library'
+    id 'application'
+}
+
+// The Beacon.Link node executable: a headless peer of the peer library on a socket of its own, with its state folder
+// and command line; the same peer as the launcher's node. Anyone runs it; it carries no game traffic. It depends on the peer library,
+// the wire protocol and the generic base only: no engine, no mod, no LWJGL.
+dependencies {
+    implementation project(':sc4j-beaconlink-peer')
+    implementation project(':sc4j-beaconlink-protocol')
+
+    // The manual protocol clock (org.fogofwarlabs.sc4j.beaconlink.protocol.test.ManualProtocolClock).
+    testImplementation testFixtures(project(':sc4j-beaconlink-protocol'))
+}
+
+application {
+    applicationName = 'sc4j-beaconlink-node'
+    mainClass = 'org.fogofwarlabs.sc4j.beaconlink.node.NodeMain'
+}
+
+// The start scripts keep the JVM's temporary files in <install>/.cache/tmp. The environment variable SC4J_BEACONLINK_NODE_CACHE names
+// another folder for that .cache folder, so that the install itself may be read-only (a service with ProtectSystem=strict, docs/beaconlink/operator.md).
+// Runs after the shared start script edit of the root build, which adds the .cache/tmp lines.
+tasks.named('startScripts') {
+    doLast {
+        def replace = { String text, String target, String replacement ->
+            if (!text.contains(target)) {
+                throw new GradleException("The start script lacks the text to replace: ${target}")
+            }
+            text.replace(target, replacement)
+        }
+        def unixText = unixScript.text
+        unixText = replace(unixText, 'mkdir -p "$APP_HOME/.cache/tmp"',
+                           'SC4J_BEACONLINK_NODE_CACHE=${SC4J_BEACONLINK_NODE_CACHE:-$APP_HOME/.cache}\nmkdir -p "$APP_HOME/.cache/tmp"')
+        unixText = replace(unixText, '"$APP_HOME/.cache/tmp"', '"$SC4J_BEACONLINK_NODE_CACHE/tmp"')
+        unixText = replace(unixText, '\'"$APP_HOME"\'/.cache/tmp', '\'"$SC4J_BEACONLINK_NODE_CACHE"\'/tmp')
+        unixScript.text = unixText
+        def windowsText = windowsScript.text
+        windowsText = replace(windowsText, 'if not exist "%APP_HOME%\\.cache\\tmp\\" mkdir',
+                              'if not defined SC4J_BEACONLINK_NODE_CACHE set SC4J_BEACONLINK_NODE_CACHE=%APP_HOME%\\.cache\r\n' +
+                              'if not exist "%APP_HOME%\\.cache\\tmp\\" mkdir')
+        windowsText = replace(windowsText, '%APP_HOME%\\.cache\\tmp', '%SC4J_BEACONLINK_NODE_CACHE%\\tmp')
+        windowsText = replace(windowsText, '%APP_HOME%/.cache/tmp', '%SC4J_BEACONLINK_NODE_CACHE%/tmp')
+        windowsScript.text = windowsText
+    }
+}
+
+// The distribution carries the Beacon.Link documents of the repository's docs/beaconlink/ in docs/, next to bin/ and lib/: the peer
+// operator guide (operator.md), the protocol reference (protocol.md) and their Korean versions (operator.ko.md, protocol.ko.md). They keep
+// their names, so their links to each other work in the distribution too.
+distributions {
+    main {
+        contents {
+            from(rootProject.file('docs/beaconlink')) {
+                include 'operator.md', 'operator.ko.md', 'protocol.md', 'protocol.ko.md'
+                into 'docs'
+            }
+        }
+    }
+}

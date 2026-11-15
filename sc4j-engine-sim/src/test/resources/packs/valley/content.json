@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "resourceKinds": ["gold", "wood"],
+  "motionProfiles": {
+    "walker": {"topSpeed": 320, "acceleration": 64, "stoppingDistance": 1024, "turnRate": 40},
+    "stone": {"topSpeed": 1280, "acceleration": 1280, "turnRate": 127, "acceleratingTurn": true}
+  },
+  "weapons": {
+    "fork": {"damage": 6, "cooldown": 20, "maximumRange": 16, "targets": ["ground", "building"]},
+    "sling": {"damage": 4, "damageFactor": 2, "cooldown": 30, "minimumRange": 8, "maximumRange": 96, "targets": ["ground"], "projectile": "stone",
+              "homing": false, "splashInnerRadius": 4, "splashMiddleRadius": 8, "splashOuterRadius": 12}
+  },
+  "factions": {
+    "valley": {"worker": "farmer", "townHall": "hall", "supplyProvider": "barn", "resourceKinds": ["gold"], "startUnits": ["farmer", "farmer"]}
+  },
+  "units": {
+    "mine": {"hitPoints": 1000, "collision": {"left": 31, "up": 30, "right": 32, "down": 29}, "placementWidth": 64, "placementHeight": 64,
+             "traits": ["resource-container"]},
+    "farmer": {"faction": "valley", "motionProfile": "walker", "hitPoints": 40, "sightRange": 7, "groundWeapon": "fork", "cost": {"gold": 50},
+               "buildTime": 60, "supplyRequired": 1, "collision": 6, "traits": ["worker"], "idleOrders": {"human": "idle", "computer": "idle"}},
+    "hall": {"faction": "valley", "hitPoints": 600, "armor": 1, "cost": {"gold": 400, "wood": 50}, "supplyProvided": 10, "collision": 47,
+             "traits": ["building", "resource-depot"]},
+    "barn": {"faction": "valley", "hitPoints": 200, "supplyProvided": 8, "collision": 31, "traits": ["building"]},
+    "slinger": {"faction": "valley", "motionProfile": "walker", "hitPoints": 45, "groundWeapon": "sling", "targetAcquisitionRange": 160,
+                "idleOrders": {"computer": "guard"}}
+  },
+  "requirements": {
+    "farmer": [{"actor": "hall"}],
+    "barn": [{"actor": ["farmer"]}],
+    "slinger": [{"anyOf": [{"completed": "barn", "count": 2}, {"completed": "hall"}]}, {"actor": "hall"}]
+  }
+}

@@ -1,0 +1,304 @@
+public final class org.fogofwarlabs.sc4j.manifest.ManifestException extends java.lang.Exception {
+  public org.fogofwarlabs.sc4j.manifest.ManifestException(org.fogofwarlabs.sc4j.manifest.validation.ValidationResult);
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult getResult();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.ModArchive {
+  public byte[] getImage(java.lang.String);
+  public java.nio.file.Path getPath();
+  public org.fogofwarlabs.sc4j.manifest.ModManifest getManifest();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.ModImages {
+  public java.lang.String getBanner();
+  public java.lang.String getIcon();
+  public java.util.List<java.lang.String> getEntries();
+  public java.util.List<java.lang.String> getScreenshots();
+  public org.fogofwarlabs.sc4j.manifest.ModImages(java.lang.String, java.lang.String, java.util.List<java.lang.String>);
+  public static final org.fogofwarlabs.sc4j.manifest.ModImages NONE;
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.ModManifest {
+  public int getFormat();
+  public java.lang.String getEntry();
+  public java.lang.String getId();
+  public java.lang.String getLicense();
+  public java.lang.String getWebsite();
+  public java.util.List<java.lang.String> getAuthors();
+  public java.util.List<org.fogofwarlabs.sc4j.manifest.text.LocalizedText> getNotices();
+  public org.fogofwarlabs.sc4j.manifest.ModImages getImages();
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingsSchema getSettings();
+  public org.fogofwarlabs.sc4j.manifest.text.LocalizedText getDescription();
+  public org.fogofwarlabs.sc4j.manifest.text.LocalizedText getName();
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult checkEngine(org.fogofwarlabs.sc4j.manifest.version.EngineVersion);
+  public org.fogofwarlabs.sc4j.manifest.version.EngineVersion getEngine();
+  public org.fogofwarlabs.sc4j.manifest.version.ModVersion getVersion();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.ModManifestReader {
+  public static final int FORMAT = 1;
+  public static final int MAXIMUM_IMAGE_SIZE = 16777216;
+  public static final int MAXIMUM_MANIFEST_SIZE = 1048576;
+  public static final java.lang.String FILE_NAME = "sc4j-mod.json";
+  public static org.fogofwarlabs.sc4j.manifest.ModArchive read(java.nio.file.Path) throws org.fogofwarlabs.sc4j.manifest.ManifestException;
+  public static org.fogofwarlabs.sc4j.manifest.ModManifest parse(byte[]) throws org.fogofwarlabs.sc4j.manifest.ManifestException;
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.install.InstallLayout {
+  public java.nio.file.Path getBeaconLinkDirectory();
+  public java.nio.file.Path getLauncherDirectory();
+  public java.nio.file.Path getLauncherSettingsFile();
+  public java.nio.file.Path getLogDirectory(java.lang.String);
+  public java.nio.file.Path getModsDirectory();
+  public java.nio.file.Path getNodesFile();
+  public java.nio.file.Path getRoot();
+  public java.nio.file.Path getRuntimeDirectory();
+  public java.nio.file.Path getRuntimeScript(java.lang.String);
+  public java.nio.file.Path getSeedsFile();
+  public java.nio.file.Path getSettingsFile(java.lang.String);
+  public java.nio.file.Path getSharedSettingsFile();
+  public java.nio.file.Path getStorageDirectory(java.lang.String);
+  public java.nio.file.Path getUserDataDirectory();
+  public static final java.lang.String DEVELOPMENT_INSTALL = "build/dev-install";
+  public static final java.lang.String LAUNCHER_FOLDER = "launcher";
+  public static final java.lang.String MODS_FOLDER = "mods";
+  public static final java.lang.String RUNTIME_FOLDER = "runtime";
+  public static final java.lang.String USER_DATA_FOLDER = "userdata";
+  public static org.fogofwarlabs.sc4j.manifest.install.InstallLayout detect(java.lang.Class<?>, java.lang.String);
+  public static org.fogofwarlabs.sc4j.manifest.install.InstallLayout fromCodeLocation(java.nio.file.Path, java.lang.String);
+  public static org.fogofwarlabs.sc4j.manifest.install.InstallLayout of(java.nio.file.Path);
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.BooleanSetting extends org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition {
+  public org.fogofwarlabs.sc4j.manifest.settings.BooleanSetting(java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, boolean, java.lang.Boolean, org.fogofwarlabs.sc4j.manifest.text.LocalizedText);
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingType getType();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.ChoiceSetting extends org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition {
+  public boolean isSystemDefault();
+  public java.lang.Object getDefaultValue();
+  public java.lang.String findOption(java.util.Locale);
+  public java.util.List<java.lang.String> getOptions();
+  public org.fogofwarlabs.sc4j.manifest.settings.ChoiceSetting(java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, boolean, java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, java.util.List<java.lang.String>, boolean);
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingType getType();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.DirectorySetting extends org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition {
+  public java.lang.String getSharedName();
+  public java.nio.file.Path detect(org.fogofwarlabs.sc4j.manifest.settings.InstallationRecords);
+  public java.util.List<java.lang.String> getContainedPaths();
+  public java.util.List<java.lang.String> getProgramFolders();
+  public java.util.List<java.lang.String> getUninstallEntries();
+  public org.fogofwarlabs.sc4j.manifest.settings.DirectorySetting(java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, boolean, java.nio.file.Path, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, java.util.List<java.lang.String>, java.util.List<java.lang.String>, java.util.List<java.lang.String>, java.lang.String);
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingType getType();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.FileSetting extends org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition {
+  public java.util.List<java.lang.String> getExtensions();
+  public org.fogofwarlabs.sc4j.manifest.settings.FileSetting(java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, boolean, java.nio.file.Path, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, java.util.List<java.lang.String>);
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingType getType();
+  public static java.lang.String normalizeExtension(java.lang.String);
+}
+
+public interface org.fogofwarlabs.sc4j.manifest.settings.InstallationRecords {
+  public abstract java.util.List<java.nio.file.Path> findUninstallLocations(java.lang.String);
+  public abstract java.util.List<java.nio.file.Path> getProgramDirectories();
+  public static final org.fogofwarlabs.sc4j.manifest.settings.InstallationRecords NONE;
+  public static org.fogofwarlabs.sc4j.manifest.settings.InstallationRecords system();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.IntegerSetting extends org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition {
+  public java.lang.Integer getMaximum();
+  public java.lang.Integer getMinimum();
+  public org.fogofwarlabs.sc4j.manifest.settings.IntegerSetting(java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, boolean, java.lang.Integer, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, java.lang.Integer, java.lang.Integer);
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingType getType();
+}
+
+public abstract class org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition {
+  public abstract org.fogofwarlabs.sc4j.manifest.settings.SettingType getType();
+  public boolean isRequired();
+  public final void validate(java.lang.Object, org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder);
+  public java.lang.Object getDefaultValue();
+  public java.lang.Object resolve(java.lang.Object);
+  public java.lang.String getKey();
+  public java.lang.String getSharedName();
+  public org.fogofwarlabs.sc4j.manifest.text.LocalizedText getDescription();
+  public org.fogofwarlabs.sc4j.manifest.text.LocalizedText getLabel();
+  public org.fogofwarlabs.sc4j.manifest.text.LocalizedText getMessage();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.SettingType extends java.lang.Enum<org.fogofwarlabs.sc4j.manifest.settings.SettingType> {
+  public java.lang.Object convert(java.lang.Object);
+  public java.lang.Object toJson(java.lang.Object);
+  public java.lang.String getExpectation();
+  public java.lang.String getName();
+  public static final org.fogofwarlabs.sc4j.manifest.settings.SettingType BOOLEAN;
+  public static final org.fogofwarlabs.sc4j.manifest.settings.SettingType CHOICE;
+  public static final org.fogofwarlabs.sc4j.manifest.settings.SettingType DIRECTORY;
+  public static final org.fogofwarlabs.sc4j.manifest.settings.SettingType FILE;
+  public static final org.fogofwarlabs.sc4j.manifest.settings.SettingType INTEGER;
+  public static final org.fogofwarlabs.sc4j.manifest.settings.SettingType STRING;
+  public static org.fogofwarlabs.sc4j.manifest.settings.SettingType fromName(java.lang.String);
+  public static org.fogofwarlabs.sc4j.manifest.settings.SettingType valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.manifest.settings.SettingType[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.SettingsSchema {
+  public java.util.List<org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition> getDefinitions();
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition findDefinition(java.lang.String);
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult validate(java.util.Map<java.lang.String, ?>);
+  public static final org.fogofwarlabs.sc4j.manifest.settings.SettingsSchema EMPTY;
+  public static org.fogofwarlabs.sc4j.manifest.settings.SettingsSchema of(java.util.List<org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition>);
+  public static org.fogofwarlabs.sc4j.manifest.settings.SettingsSchema read(java.util.List<?>, java.lang.String, org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder);
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.StringSetting extends org.fogofwarlabs.sc4j.manifest.settings.SettingDefinition {
+  public java.util.regex.Pattern getPattern();
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingType getType();
+  public org.fogofwarlabs.sc4j.manifest.settings.StringSetting(java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, boolean, java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, java.util.regex.Pattern);
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.value.SettingValueStore {
+  public java.util.Map<java.lang.String, java.lang.Object> read() throws java.io.IOException, org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesException;
+  public java.util.Map<java.lang.String, java.lang.Object> resolve(org.fogofwarlabs.sc4j.manifest.settings.InstallationRecords) throws java.io.IOException, org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesException;
+  public org.fogofwarlabs.sc4j.manifest.settings.value.SettingValueStore(org.fogofwarlabs.sc4j.manifest.settings.SettingsSchema, org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesFile, org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesFile);
+  public org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesFile getModFile();
+  public org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesFile getSharedFile();
+  public static org.fogofwarlabs.sc4j.manifest.settings.value.SettingValueStore of(org.fogofwarlabs.sc4j.manifest.install.InstallLayout, org.fogofwarlabs.sc4j.manifest.ModManifest);
+  public void write(java.util.Map<java.lang.String, ?>) throws java.io.IOException, org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesException;
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.value.SettingValues {
+  public boolean getBoolean(java.lang.String);
+  public boolean hasValue(java.lang.String);
+  public int getInteger(java.lang.String);
+  public java.lang.String getChoice(java.lang.String);
+  public java.lang.String getString(java.lang.String);
+  public java.nio.file.Path getDirectory(java.lang.String);
+  public java.nio.file.Path getFile(java.lang.String);
+  public java.util.Map<java.lang.String, java.lang.Object> toSavedValues();
+  public org.fogofwarlabs.sc4j.manifest.settings.SettingsSchema getSchema();
+  public static org.fogofwarlabs.sc4j.manifest.settings.value.SettingValues resolve(org.fogofwarlabs.sc4j.manifest.settings.SettingsSchema, java.util.Map<java.lang.String, ?>) throws org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesException;
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesException extends java.lang.Exception {
+  public org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesException(org.fogofwarlabs.sc4j.manifest.validation.ValidationResult);
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult getResult();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesFile {
+  public java.nio.file.Path getPath();
+  public java.util.Map<java.lang.String, java.lang.Object> read() throws java.io.IOException, org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesException;
+  public org.fogofwarlabs.sc4j.manifest.settings.value.SettingValuesFile(java.nio.file.Path);
+  public static final int FORMAT = 1;
+  public void write(java.util.Map<java.lang.String, java.lang.Object>) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.text.LocalizedText {
+  public java.lang.String get(java.lang.String);
+  public java.util.Map<java.lang.String, java.lang.String> getTexts();
+  public static boolean isLanguage(java.lang.String);
+  public static final java.lang.String FALLBACK_LANGUAGE = "en";
+  public static org.fogofwarlabs.sc4j.manifest.text.LocalizedText of(java.util.Map<java.lang.String, java.lang.String>);
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.validation.JsonFieldReader {
+  public boolean has(java.lang.String);
+  public java.lang.Boolean readOptionalBoolean(java.lang.String);
+  public java.lang.Long readOptionalInteger(java.lang.String);
+  public java.lang.Long readRequiredInteger(java.lang.String);
+  public java.lang.Object get(java.lang.String);
+  public java.lang.String getPath(java.lang.String);
+  public java.lang.String readOptionalString(java.lang.String);
+  public java.lang.String readRequiredString(java.lang.String);
+  public java.util.List<?> readOptionalList(java.lang.String);
+  public java.util.List<java.lang.String> readOptionalStringList(java.lang.String);
+  public java.util.List<org.fogofwarlabs.sc4j.manifest.text.LocalizedText> readOptionalLocalizedTextList(java.lang.String);
+  public org.fogofwarlabs.sc4j.manifest.text.LocalizedText readOptionalLocalizedText(java.lang.String);
+  public org.fogofwarlabs.sc4j.manifest.text.LocalizedText readRequiredLocalizedText(java.lang.String);
+  public org.fogofwarlabs.sc4j.manifest.validation.JsonFieldReader readOptionalObject(java.lang.String);
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder getProblems();
+  public static org.fogofwarlabs.sc4j.manifest.validation.JsonFieldReader of(java.lang.Object, java.lang.String, org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder);
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.validation.ProblemCode extends java.lang.Enum<org.fogofwarlabs.sc4j.manifest.validation.ProblemCode> {
+  public java.lang.String getCode();
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode ARCHIVE_UNREADABLE;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode ENGINE_SYNTAX;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode ENGINE_UNSUPPORTED;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode ENTRY_SYNTAX;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode FIELD_MISSING;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode FIELD_TYPE;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode FIELD_VALUE;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode FORMAT_UNSUPPORTED;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode ID_SYNTAX;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode IMAGE_MISSING;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode MANIFEST_MISSING;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode MANIFEST_SYNTAX;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode SETTING_DUPLICATE;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode SETTING_INVALID;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode SETTING_TYPE_UNKNOWN;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUES_SYNTAX;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_CONTAINS;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_DIRECTORY;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_EXTENSION;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_FILE;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_OPTION;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_PATTERN;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_RANGE;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_REQUIRED;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VALUE_TYPE;
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ProblemCode VERSION_SYNTAX;
+  public static org.fogofwarlabs.sc4j.manifest.validation.ProblemCode valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.manifest.validation.ProblemCode[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.validation.ValidationProblem {
+  public java.lang.String describe();
+  public java.lang.String getDisplayText(java.lang.String);
+  public java.lang.String getSubject();
+  public java.lang.String getText();
+  public org.fogofwarlabs.sc4j.manifest.text.LocalizedText getMessage();
+  public org.fogofwarlabs.sc4j.manifest.validation.ProblemCode getCode();
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationProblem(org.fogofwarlabs.sc4j.manifest.validation.ProblemCode, java.lang.String, java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText);
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.validation.ValidationResult {
+  public boolean hasProblem(org.fogofwarlabs.sc4j.manifest.validation.ProblemCode);
+  public boolean isValid();
+  public java.lang.String describe();
+  public java.util.List<org.fogofwarlabs.sc4j.manifest.validation.ValidationProblem> getProblems();
+  public static final org.fogofwarlabs.sc4j.manifest.validation.ValidationResult VALID;
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder {
+  public boolean isValid();
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult build();
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder add(org.fogofwarlabs.sc4j.manifest.validation.ProblemCode, java.lang.String, java.lang.String, java.lang.Object...);
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder add(org.fogofwarlabs.sc4j.manifest.validation.ValidationProblem);
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder addAll(org.fogofwarlabs.sc4j.manifest.validation.ValidationResult);
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder addCheckFailure(org.fogofwarlabs.sc4j.manifest.validation.ProblemCode, java.lang.String, org.fogofwarlabs.sc4j.manifest.text.LocalizedText, java.lang.String, java.lang.Object...);
+  public org.fogofwarlabs.sc4j.manifest.validation.ValidationResult$Builder();
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.version.EngineVersion {
+  public boolean equals(java.lang.Object);
+  public boolean supports(org.fogofwarlabs.sc4j.manifest.version.EngineVersion);
+  public int getMajor();
+  public int getMinor();
+  public int hashCode();
+  public java.lang.String toString();
+  public static final org.fogofwarlabs.sc4j.manifest.version.EngineVersion CURRENT;
+  public static org.fogofwarlabs.sc4j.manifest.version.EngineVersion parse(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.version.ModVersion {
+  public boolean equals(java.lang.Object);
+  public int getMajor();
+  public int getMinor();
+  public int getPatch();
+  public int hashCode();
+  public java.lang.String getPreRelease();
+  public java.lang.String toString();
+  public static org.fogofwarlabs.sc4j.manifest.version.ModVersion parse(java.lang.String);
+}

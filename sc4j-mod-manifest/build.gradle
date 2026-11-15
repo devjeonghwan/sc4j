@@ -1,0 +1,11 @@
+plugins {
+    id 'java-library'
+    // Test jars for the tests of the manifest, engine and runtime modules (org.fogofwarlabs.sc4j.manifest.test).
+    id 'java-test-fixtures'
+}
+
+// The mod manifest (sc4j-mod.json), its settings schema and the settings value files. The launcher and the runtime share
+// it; it reads a mod jar as a zip and never loads mod classes, so it depends on the generic base only (no engine, no LWJGL).
+dependencies {
+    api project(':sc4j-base')
+}

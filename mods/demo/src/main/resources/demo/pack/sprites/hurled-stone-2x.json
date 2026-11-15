@@ -1,0 +1,9 @@
+{
+  "image": "hurled-stone-2x.png",
+  "shadow": "hurled-stone-2x_shadow.png",
+  "frameWidth": 44,
+  "frameHeight": 56,
+  "columns": 2,
+  "rows": 1,
+  "anchor": {"x": 22, "y": 42}
+}

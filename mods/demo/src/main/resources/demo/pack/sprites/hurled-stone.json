@@ -1,0 +1,12 @@
+{
+  "image": "hurled-stone.png",
+  "shadow": "hurled-stone_shadow.png",
+  "frameWidth": 22,
+  "frameHeight": 28,
+  "columns": 2,
+  "rows": 1,
+  "anchor": {"x": 11, "y": 21},
+  "animations": {
+    "idle": [{"frame": 0}, {"wait": 3}, {"frame": 1}, {"wait": 3}, {"jump": "idle"}]
+  }
+}

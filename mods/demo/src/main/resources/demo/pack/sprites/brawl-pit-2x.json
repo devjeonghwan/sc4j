@@ -1,0 +1,10 @@
+{
+  "image": "brawl-pit-2x.png",
+  "teamMask": "brawl-pit-2x_team.png",
+  "shadow": "brawl-pit-2x_shadow.png",
+  "frameWidth": 284,
+  "frameHeight": 222,
+  "columns": 5,
+  "rows": 1,
+  "anchor": {"x": 142, "y": 110}
+}

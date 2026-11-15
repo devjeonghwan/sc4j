@@ -1,0 +1,2819 @@
+public interface org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer {
+  public abstract int getChannelCount();
+  public abstract int getFrameCount();
+  public abstract int getSampleRate();
+  public abstract void release();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.AudioBus {
+  public boolean isMaster();
+  public float getGain();
+  public float mix(float);
+  public void setGain(float);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.audio.AudioDevice extends java.lang.AutoCloseable {
+  public abstract long getTime();
+  public abstract org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer createBuffer(org.fogofwarlabs.sc4j.engine.resource.audio.SoundClip);
+  public abstract org.fogofwarlabs.sc4j.engine.client.audio.AudioVoice createVoice();
+  public abstract void close();
+  public static org.fogofwarlabs.sc4j.engine.client.audio.AudioDevice openDefault();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.AudioMixer implements java.lang.AutoCloseable {
+  public boolean isClosed();
+  public long getTime();
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer createBuffer(org.fogofwarlabs.sc4j.engine.resource.audio.SoundClip);
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioBus createBus();
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioBus getMasterBus();
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioDevice getDevice();
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioMixer(org.fogofwarlabs.sc4j.engine.client.audio.AudioDevice);
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioStream createStream(org.fogofwarlabs.sc4j.engine.client.audio.AudioBus);
+  public org.fogofwarlabs.sc4j.engine.client.audio.MusicChannel createMusicChannel(org.fogofwarlabs.sc4j.engine.client.audio.AudioBus);
+  public org.fogofwarlabs.sc4j.engine.client.audio.SoundChannels createChannels(org.fogofwarlabs.sc4j.engine.client.audio.AudioBus, int, org.fogofwarlabs.sc4j.engine.client.audio.ChannelPolicy);
+  public void close();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.AudioStream implements org.fogofwarlabs.sc4j.engine.client.audio.AudioBus$Member {
+  public int getPendingClipCount();
+  public void close();
+  public void queue(org.fogofwarlabs.sc4j.engine.resource.audio.SoundClip, float);
+  public void refreshGain();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.audio.AudioVoice {
+  public abstract boolean isPlaying();
+  public abstract int getProcessedBufferCount();
+  public abstract int getQueuedBufferCount();
+  public abstract org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer unqueueBuffer();
+  public abstract void queueBuffer(org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer);
+  public abstract void release();
+  public abstract void setBuffer(org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer);
+  public abstract void setGain(float);
+  public abstract void setLooping(boolean);
+  public abstract void setPan(float);
+  public abstract void start();
+  public abstract void stop();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.audio.ChannelPolicy {
+  public abstract int selectChannel(org.fogofwarlabs.sc4j.engine.client.audio.SoundChannels, org.fogofwarlabs.sc4j.engine.client.audio.SoundCue);
+  public static final int NO_CHANNEL = -1;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.MasterFade {
+  public float update(long, boolean, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.audio.MasterFade();
+  public static final long FADE_MILLISECONDS = 300l;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.MusicChannel implements org.fogofwarlabs.sc4j.engine.client.audio.AudioBus$Member {
+  public boolean isPlaying();
+  public float getGain();
+  public void close();
+  public void play(org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer, boolean);
+  public void refreshGain();
+  public void setGain(float);
+  public void stop();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.MusicPlayer implements java.lang.AutoCloseable {
+  public boolean hasChannel();
+  public boolean isActive();
+  public boolean isPlaying();
+  public float getVolume();
+  public org.fogofwarlabs.sc4j.engine.client.audio.MusicPlayer(org.fogofwarlabs.sc4j.engine.client.audio.MusicChannel, org.fogofwarlabs.sc4j.engine.client.audio.AudioBus);
+  public org.fogofwarlabs.sc4j.engine.client.audio.MusicPlayer(org.fogofwarlabs.sc4j.engine.client.audio.MusicChannel, org.fogofwarlabs.sc4j.engine.client.audio.AudioBus, float, float, float, long);
+  public static final float DEFAULT_DUCKED_LEVEL = 0.75f;
+  public static final float DEFAULT_FADE_IN_STEP = 0.05f;
+  public static final float DEFAULT_FADE_OUT_STEP = 0.1f;
+  public static final long DEFAULT_FADE_PERIOD_MILLISECONDS = 20l;
+  public void clearDucking();
+  public void close();
+  public void fadeOut();
+  public void play(org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer, boolean);
+  public void setDucked(boolean);
+  public void setVolume(float, boolean);
+  public void startFadeIn();
+  public void stop();
+  public void update(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.MusicPlaylist implements java.lang.AutoCloseable {
+  public float getVolume();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.resource.ResourceKey> getTracks();
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioBus getBus();
+  public org.fogofwarlabs.sc4j.engine.client.audio.MusicPlayer getPlayer();
+  public org.fogofwarlabs.sc4j.engine.client.audio.MusicPlaylist(org.fogofwarlabs.sc4j.engine.client.audio.AudioMixer);
+  public org.fogofwarlabs.sc4j.engine.resource.ResourceKey getTrack();
+  public void close();
+  public void play(org.fogofwarlabs.sc4j.engine.resource.ResourceProvider, java.util.List<org.fogofwarlabs.sc4j.engine.resource.ResourceKey>);
+  public void setVolume(float);
+  public void stop();
+  public void update(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.OldestChannelPolicy implements org.fogofwarlabs.sc4j.engine.client.audio.ChannelPolicy {
+  public int selectChannel(org.fogofwarlabs.sc4j.engine.client.audio.SoundChannels, org.fogofwarlabs.sc4j.engine.client.audio.SoundCue);
+  public org.fogofwarlabs.sc4j.engine.client.audio.OldestChannelPolicy();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.PlayingSound {
+  public boolean isPlaying();
+  public int getChannel();
+  public org.fogofwarlabs.sc4j.engine.client.audio.SoundChannels getChannels();
+  public void stop();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.PriorityChannelPolicy implements org.fogofwarlabs.sc4j.engine.client.audio.ChannelPolicy {
+  public int selectChannel(org.fogofwarlabs.sc4j.engine.client.audio.SoundChannels, org.fogofwarlabs.sc4j.engine.client.audio.SoundCue);
+  public org.fogofwarlabs.sc4j.engine.client.audio.PriorityChannelPolicy();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.SilentAudioDevice implements org.fogofwarlabs.sc4j.engine.client.audio.AudioDevice {
+  public long getTime();
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer createBuffer(org.fogofwarlabs.sc4j.engine.resource.audio.SoundClip);
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioVoice createVoice();
+  public org.fogofwarlabs.sc4j.engine.client.audio.SilentAudioDevice(java.util.function.LongSupplier);
+  public void close();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.SoundChannels implements org.fogofwarlabs.sc4j.engine.client.audio.AudioBus$Member {
+  public boolean isPlaying(int);
+  public int getChannelCount();
+  public long getStartSequence(int);
+  public org.fogofwarlabs.sc4j.engine.client.audio.AudioBus getBus();
+  public org.fogofwarlabs.sc4j.engine.client.audio.PlayingSound play(org.fogofwarlabs.sc4j.engine.client.audio.SoundCue, org.fogofwarlabs.sc4j.engine.client.audio.AudioBuffer, boolean, float, float);
+  public org.fogofwarlabs.sc4j.engine.client.audio.SoundCue getCue(int);
+  public void clear();
+  public void close();
+  public void refreshGain();
+  public void stopAll();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.audio.SoundCue {
+  public abstract boolean conflictsWith(org.fogofwarlabs.sc4j.engine.client.audio.SoundCue);
+  public abstract boolean isPreemptible();
+  public abstract int getPriority();
+  public static org.fogofwarlabs.sc4j.engine.client.audio.SoundCue of(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.SoundPositioning {
+  public float getPan(int, int, int);
+  public int getVolume(int, int, int, int, int, int, int);
+  public org.fogofwarlabs.sc4j.engine.client.audio.SoundPositioning(int, int, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.audio.WaveData {
+  public byte[] getSamples();
+  public int getChannels();
+  public int getSampleBits();
+  public int getSampleRate();
+  public org.fogofwarlabs.sc4j.engine.client.audio.WaveData(int, int, int, byte[]);
+  public org.fogofwarlabs.sc4j.engine.resource.audio.SoundClip toSoundClip();
+  public static org.fogofwarlabs.sc4j.engine.client.audio.WaveData decode(byte[]) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.CancelAction implements org.fogofwarlabs.sc4j.engine.client.command.CommandAction {
+  public boolean canCancel(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public boolean isTargeted();
+  public boolean issue(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.client.command.CommandTarget, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.command.CancelAction(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.production.CancelProductionCommandType);
+  public void cancelSlot(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.entity.Unit, int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.command.CommandAction {
+  public abstract boolean isTargeted();
+  public abstract boolean issue(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.client.command.CommandTarget, boolean);
+  public default int getSupplyCost();
+  public default org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal findRefusal(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator);
+  public default org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal findWarning(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator);
+  public default org.fogofwarlabs.sc4j.engine.content.economy.ResourceCost getCost();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal {
+  public java.lang.String describe(java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.UnitType, java.lang.String>, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind, java.lang.String>, java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason getReason();
+  public org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind getResourceKind();
+  public org.fogofwarlabs.sc4j.engine.content.type.UnitType getUnitType();
+  public static final org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal MISSING_SUPPLY;
+  public static final org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal NOT_AVAILABLE;
+  public static final org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal QUEUE_FULL;
+  public static org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal ofMissingResource(org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind);
+  public static org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal ofMissingUnit(org.fogofwarlabs.sc4j.engine.content.type.UnitType);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason> {
+  public static final org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason MISSING_REQUIREMENT;
+  public static final org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason MISSING_RESOURCE;
+  public static final org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason MISSING_SUPPLY;
+  public static final org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason QUEUE_FULL;
+  public static org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal$Reason[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.CommandTarget {
+  public int getX();
+  public int getY();
+  public org.fogofwarlabs.sc4j.engine.entity.Unit getUnit();
+  public static org.fogofwarlabs.sc4j.engine.client.command.CommandTarget at(int, int);
+  public static org.fogofwarlabs.sc4j.engine.client.command.CommandTarget at(int, int, org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public static org.fogofwarlabs.sc4j.engine.client.command.CommandTarget of(org.fogofwarlabs.sc4j.engine.entity.Unit);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator {
+  public boolean cancel();
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean run(org.fogofwarlabs.sc4j.engine.client.command.CommandAction, boolean);
+  public java.util.function.Consumer<org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal> getRefusalListener();
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandAction getDefaultAction();
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandAction getPendingAction();
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.command.CommandSink, org.fogofwarlabs.sc4j.engine.client.command.Selection, org.fogofwarlabs.sc4j.engine.client.input.KeyBindingTable<org.fogofwarlabs.sc4j.engine.client.command.CommandAction>, org.fogofwarlabs.sc4j.engine.client.command.TargetPicker);
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.command.CommandSink, org.fogofwarlabs.sc4j.engine.client.command.Selection, org.fogofwarlabs.sc4j.engine.client.input.KeyBindingTable<org.fogofwarlabs.sc4j.engine.client.command.CommandAction>, org.fogofwarlabs.sc4j.engine.client.command.TargetPicker, org.fogofwarlabs.sc4j.engine.client.command.TargetingMode);
+  public org.fogofwarlabs.sc4j.engine.client.command.Selection getSelection();
+  public org.fogofwarlabs.sc4j.engine.client.command.TargetingMode getTargeting();
+  public org.fogofwarlabs.sc4j.engine.client.input.KeyBindingTable<org.fogofwarlabs.sc4j.engine.client.command.CommandAction> getBindings();
+  public org.fogofwarlabs.sc4j.engine.command.CommandSink getSink();
+  public org.fogofwarlabs.sc4j.engine.player.Player getPlayer();
+  public void setDefaultAction(org.fogofwarlabs.sc4j.engine.client.command.CommandAction);
+  public void setRefusalListener(java.util.function.Consumer<org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.ConstructAction implements org.fogofwarlabs.sc4j.engine.client.command.CommandAction {
+  public boolean isTargeted();
+  public boolean issue(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.client.command.CommandTarget, boolean);
+  public int getFootprintHeight();
+  public int getFootprintWidth();
+  public int getSupplyCost();
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal findRefusal(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator);
+  public org.fogofwarlabs.sc4j.engine.client.command.ConstructAction(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.production.ConstructBuildingCommandType, org.fogofwarlabs.sc4j.engine.content.type.UnitType, int, int);
+  public org.fogofwarlabs.sc4j.engine.content.economy.ResourceCost getCost();
+  public org.fogofwarlabs.sc4j.engine.content.type.UnitType getBuildingType();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.ControlGroups {
+  public boolean recall(int, org.fogofwarlabs.sc4j.engine.client.command.OrderedSelection);
+  public int getCount();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit> getUnits(int);
+  public org.fogofwarlabs.sc4j.engine.client.command.ControlGroups(int);
+  public void add(int, org.fogofwarlabs.sc4j.engine.client.command.Selection);
+  public void assign(int, org.fogofwarlabs.sc4j.engine.client.command.Selection);
+  public void retain(java.util.function.Predicate<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.OrderAction implements org.fogofwarlabs.sc4j.engine.client.command.CommandAction {
+  public boolean isTargeted();
+  public boolean issue(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.client.command.CommandTarget, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.command.OrderAction(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.order.IssueOrderCommandType, org.fogofwarlabs.sc4j.engine.content.type.OrderType, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.command.OrderAction(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.order.IssueOrderCommandType, org.fogofwarlabs.sc4j.engine.content.type.OrderType, org.fogofwarlabs.sc4j.engine.content.type.OrderType, boolean);
+  public org.fogofwarlabs.sc4j.engine.content.type.OrderType getOrderType();
+  public org.fogofwarlabs.sc4j.engine.content.type.OrderType getPointOrderType();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.OrderedSelection implements org.fogofwarlabs.sc4j.engine.client.command.Selection {
+  public boolean add(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public boolean contains(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public boolean isEmpty();
+  public boolean isFull();
+  public boolean remove(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public boolean retain(java.util.function.Predicate<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+  public boolean toggle(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public int getCapacity();
+  public int getChangeCount();
+  public int getSize();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit> getUnits();
+  public org.fogofwarlabs.sc4j.engine.client.command.OrderedSelection(int);
+  public void addAll(java.util.Collection<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+  public void clear();
+  public void select(java.util.Collection<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+  public void select(org.fogofwarlabs.sc4j.engine.entity.Unit);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.ProductionCheck {
+  public boolean isAllowed(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public int getSupplyCost();
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal findRefusal(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.entity.Unit, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.command.ProductionCheck(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.content.type.UnitType);
+  public org.fogofwarlabs.sc4j.engine.content.economy.ResourceCost getCost();
+  public org.fogofwarlabs.sc4j.engine.content.type.UnitType getUnitType();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.RallyAction implements org.fogofwarlabs.sc4j.engine.client.command.CommandAction {
+  public boolean isProducer(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public boolean isTargeted();
+  public boolean issue(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.client.command.CommandTarget, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.command.RallyAction(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.production.SetRallyPointCommandType);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.command.Selection {
+  public abstract boolean contains(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public abstract boolean isEmpty();
+  public abstract boolean isFull();
+  public abstract int getCapacity();
+  public abstract int getSize();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit> getUnits();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.SelectionFilter<U extends org.fogofwarlabs.sc4j.engine.entity.Unit> {
+  public int getCapacity();
+  public java.util.List<U> filterBox(java.util.List<U>);
+  public java.util.List<U> filterType(java.util.List<U>, U);
+  public java.util.List<U> merge(java.util.List<U>, java.util.List<U>);
+  public org.fogofwarlabs.sc4j.engine.client.command.SelectionFilter(int, org.fogofwarlabs.sc4j.engine.client.command.SelectionRules<U>);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.command.SelectionRules<U extends org.fogofwarlabs.sc4j.engine.entity.Unit> {
+  public abstract U getMainUnit(U);
+  public abstract boolean canJoinMultipleSelection(U);
+  public abstract boolean isListable(U);
+  public abstract boolean isSameKind(U, U);
+  public abstract int getReplacementKey(U);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.StandardSelectionRules implements org.fogofwarlabs.sc4j.engine.client.command.SelectionRules<org.fogofwarlabs.sc4j.engine.entity.Unit> {
+  public boolean canJoinMultipleSelection(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public boolean isListable(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public boolean isSameKind(org.fogofwarlabs.sc4j.engine.entity.Unit, org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public int getReplacementKey(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public org.fogofwarlabs.sc4j.engine.client.command.StandardSelectionRules(org.fogofwarlabs.sc4j.engine.client.view.GameView);
+  public org.fogofwarlabs.sc4j.engine.entity.Unit getMainUnit(org.fogofwarlabs.sc4j.engine.entity.Unit);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.command.TargetPicker {
+  public abstract org.fogofwarlabs.sc4j.engine.client.command.CommandTarget pick(float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.TargetingMode {
+  public boolean cancel();
+  public boolean isActive();
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandAction getAction();
+  public org.fogofwarlabs.sc4j.engine.client.command.TargetingMode();
+  public void start(org.fogofwarlabs.sc4j.engine.client.command.CommandAction);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.command.TrainAction implements org.fogofwarlabs.sc4j.engine.client.command.CommandAction {
+  public boolean isTargeted();
+  public boolean issue(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.client.command.CommandTarget, boolean);
+  public int getSupplyCost();
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal findRefusal(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator);
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal findWarning(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator);
+  public org.fogofwarlabs.sc4j.engine.client.command.TrainAction(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.production.TrainUnitCommandType, org.fogofwarlabs.sc4j.engine.content.type.UnitType);
+  public org.fogofwarlabs.sc4j.engine.content.economy.ResourceCost getCost();
+  public org.fogofwarlabs.sc4j.engine.content.type.UnitType getUnitType();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.console.Console {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean isOpen();
+  public java.lang.String getInput();
+  public java.util.List<java.lang.String> getLines();
+  public org.fogofwarlabs.sc4j.engine.client.console.Console(org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommandRegistry, java.util.function.Consumer<java.lang.String>, int);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommandRegistry getRegistry();
+  public static final java.lang.String PROMPT = "> ";
+  public void addLine(java.lang.String);
+  public void close();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.text.Font, float, float, int);
+  public void open();
+  public void setLineTimes(long, long);
+  public void submit(java.lang.String);
+  public void update(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand {
+  public java.lang.String getName();
+  public java.lang.String getSummary();
+  public java.lang.String getSummaryLine();
+  public java.lang.String getSyntax();
+  public java.lang.String getUsageReply();
+  public java.lang.String run(java.lang.String[]);
+  public java.util.List<java.lang.String> getHelpLines();
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand availability(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand describe(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand example(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand item(java.lang.String, java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand otherwise(java.lang.String, java.lang.String, org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand$Handler);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand requires(java.util.function.BooleanSupplier, java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand section(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand subcommand(java.lang.String, java.lang.String, java.lang.String, org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand$Handler);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand whenEmpty(java.lang.String, org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand$Handler);
+  public static final int HELP_WIDTH = 72;
+  public static final java.lang.String OFF = "off";
+  public static final java.lang.String ON = "on";
+  public static java.lang.Boolean parseSwitch(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand of(java.lang.String, java.lang.String, java.lang.String);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand$Handler {
+  public abstract java.lang.String run(java.lang.String[]);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommandRegistry {
+  public java.lang.String run(java.lang.String);
+  public java.util.Collection<org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand> getCommands();
+  public java.util.List<java.lang.String> getCommandHelpLines(java.lang.String);
+  public java.util.List<java.lang.String> getHelpLines();
+  public java.util.List<java.lang.String> runPaged(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommandRegistry(int);
+  public static boolean isCommand(java.lang.String);
+  public static final java.lang.String PREFIX = "/";
+  public static final java.lang.String UNKNOWN_COMMAND = "Unknown command, type /help";
+  public void register(org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommand);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext> {
+  public org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext getFallback();
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext HOVER_ENEMY;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext HOVER_FRIEND;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext HOVER_NEUTRAL;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext NORMAL;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext PLACE;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext PLACE_INVALID;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext SCROLL_DOWN;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext SCROLL_DOWN_LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext SCROLL_DOWN_RIGHT;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext SCROLL_LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext SCROLL_RIGHT;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext SCROLL_UP;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext SCROLL_UP_LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext SCROLL_UP_RIGHT;
+  public static final org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext TARGET;
+  public static org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext ofScroll(int, int);
+  public static org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.cursor.CursorController {
+  public org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext getContext();
+  public org.fogofwarlabs.sc4j.engine.client.cursor.CursorController(org.fogofwarlabs.sc4j.engine.client.cursor.CursorSurface);
+  public org.fogofwarlabs.sc4j.engine.client.cursor.CursorSet getCursors();
+  public org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture> getShown();
+  public void setCursors(org.fogofwarlabs.sc4j.engine.client.cursor.CursorSet);
+  public void update(org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext, org.fogofwarlabs.sc4j.engine.content.type.OrderType);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.cursor.CursorSet {
+  public org.fogofwarlabs.sc4j.engine.client.cursor.CursorSet();
+  public org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture> findCursor(org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext, org.fogofwarlabs.sc4j.engine.content.type.OrderType);
+  public void setCursor(org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext, org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture>);
+  public void setOrderCursor(org.fogofwarlabs.sc4j.engine.content.type.OrderType, org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture>);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.cursor.CursorSurface extends java.lang.AutoCloseable {
+  public abstract boolean isAvailable();
+  public abstract void close();
+  public abstract void hide();
+  public abstract void setScale(int);
+  public abstract void show(org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture>);
+  public abstract void showDefault();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.cursor.HeadlessCursorSurface implements org.fogofwarlabs.sc4j.engine.client.cursor.CursorSurface {
+  public boolean isAvailable();
+  public int getScale();
+  public org.fogofwarlabs.sc4j.engine.client.cursor.HeadlessCursorSurface();
+  public org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture> getShown();
+  public void close();
+  public void hide();
+  public void setScale(int);
+  public void show(org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture>);
+  public void showDefault();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.Button extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  public boolean isFocusable();
+  public boolean isPressable();
+  public boolean isSelected();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Button(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+  public static final java.lang.String SELECTED_ATTRIBUTE = "selected";
+  public void setSelected(boolean);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.CheckBox extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  public boolean activate();
+  public boolean isChecked();
+  public boolean isFocusable();
+  public boolean isOption();
+  public boolean isPressable();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.CheckBox(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl, boolean, org.fogofwarlabs.sc4j.engine.client.dialog.Dialog);
+  public static final java.lang.String GROUP_ATTRIBUTE = "group";
+  public void setChecked(boolean);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.CheckModel {
+  public boolean isChecked();
+  public boolean isOption();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.CheckModel(boolean);
+  public void activate();
+  public void setChecked(boolean);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ComboBox extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected boolean onReleased(float, float);
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  protected void drawOverlay(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  protected void onFocusLost();
+  protected void onPressed(float, float);
+  public boolean activate();
+  public boolean contains(float, float);
+  public boolean handleKey(org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey);
+  public boolean isFocusable();
+  public boolean isOpen();
+  public boolean isOverlayOpen();
+  public boolean isPressable();
+  public int getSelection();
+  public java.util.List<java.lang.String> getEntries();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ComboBox(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl, int);
+  public static final int NO_SELECTION = -1;
+  public void setEntries(java.util.List<java.lang.String>);
+  public void setSelection(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ComboBoxModel<T> {
+  public T getItem(int);
+  public boolean chooseItem(int);
+  public boolean isInputEnabled();
+  public boolean isItemEnabled(int);
+  public boolean isOpen();
+  public boolean isUpward();
+  public int findItem(float, float, float, float);
+  public int getHoveredItem();
+  public int getItemCount();
+  public int getSelection();
+  public java.util.List<T> getItems();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ComboBoxModel();
+  public static boolean isUpwardNeeded(float, float, float, float);
+  public static final int NO_SELECTION = -1;
+  public void addItem(T);
+  public void clear();
+  public void select(int);
+  public void setHoveredItem(int);
+  public void setInputEnabled(boolean);
+  public void setItemEnabled(int, boolean);
+  public void setItems(java.util.Collection<? extends T>);
+  public void setOpen(boolean);
+  public void setOpen(boolean, boolean);
+  public void step(boolean);
+}
+
+public abstract class org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected abstract void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  protected boolean onReleased(float, float);
+  protected final int getTextColor(org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme);
+  protected final void drawText(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, java.lang.String, float, float, float, float, int);
+  protected org.fogofwarlabs.sc4j.engine.client.dialog.Control(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+  protected void drawOverlay(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  protected void onDragged(float, float);
+  protected void onFocusLost();
+  protected void onPressed(float, float);
+  protected void onReplacing(org.fogofwarlabs.sc4j.engine.client.dialog.Control);
+  public boolean activate();
+  public boolean contains(float, float);
+  public boolean handleCharacter(int);
+  public boolean handleKey(org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey);
+  public boolean handleWheel(int);
+  public boolean isFocusable();
+  public boolean isOverlayOpen();
+  public boolean isPressable();
+  public final boolean isCancel();
+  public final boolean isDefault();
+  public final boolean isEnabled();
+  public final boolean isFocused();
+  public final boolean isHovered();
+  public final boolean isInteractive();
+  public final boolean isPressed();
+  public final boolean isShown();
+  public final boolean isVisible();
+  public final float getLeft();
+  public final float getTop();
+  public final int getHotkey();
+  public final java.lang.String getText();
+  public final java.util.List<org.fogofwarlabs.sc4j.engine.client.dialog.Control> getChildren();
+  public final org.fogofwarlabs.sc4j.engine.client.dialog.Control getParent();
+  public final org.fogofwarlabs.sc4j.engine.client.dialog.Dialog getDialog();
+  public final org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl getDefinition();
+  public final void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  public final void setEnabled(boolean);
+  public final void setVisible(boolean);
+  public static final int NO_HOTKEY = -1;
+  public static final java.lang.String CANCEL_ATTRIBUTE = "cancel";
+  public static final java.lang.String DEFAULT_ATTRIBUTE = "default";
+  public static final java.lang.String DISABLED_ATTRIBUTE = "disabled";
+  public static final java.lang.String HIDDEN_ATTRIBUTE = "hidden";
+  public static final java.lang.String HOTKEY_ATTRIBUTE = "hotkey";
+  public static final java.lang.String TRUE_VALUE = "true";
+  public void setText(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ControlDrawException extends java.lang.RuntimeException {
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.ControlDrawException create(java.lang.Throwable, java.lang.String, java.lang.Object...);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.dialog.ControlFactory {
+  public abstract org.fogofwarlabs.sc4j.engine.client.dialog.Control createControl(org.fogofwarlabs.sc4j.engine.client.dialog.Dialog, org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.DefaultControlFactory implements org.fogofwarlabs.sc4j.engine.client.dialog.ControlFactory {
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Control createControl(org.fogofwarlabs.sc4j.engine.client.dialog.Dialog, org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DefaultControlFactory(int);
+}
+
+public class org.fogofwarlabs.sc4j.engine.client.dialog.Dialog implements org.fogofwarlabs.sc4j.engine.client.dialog.DialogLayer<org.fogofwarlabs.sc4j.engine.client.dialog.Control> {
+  protected boolean isFocusedOnPress(org.fogofwarlabs.sc4j.engine.client.dialog.Control);
+  public boolean handleCharacter(int);
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean handleKey(org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey);
+  public boolean handleWheel(int);
+  public final <T extends org.fogofwarlabs.sc4j.engine.client.dialog.Control> T replaceControl(org.fogofwarlabs.sc4j.engine.client.dialog.Control, T);
+  public final boolean focusNext();
+  public final boolean hasPressedControl();
+  public final boolean isModal();
+  public final float getLeft();
+  public final float getTop();
+  public final java.util.List<org.fogofwarlabs.sc4j.engine.client.dialog.Control> getAllControls();
+  public final java.util.List<org.fogofwarlabs.sc4j.engine.client.dialog.Control> getControls();
+  public final org.fogofwarlabs.sc4j.engine.client.dialog.Control getFocused();
+  public final org.fogofwarlabs.sc4j.engine.client.dialog.Control getHovered();
+  public final org.fogofwarlabs.sc4j.engine.client.dialog.Control getPressed();
+  public final org.fogofwarlabs.sc4j.engine.client.dialog.Control pressAt(float, float);
+  public final org.fogofwarlabs.sc4j.engine.client.dialog.Control release(float, float);
+  public final org.fogofwarlabs.sc4j.engine.resource.dialog.DialogDefinition getDefinition();
+  public final void cancelPress();
+  public final void drag(float, float);
+  public final void press(org.fogofwarlabs.sc4j.engine.client.dialog.Control, float, float);
+  public final void setFocused(org.fogofwarlabs.sc4j.engine.client.dialog.Control);
+  public final void setHovered(org.fogofwarlabs.sc4j.engine.client.dialog.Control);
+  public final void setPosition(float, float);
+  public java.lang.Object findControlAt(float, float);
+  public java.lang.Object findHoverAt(float, float);
+  public java.lang.Object release(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Control findControl(int);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Control findControlAt(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Control findHoverAt(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Control getControl(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Dialog(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogDefinition, org.fogofwarlabs.sc4j.engine.client.dialog.ControlFactory, org.fogofwarlabs.sc4j.engine.client.dialog.DialogListener, boolean);
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme);
+  public void press(java.lang.Object, float, float);
+  public void setHovered(java.lang.Object);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey> {
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey BACKSPACE;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey DELETE;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey DOWN;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey END;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey ENTER;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey ESCAPE;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey HOME;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey PAGE_DOWN;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey PAGE_UP;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey RIGHT;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey TAB;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey UP;
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey find(org.fogofwarlabs.sc4j.engine.client.input.Key);
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.dialog.DialogLayer<C> {
+  public abstract C findControlAt(float, float);
+  public abstract C findHoverAt(float, float);
+  public abstract C release(float, float);
+  public abstract boolean hasPressedControl();
+  public abstract boolean isModal();
+  public abstract float getLeft();
+  public abstract float getTop();
+  public abstract void press(C, float, float);
+  public abstract void setHovered(C);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.dialog.DialogListener {
+  public abstract void onActivated(org.fogofwarlabs.sc4j.engine.client.dialog.Dialog, org.fogofwarlabs.sc4j.engine.client.dialog.Control);
+  public default void onCancelled(org.fogofwarlabs.sc4j.engine.client.dialog.Dialog);
+  public default void onHovered(org.fogofwarlabs.sc4j.engine.client.dialog.Dialog, org.fogofwarlabs.sc4j.engine.client.dialog.Control);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.DialogScene<C> implements org.fogofwarlabs.sc4j.engine.client.scene.Scene<C, org.fogofwarlabs.sc4j.engine.client.render.Canvas> {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Dialog getDialog();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogScene(org.fogofwarlabs.sc4j.engine.client.dialog.Dialog, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, org.fogofwarlabs.sc4j.engine.client.dialog.DialogStack<org.fogofwarlabs.sc4j.engine.client.dialog.Control, org.fogofwarlabs.sc4j.engine.client.dialog.Dialog>);
+  public void close();
+  public void draw(java.lang.Object) throws java.io.IOException;
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public void open(C);
+  public void update(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.DialogStack<C, L extends org.fogofwarlabs.sc4j.engine.client.dialog.DialogLayer<C>> {
+  public L findKeyTarget();
+  public L getModal();
+  public L getTop();
+  public java.util.List<L> getLayers();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogStack$Target<C, L> findPointerTarget(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogStack$Target<C, L> press(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogStack$Target<C, L> release(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogStack$Target<C, L> updateHover(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogStack();
+  public void push(L);
+  public void remove(L);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.DialogStack$Target<C, L extends org.fogofwarlabs.sc4j.engine.client.dialog.DialogLayer<C>> {
+  public C getControl();
+  public L getLayer();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme {
+  public float getFieldPadding();
+  public float getFrameThickness();
+  public int getBackgroundColor();
+  public int getDisabledTextColor();
+  public int getFillColor();
+  public int getFocusColor();
+  public int getFrameColor();
+  public int getHighlightTextColor();
+  public int getPressedFillColor();
+  public int getSelectionColor();
+  public int getTextColor();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme withButtonStyle(org.fogofwarlabs.sc4j.engine.client.skin.ButtonStyle);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme withFieldStyle(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme withPanelStyle(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme withSelectionStyle(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme(org.fogofwarlabs.sc4j.engine.client.text.Font, int, int, int, int, int, int, int, int, int, float);
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getFieldStyle();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getPanelStyle();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getSelectionStyle();
+  public org.fogofwarlabs.sc4j.engine.client.skin.ButtonStyle getButtonStyle();
+  public org.fogofwarlabs.sc4j.engine.client.text.Font getFont();
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme createDefault(org.fogofwarlabs.sc4j.engine.client.text.Font);
+  public void drawFieldBackground(org.fogofwarlabs.sc4j.engine.client.render.Canvas, float, float, float, float);
+  public void drawFieldOutline(org.fogofwarlabs.sc4j.engine.client.render.Canvas, float, float, float, float, boolean);
+  public void drawSelection(org.fogofwarlabs.sc4j.engine.client.render.Canvas, float, float, float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.Label extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Label(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ListBox extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected boolean onReleased(float, float);
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  protected void onPressed(float, float);
+  public boolean activate();
+  public boolean handleKey(org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey);
+  public boolean handleWheel(int);
+  public boolean isFocusable();
+  public boolean isPressable();
+  public int getFirstVisibleRow();
+  public int getSelection();
+  public int getVisibleRowCount();
+  public java.util.List<java.lang.String> getEntries();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ListBox(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl, int);
+  public static final int NO_SELECTION = -1;
+  public void setEntries(java.util.List<java.lang.String>);
+  public void setSelection(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ListModel<T> {
+  public T getItem(int);
+  public boolean selectAt(float, float, int);
+  public int getCount();
+  public int getFirstRow();
+  public int getSelection();
+  public java.util.List<T> getItems();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ListModel();
+  public static final int NO_SELECTION = -1;
+  public void addItem(T);
+  public void insertItem(int, T);
+  public void moveSelection(org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey, int);
+  public void removeItem(int);
+  public void scrollByWheel(boolean, int, boolean);
+  public void scrollTo(int, int);
+  public void select(int, int);
+  public void setItems(java.util.Collection<? extends T>);
+  public void step(boolean, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.Panel extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.Panel(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+  public org.fogofwarlabs.sc4j.engine.client.render.Texture getImage();
+  public void setImage(org.fogofwarlabs.sc4j.engine.client.render.Texture);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ScrollBar extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected boolean onReleased(float, float);
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  protected void onDragged(float, float);
+  protected void onPressed(float, float);
+  public boolean activate();
+  public boolean handleKey(org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey);
+  public boolean handleWheel(int);
+  public boolean isFocusable();
+  public boolean isHorizontal();
+  public boolean isPressable();
+  public int getMaximum();
+  public int getMinimum();
+  public int getPage();
+  public int getValue();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ScrollBar(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+  public void setPage(int);
+  public void setRange(int, int);
+  public void setValue(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ScrollModel {
+  public boolean dragTo(float, int, int, int, int);
+  public boolean isDragging();
+  public boolean isPartPressed(org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart);
+  public boolean press(org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart);
+  public boolean repeat();
+  public int getMaximum();
+  public int getMinimum();
+  public int getPage();
+  public int getThumbOffset(int);
+  public int getValue();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ScrollModel();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart findPart(float, float, float, float, float);
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart getHeldPart();
+  public static final int PAGE_REPEAT_TICKS = 3;
+  public static final int STEP_REPEAT_TICKS = 1;
+  public void movePointer(org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart);
+  public void release();
+  public void setPage(int);
+  public void setRange(int, int);
+  public void setValue(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart> {
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart NONE;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart PAGE_BACK;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart PAGE_FORWARD;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart STEP_BACK;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart STEP_FORWARD;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart THUMB;
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.dialog.TextClipboard {
+  public abstract java.lang.String read();
+  public abstract void write(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey> {
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey BACKSPACE;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey DELETE;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey END;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey HOME;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey RIGHT;
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.TextEditModel {
+  public boolean apply(org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation, org.fogofwarlabs.sc4j.engine.client.dialog.TextClipboard);
+  public boolean press(org.fogofwarlabs.sc4j.engine.client.dialog.TextEditKey);
+  public boolean type(int);
+  public int getCaret();
+  public int getMaximumLength();
+  public int getSelectionEnd();
+  public int getSelectionStart();
+  public java.lang.String getText();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.TextEditModel(java.lang.String, int, java.lang.String);
+  public static final int MAXIMUM_UNDO_STEPS = 64;
+  public static final int UNLIMITED = 2147483647;
+  public void setAcceptance(java.util.function.Predicate<java.lang.String>);
+  public void setText(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation> {
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation COPY;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation CUT;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation PASTE;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation REDO;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation SELECT_ALL;
+  public static final org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation UNDO;
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation ofKey(org.fogofwarlabs.sc4j.engine.client.input.Key, int);
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.dialog.TextEditOperation[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.TextInput extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
+  protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
+  public boolean activate();
+  public boolean handleCharacter(int);
+  public boolean handleKey(org.fogofwarlabs.sc4j.engine.client.dialog.DialogKey);
+  public boolean isFocusable();
+  public boolean isPressable();
+  public int getCursor();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.TextInput(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
+  public static final java.lang.String MAXIMUM_LENGTH_ATTRIBUTE = "maximumLength";
+  public void setText(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.ViewScrollModel {
+  public boolean isScrollable();
+  public float getContent();
+  public float getOffset();
+  public float getThumbLength(float, float);
+  public float getThumbOffset(float, float);
+  public float getView();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.ViewScrollModel();
+  public void dragThumb(float, float, float);
+  public void scrollBy(float);
+  public void scrollToEnd();
+  public void setContent(float, float);
+  public void setOffset(float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.dialog.WindowClipboard implements org.fogofwarlabs.sc4j.engine.client.dialog.TextClipboard {
+  public java.lang.String read();
+  public org.fogofwarlabs.sc4j.engine.client.dialog.WindowClipboard(java.util.function.Supplier<org.fogofwarlabs.sc4j.engine.client.host.HostWindow>);
+  public void write(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.display.DetailSet<T> {
+  public T find(float);
+  public T getDetail(int);
+  public T getResource();
+  public int findDetail(float);
+  public int findMultiple(float);
+  public int getDetailCount();
+  public int getMultiple(int);
+  public org.fogofwarlabs.sc4j.engine.client.display.DetailSet(T, java.util.List<T>, int[]);
+  public static <T> org.fogofwarlabs.sc4j.engine.client.display.DetailSet<T> of(T);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.display.DetailUtils {
+  public static final int MAXIMUM_MULTIPLE = 4;
+  public static final int MINIMUM_MULTIPLE = 2;
+  public static int findDetail(int[], float);
+  public static org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture> loadPictures(org.fogofwarlabs.sc4j.engine.resource.ResourceProvider, org.fogofwarlabs.sc4j.engine.resource.ResourceKey) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet> loadSpriteSheets(org.fogofwarlabs.sc4j.engine.resource.ResourceProvider, org.fogofwarlabs.sc4j.engine.resource.ResourceKey) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.TileGraphics> loadTileGraphics(org.fogofwarlabs.sc4j.engine.resource.ResourceProvider, org.fogofwarlabs.sc4j.engine.resource.ResourceKey) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.resource.ResourceKey createKey(org.fogofwarlabs.sc4j.engine.resource.ResourceKey, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.display.DisplayScale {
+  public boolean equals(java.lang.Object);
+  public float getContentScale();
+  public float getScale();
+  public float getUserScale();
+  public int getWholeScale();
+  public int hashCode();
+  public java.lang.String toString();
+  public static final java.lang.String SETTING_KEY = "uiScale";
+  public static final java.util.List<java.lang.String> USER_SCALE_OPTIONS;
+  public static final org.fogofwarlabs.sc4j.engine.client.display.DisplayScale ONE;
+  public static float parseUserScale(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.display.DisplayScale of(float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.display.LetterboxFit {
+  public float getLeft();
+  public float getScale();
+  public float getTop();
+  public float toDesignX(float);
+  public float toDesignY(float);
+  public float toLogicalX(float);
+  public float toLogicalY(float);
+  public org.fogofwarlabs.sc4j.engine.client.display.LetterboxFit toFramebuffer(org.fogofwarlabs.sc4j.engine.client.display.UiSurface);
+  public static final float CENTER = 0.5f;
+  public static final float END = 1.0f;
+  public static final float START = 0.0f;
+  public static org.fogofwarlabs.sc4j.engine.client.display.LetterboxFit of(float, float, float, float);
+  public static org.fogofwarlabs.sc4j.engine.client.display.LetterboxFit of(float, float, float, float, float, float);
+  public static org.fogofwarlabs.sc4j.engine.client.display.LetterboxFit of(org.fogofwarlabs.sc4j.engine.client.display.UiSurface, float, float, float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.display.UiSurface {
+  public boolean isPixelExact();
+  public float getPixelScaleX();
+  public float getPixelScaleY();
+  public float toFramebufferX(float);
+  public float toFramebufferY(float);
+  public float toLogicalX(float);
+  public float toLogicalY(float);
+  public int getFramebufferHeight();
+  public int getFramebufferWidth();
+  public int getHeight();
+  public int getWidth();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.client.display.DisplayScale getScale();
+  public org.fogofwarlabs.sc4j.engine.client.display.UiSurface fitTo(int, int);
+  public static final int MINIMUM_HEIGHT = 360;
+  public static final int MINIMUM_WIDTH = 640;
+  public static org.fogofwarlabs.sc4j.engine.client.display.UiSurface of(int, int, org.fogofwarlabs.sc4j.engine.client.display.DisplayScale);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.CommandPoint extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.game.CommandPoint> {
+  public static final org.fogofwarlabs.sc4j.engine.client.game.CommandPoint FRAME_RUNNER;
+  public static final org.fogofwarlabs.sc4j.engine.client.game.CommandPoint MOD_LOOP;
+  public static org.fogofwarlabs.sc4j.engine.client.game.CommandPoint valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.game.CommandPoint[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.GameScreen implements java.lang.AutoCloseable {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator getTranslator();
+  public org.fogofwarlabs.sc4j.engine.client.command.OrderedSelection getSelection();
+  public org.fogofwarlabs.sc4j.engine.client.cursor.CursorContext findCursorContext();
+  public org.fogofwarlabs.sc4j.engine.client.game.GameScreen(org.fogofwarlabs.sc4j.engine.client.game.GameSession, org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.text.Font, org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection, org.fogofwarlabs.sc4j.engine.client.world.TerrainColors, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind, java.lang.String>, java.lang.String, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.UnitType, java.lang.String>);
+  public org.fogofwarlabs.sc4j.engine.client.game.GameScreen(org.fogofwarlabs.sc4j.engine.client.game.GameSession, org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.text.Font, org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection, org.fogofwarlabs.sc4j.engine.client.world.TerrainColors, org.fogofwarlabs.sc4j.engine.client.render.WorldLayer, org.fogofwarlabs.sc4j.engine.client.render.WorldLayer, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind, java.lang.String>, java.lang.String, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.UnitType, java.lang.String>);
+  public org.fogofwarlabs.sc4j.engine.client.hud.CommandCard getCommandCard();
+  public org.fogofwarlabs.sc4j.engine.client.hud.ConsolePlate getConsolePlate();
+  public org.fogofwarlabs.sc4j.engine.client.hud.HudBlock getQueuePanel();
+  public org.fogofwarlabs.sc4j.engine.client.hud.HudListener getListener();
+  public org.fogofwarlabs.sc4j.engine.client.hud.Minimap getMinimap();
+  public org.fogofwarlabs.sc4j.engine.client.hud.ResourceBar getResourceBar();
+  public org.fogofwarlabs.sc4j.engine.client.hud.SelectionPanel getSelectionPanel();
+  public org.fogofwarlabs.sc4j.engine.client.hud.WaitingDialog getWaitingDialog();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getBackdrop();
+  public org.fogofwarlabs.sc4j.engine.client.world.Camera getCamera();
+  public org.fogofwarlabs.sc4j.engine.client.world.CameraScroll getCameraScroll();
+  public org.fogofwarlabs.sc4j.engine.client.world.ContinuousScrollRate getScrollRate();
+  public org.fogofwarlabs.sc4j.engine.client.world.PlacementLayer getPlacement();
+  public static final float CONSOLE_HEIGHT_SHARE = 0.3f;
+  public static final float MINIMAP_WIDTH_SHARE = 0.25f;
+  public static final int PANEL_HEIGHT = 160;
+  public static final int RESOURCE_BAR_HEIGHT = 24;
+  public static final int SECTION_GAP = 6;
+  public static final int SELECTION_CAPACITY = 24;
+  public static int getConsoleHeight(int);
+  public void close();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.display.UiSurface) throws java.io.IOException;
+  public void drawContent(int, int) throws java.io.IOException;
+  public void registerCommands(org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommandRegistry);
+  public void setBackdrop(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public void setCommandCardSource(org.fogofwarlabs.sc4j.engine.client.hud.CommandCardSource, org.fogofwarlabs.sc4j.engine.client.command.CommandAction);
+  public void setCommands(java.util.List<org.fogofwarlabs.sc4j.engine.client.hud.CommandButton>, org.fogofwarlabs.sc4j.engine.client.command.CommandAction);
+  public void setCursor(org.fogofwarlabs.sc4j.engine.client.cursor.CursorController);
+  public void setListener(org.fogofwarlabs.sc4j.engine.client.hud.HudListener);
+  public void setQueuePanel(org.fogofwarlabs.sc4j.engine.client.hud.HudBlock, float);
+  public void setSkin(org.fogofwarlabs.sc4j.engine.client.skin.HudSkin);
+  public void setSkins(org.fogofwarlabs.sc4j.engine.client.skin.HudSkinTable);
+  public void setViewedPlayer(org.fogofwarlabs.sc4j.engine.player.Player, java.lang.String);
+  public void update(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.GameSession {
+  public boolean runFrame();
+  public org.fogofwarlabs.sc4j.engine.client.game.CommandPoint getCommandPoint();
+  public org.fogofwarlabs.sc4j.engine.client.game.GameSession$Kind getKind();
+  public org.fogofwarlabs.sc4j.engine.client.view.GameView getView();
+  public org.fogofwarlabs.sc4j.engine.command.CommandSink getCommandSink();
+  public org.fogofwarlabs.sc4j.engine.controller.ControllerCommandSource getCommandSource();
+  public org.fogofwarlabs.sc4j.engine.game.Game getGame();
+  public org.fogofwarlabs.sc4j.engine.lockstep.LockstepSession getLockstepSession();
+  public org.fogofwarlabs.sc4j.engine.player.Player getLocalPlayer();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.GameSession$Kind extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.game.GameSession$Kind> {
+  public static final org.fogofwarlabs.sc4j.engine.client.game.GameSession$Kind LOCAL;
+  public static final org.fogofwarlabs.sc4j.engine.client.game.GameSession$Kind NETWORK;
+  public static final org.fogofwarlabs.sc4j.engine.client.game.GameSession$Kind REPLAY;
+  public static org.fogofwarlabs.sc4j.engine.client.game.GameSession$Kind valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.game.GameSession$Kind[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.GameSessionFactory {
+  public org.fogofwarlabs.sc4j.engine.client.game.CommandPoint getCommandPoint();
+  public org.fogofwarlabs.sc4j.engine.client.game.GameSession createLocal(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.player.Player, java.util.List<org.fogofwarlabs.sc4j.engine.controller.PlayerController>);
+  public org.fogofwarlabs.sc4j.engine.client.game.GameSession createLocal(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.command.CommandSink, java.util.List<org.fogofwarlabs.sc4j.engine.controller.PlayerController>);
+  public org.fogofwarlabs.sc4j.engine.client.game.GameSession createNetwork(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.command.CommandSink, java.util.List<org.fogofwarlabs.sc4j.engine.controller.PlayerController>);
+  public org.fogofwarlabs.sc4j.engine.client.game.GameSession createNetwork(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.lockstep.LockstepSession, java.util.List<org.fogofwarlabs.sc4j.engine.controller.PlayerController>);
+  public org.fogofwarlabs.sc4j.engine.client.game.GameSession createReplay(org.fogofwarlabs.sc4j.engine.game.Game, java.util.List<org.fogofwarlabs.sc4j.engine.controller.PlayerController>);
+  public org.fogofwarlabs.sc4j.engine.client.game.GameSessionFactory(org.fogofwarlabs.sc4j.engine.client.game.GameViewFactory, org.fogofwarlabs.sc4j.engine.client.game.CommandPoint);
+  public org.fogofwarlabs.sc4j.engine.client.game.GameSessionFactory(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, org.fogofwarlabs.sc4j.engine.spatial.UnitBounds<org.fogofwarlabs.sc4j.engine.entity.Unit>, int, java.util.List<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind>, int[]);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.GameTimeUtils {
+  public static java.lang.String format(long, long);
+  public static long parse(java.lang.String, long);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.game.GameViewFactory {
+  public abstract org.fogofwarlabs.sc4j.engine.client.view.GameView createView(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.player.Player);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.LocalCommandQueue implements org.fogofwarlabs.sc4j.engine.command.CommandSink,org.fogofwarlabs.sc4j.engine.controller.PlayerController {
+  public <C> void submit(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.command.CommandType<C>, C);
+  public int getQueuedCount();
+  public org.fogofwarlabs.sc4j.engine.client.game.LocalCommandQueue();
+  public org.fogofwarlabs.sc4j.engine.controller.ControllerSource getSource();
+  public void collectCommands(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.command.CommandSink);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.ReplayAutosave {
+  public java.nio.file.Path getLastWritten();
+  public org.fogofwarlabs.sc4j.engine.client.game.ReplayAutosave();
+  public static boolean saveCopy(java.nio.file.Path, java.nio.file.Path);
+  public void saveAtEnd(java.nio.file.Path, org.fogofwarlabs.sc4j.engine.client.game.ReplayAutosave$ReplayWriter);
+  public void saveStalled(java.nio.file.Path, org.fogofwarlabs.sc4j.engine.client.game.ReplayAutosave$ReplayWriter);
+  public void startGame();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.game.ReplayAutosave$ReplayWriter {
+  public abstract void write(java.nio.file.Path) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.game.SimulationWatchdog implements java.lang.AutoCloseable {
+  public org.fogofwarlabs.sc4j.engine.client.game.SimulationWatchdog();
+  public org.fogofwarlabs.sc4j.engine.client.game.SimulationWatchdog(long, long);
+  public static final long DEFAULT_CHECK_MILLISECONDS = 1000l;
+  public static final long DEFAULT_STALL_MILLISECONDS = 5000l;
+  public synchronized void close();
+  public void begin(long);
+  public void end();
+  public void setStallListener(java.lang.Runnable);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.AspectRange {
+  public float getMaximumRatio();
+  public float getMinimumRatio();
+  public int getLogicalHeight();
+  public int getLogicalWidth(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.host.AspectRange(int, float, float);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.ClientHost extends java.lang.AutoCloseable {
+  public abstract double getTime();
+  public abstract org.fogofwarlabs.sc4j.engine.client.host.HostWindow createSharedContextWindow(org.fogofwarlabs.sc4j.engine.client.host.HostWindow, int, int);
+  public abstract org.fogofwarlabs.sc4j.engine.client.host.HostWindow createWindow(org.fogofwarlabs.sc4j.engine.client.host.WindowSettings);
+  public abstract void close();
+  public abstract void createCapabilities();
+  public abstract void pollEvents();
+  public abstract void run(org.fogofwarlabs.sc4j.engine.client.host.HostWindow, org.fogofwarlabs.sc4j.engine.client.host.HostApplication) throws java.io.IOException;
+  public abstract void waitEvents(double);
+  public static org.fogofwarlabs.sc4j.engine.client.host.ClientHost initialize();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.DisplayMode extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.host.DisplayMode> {
+  public static final org.fogofwarlabs.sc4j.engine.client.host.DisplayMode BORDERLESS;
+  public static final org.fogofwarlabs.sc4j.engine.client.host.DisplayMode FULLSCREEN;
+  public static final org.fogofwarlabs.sc4j.engine.client.host.DisplayMode WINDOWED;
+  public static org.fogofwarlabs.sc4j.engine.client.host.DisplayMode valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.host.DisplayMode[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.FileDropListener {
+  public abstract void onFilesDropped(java.util.List<java.nio.file.Path>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.FixedSystemPointerSpeed implements org.fogofwarlabs.sc4j.engine.client.host.SystemPointerSpeed {
+  public int readSpeed();
+  public org.fogofwarlabs.sc4j.engine.client.host.FixedSystemPointerSpeed();
+  public void writeSpeed(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.FramePacer {
+  public org.fogofwarlabs.sc4j.engine.client.host.FramePacer();
+  public void waitForNextFrame(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.FrameResult extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.host.FrameResult> {
+  public boolean isPresented();
+  public static final org.fogofwarlabs.sc4j.engine.client.host.FrameResult LAST;
+  public static final org.fogofwarlabs.sc4j.engine.client.host.FrameResult PRESENTED;
+  public static final org.fogofwarlabs.sc4j.engine.client.host.FrameResult SKIPPED;
+  public static org.fogofwarlabs.sc4j.engine.client.host.FrameResult valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.host.FrameResult[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.FrameTiming implements java.lang.AutoCloseable {
+  public static final int GPU_FRAMES = 4;
+  public static final int GPU_MARKS = 32;
+  public static final java.lang.String ENVIRONMENT_VARIABLE = "SC4J_FRAME_TIMING";
+  public static final java.lang.String PROPERTY = "sc4j.frameTiming";
+  public static java.nio.file.Path findConfiguredFile();
+  public static org.fogofwarlabs.sc4j.engine.client.host.FrameTiming open(java.nio.file.Path, java.util.List<java.lang.String>, org.fogofwarlabs.sc4j.engine.client.render.GraphicsDevice) throws java.io.IOException;
+  public static void addSimulationStep();
+  public static void addSound(long);
+  public void beginFrame();
+  public void close();
+  public void endFrame(long);
+  public void mark(int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.HostApplication {
+  public abstract int getFrameRateLimit();
+  public abstract org.fogofwarlabs.sc4j.engine.client.host.FrameResult runFrame() throws java.io.IOException;
+  public default void beginFrame();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.HostTickClock {
+  public abstract int readTicks();
+  public static org.fogofwarlabs.sc4j.engine.client.host.HostTickClock getDefault();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.HostWindow extends java.lang.AutoCloseable {
+  public abstract boolean isCloseRequested();
+  public abstract boolean isFocused();
+  public abstract boolean isKeyDown(org.fogofwarlabs.sc4j.engine.client.input.Key);
+  public abstract boolean isMinimized();
+  public abstract boolean isPointerInside();
+  public abstract double getPointerX();
+  public abstract double getPointerY();
+  public abstract float getContentScale();
+  public abstract int getFramebufferHeight();
+  public abstract int getFramebufferWidth();
+  public abstract int getHeight();
+  public abstract int getWidth();
+  public abstract java.lang.String getClipboardText();
+  public abstract org.fogofwarlabs.sc4j.engine.client.cursor.CursorSurface createCursorSurface();
+  public abstract org.fogofwarlabs.sc4j.engine.client.host.DisplayMode getDisplayMode();
+  public abstract org.fogofwarlabs.sc4j.engine.client.host.TextInputMethod getTextInputMethod();
+  public abstract org.fogofwarlabs.sc4j.engine.client.host.WindowInput createInput(org.fogofwarlabs.sc4j.engine.client.input.InputListener);
+  public abstract org.fogofwarlabs.sc4j.engine.client.host.WindowInput createInput(org.fogofwarlabs.sc4j.engine.client.input.InputListener, org.fogofwarlabs.sc4j.engine.client.input.DoublePressDetector, java.util.function.LongSupplier);
+  public abstract org.fogofwarlabs.sc4j.engine.client.host.WindowSettings getSettings();
+  public abstract void applyGammaRamp(short[]);
+  public abstract void center();
+  public abstract void close();
+  public abstract void makeContextCurrent();
+  public abstract void releaseContext();
+  public abstract void requestClose();
+  public abstract void setClipboardText(java.lang.String);
+  public abstract void setDisplayMode(org.fogofwarlabs.sc4j.engine.client.host.DisplayMode, int, int);
+  public abstract void setFileDropListener(org.fogofwarlabs.sc4j.engine.client.host.FileDropListener);
+  public abstract void setPointerMode(org.fogofwarlabs.sc4j.engine.client.host.PointerMode);
+  public abstract void setPointerPosition(double, double);
+  public abstract void setSwapInterval(int);
+  public abstract void show();
+  public abstract void swapBuffers();
+  public static final int GAMMA_RAMP_CHANNEL_COUNT = 3;
+  public static final int GAMMA_RAMP_SIZE = 256;
+  public static final int SWAP_INTERVAL_ADAPTIVE = -1;
+  public static final int SWAP_INTERVAL_OFF = 0;
+  public static final int SWAP_INTERVAL_ON = 1;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.MonotonicHostTickClock implements org.fogofwarlabs.sc4j.engine.client.host.HostTickClock {
+  public int readTicks();
+  public org.fogofwarlabs.sc4j.engine.client.host.MonotonicHostTickClock();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.NoTextInputMethod implements org.fogofwarlabs.sc4j.engine.client.host.TextInputMethod {
+  public boolean isEnabled();
+  public java.util.Locale getCompositionLocale();
+  public org.fogofwarlabs.sc4j.engine.client.host.NoTextInputMethod();
+  public void cancelComposition();
+  public void setEnabled(boolean);
+  public void setListener(org.fogofwarlabs.sc4j.engine.client.host.TextCompositionListener);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.PointerMode extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.host.PointerMode> {
+  public static final org.fogofwarlabs.sc4j.engine.client.host.PointerMode CAPTURED;
+  public static final org.fogofwarlabs.sc4j.engine.client.host.PointerMode HIDDEN;
+  public static final org.fogofwarlabs.sc4j.engine.client.host.PointerMode NORMAL;
+  public static org.fogofwarlabs.sc4j.engine.client.host.PointerMode valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.host.PointerMode[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.PresentThrottle {
+  public boolean isActive();
+  public boolean takePresentDue(long);
+  public int getDrawIntervalMilliseconds();
+  public int getFrameRateLimit();
+  public int getPresentIntervalMilliseconds();
+  public org.fogofwarlabs.sc4j.engine.client.host.PresentThrottle(int);
+  public void setActive(boolean, long);
+  public void setFrameRateLimit(int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.SystemPointerSpeed {
+  public abstract int readSpeed();
+  public abstract void writeSpeed(int);
+  public static final int DEFAULT_SPEED = 10;
+  public static final int MAXIMUM_SPEED = 20;
+  public static final int MINIMUM_SPEED = 1;
+  public static org.fogofwarlabs.sc4j.engine.client.host.SystemPointerSpeed getDefault();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.TextComposition {
+  public int getClauseEnd();
+  public int getClauseStart();
+  public int getCursor();
+  public java.lang.String getText();
+  public org.fogofwarlabs.sc4j.engine.client.host.TextComposition(java.lang.String, int, int, int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.TextCompositionListener {
+  public abstract void onCompositionCanceled();
+  public abstract void onCompositionChanged(org.fogofwarlabs.sc4j.engine.client.host.TextComposition);
+  public abstract void onCompositionCommitted(java.lang.String);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.TextInputMethod {
+  public abstract boolean isEnabled();
+  public abstract java.util.Locale getCompositionLocale();
+  public abstract void cancelComposition();
+  public abstract void setEnabled(boolean);
+  public abstract void setListener(org.fogofwarlabs.sc4j.engine.client.host.TextCompositionListener);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.host.WindowInput {
+  public abstract float toFramebufferX(double);
+  public abstract float toFramebufferY(double);
+  public abstract org.fogofwarlabs.sc4j.engine.client.input.DoublePressDetector getDoublePresses();
+  public abstract void refreshSurfaceSize();
+  public abstract void setSurfaceSize(int, int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.WindowSettings {
+  public boolean isDecorated();
+  public boolean isScaledToMonitor();
+  public int getContextMajorVersion();
+  public int getContextMinorVersion();
+  public int getHeight();
+  public int getMinimumHeight();
+  public int getMinimumWidth();
+  public int getWidth();
+  public java.lang.String getTitle();
+  public static final int DEFAULT_CONTEXT_MAJOR_VERSION = 3;
+  public static final int DEFAULT_CONTEXT_MINOR_VERSION = 3;
+  public static final int NO_SIZE_LIMIT = 0;
+  public static org.fogofwarlabs.sc4j.engine.client.host.WindowSettings$Builder builder(java.lang.String, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.WindowSettings$Builder {
+  public org.fogofwarlabs.sc4j.engine.client.host.WindowSettings build();
+  public org.fogofwarlabs.sc4j.engine.client.host.WindowSettings$Builder setContextVersion(int, int);
+  public org.fogofwarlabs.sc4j.engine.client.host.WindowSettings$Builder setDecorated(boolean);
+  public org.fogofwarlabs.sc4j.engine.client.host.WindowSettings$Builder setMinimumSize(int, int);
+  public org.fogofwarlabs.sc4j.engine.client.host.WindowSettings$Builder setScaledToMonitor(boolean);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.CommandButton {
+  public java.lang.String getLabel();
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandAction getAction();
+  public org.fogofwarlabs.sc4j.engine.client.hud.CommandButton(java.lang.String, org.fogofwarlabs.sc4j.engine.client.input.Key, org.fogofwarlabs.sc4j.engine.client.command.CommandAction);
+  public org.fogofwarlabs.sc4j.engine.client.input.Key getHotkey();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.CommandCard extends org.fogofwarlabs.sc4j.engine.client.hud.HudBlock {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public java.util.List<org.fogofwarlabs.sc4j.engine.client.hud.CommandButton> getButtons();
+  public org.fogofwarlabs.sc4j.engine.client.hud.CommandButton findButtonAt(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.hud.CommandCard(org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.client.text.Font, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.UnitType, java.lang.String>, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind, java.lang.String>, java.lang.String, int, int);
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public void setButtons(java.util.List<org.fogofwarlabs.sc4j.engine.client.hud.CommandButton>);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.hud.CommandCardSource {
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.client.hud.CommandButton> createButtons(org.fogofwarlabs.sc4j.engine.player.Player, java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.ConsolePlate extends org.fogofwarlabs.sc4j.engine.client.hud.HudBlock {
+  public org.fogofwarlabs.sc4j.engine.client.hud.ConsolePlate();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+}
+
+public abstract class org.fogofwarlabs.sc4j.engine.client.hud.HudBlock {
+  protected org.fogofwarlabs.sc4j.engine.client.hud.HudBlock();
+  public abstract void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean isShown();
+  public final boolean contains(float, float);
+  public final float getHeight();
+  public final float getWidth();
+  public final float getX();
+  public final float getY();
+  public final org.fogofwarlabs.sc4j.engine.client.skin.HudSkin getSkin();
+  public final void setBounds(float, float, float, float);
+  public final void setSkin(org.fogofwarlabs.sc4j.engine.client.skin.HudSkin);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.hud.HudListener {
+  public default void onButtonPressed();
+  public default void onCommandRefused(org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal, java.lang.String);
+  public default void onProductionWaiting(org.fogofwarlabs.sc4j.engine.entity.Unit, org.fogofwarlabs.sc4j.engine.client.command.CommandRefusal, java.lang.String);
+  public default void onUnitsSelected(java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.Minimap extends org.fogofwarlabs.sc4j.engine.client.hud.HudBlock implements org.fogofwarlabs.sc4j.engine.client.command.TargetPicker,java.lang.AutoCloseable {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public float getMapAreaHeight();
+  public float getMapAreaLeft();
+  public float getMapAreaTop();
+  public float getMapAreaWidth();
+  public int toWorldX(float, float);
+  public int toWorldY(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandTarget pick(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.hud.Minimap(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.world.Camera, org.fogofwarlabs.sc4j.engine.client.world.TerrainColors);
+  public org.fogofwarlabs.sc4j.engine.client.hud.MinimapPings getPings();
+  public org.fogofwarlabs.sc4j.engine.client.hud.MinimapStyle getStyle();
+  public static final int PING_FRAMES = 16;
+  public static final int PING_SLOTS = 8;
+  public static final long PING_FRAME_INTERVAL = 100l;
+  public void addPing(int, int, int);
+  public void addPing(int, int, org.fogofwarlabs.sc4j.engine.player.Player);
+  public void close();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public void setStyle(org.fogofwarlabs.sc4j.engine.client.hud.MinimapStyle);
+  public void setViewInsets(float, float);
+  public void update(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.MinimapPings {
+  public boolean advance();
+  public boolean isActive(int);
+  public boolean isAnyActive();
+  public boolean isPlayerColor(int);
+  public int getColor(int);
+  public int getFrame(int);
+  public int getFrameCount();
+  public int getSlotCount();
+  public int getX(int);
+  public int getY(int);
+  public org.fogofwarlabs.sc4j.engine.client.hud.MinimapPings(int, int);
+  public void add(int, int, int, boolean);
+  public void clear();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.hud.MinimapStyle {
+  public abstract float getPingSize(int, int);
+  public abstract int getCameraColor();
+  public abstract int getFogColor(boolean);
+  public abstract int getUnitColor(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.entity.Unit, org.fogofwarlabs.sc4j.engine.player.Player);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.OrderButton {
+  public boolean isTargeted();
+  public java.lang.String getLabel();
+  public org.fogofwarlabs.sc4j.engine.client.hud.OrderButton(org.fogofwarlabs.sc4j.engine.content.type.OrderType, java.lang.String, org.fogofwarlabs.sc4j.engine.client.input.Key, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.hud.OrderButton(org.fogofwarlabs.sc4j.engine.content.type.OrderType, java.lang.String, org.fogofwarlabs.sc4j.engine.client.input.Key, boolean, org.fogofwarlabs.sc4j.engine.content.definition.UnitTrait);
+  public org.fogofwarlabs.sc4j.engine.client.hud.OrderButton(org.fogofwarlabs.sc4j.engine.content.type.OrderType, org.fogofwarlabs.sc4j.engine.content.type.OrderType, java.lang.String, org.fogofwarlabs.sc4j.engine.client.input.Key, boolean, org.fogofwarlabs.sc4j.engine.content.definition.UnitTrait);
+  public org.fogofwarlabs.sc4j.engine.client.input.Key getHotkey();
+  public org.fogofwarlabs.sc4j.engine.content.definition.UnitTrait getRequiredTrait();
+  public org.fogofwarlabs.sc4j.engine.content.type.OrderType getOrderType();
+  public org.fogofwarlabs.sc4j.engine.content.type.OrderType getPointOrderType();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.OrderTexts {
+  public boolean isTargetNamed(org.fogofwarlabs.sc4j.engine.content.type.OrderType);
+  public java.lang.String findText(org.fogofwarlabs.sc4j.engine.content.type.OrderType);
+  public org.fogofwarlabs.sc4j.engine.client.hud.OrderTexts();
+  public void setText(org.fogofwarlabs.sc4j.engine.content.type.OrderType, java.lang.String, boolean);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.ProductionQueuePanel extends org.fogofwarlabs.sc4j.engine.client.hud.HudBlock {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean isShown();
+  public int findSlotAt(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.command.CancelAction getCancelAction();
+  public org.fogofwarlabs.sc4j.engine.client.hud.ProductionQueuePanel(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.command.OrderedSelection, org.fogofwarlabs.sc4j.engine.client.command.CommandTranslator, org.fogofwarlabs.sc4j.engine.client.text.Font, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.UnitType, java.lang.String>, java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.view.UnitView findShownUnit();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public void setCancelAction(org.fogofwarlabs.sc4j.engine.client.command.CancelAction);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.ReplayPanel extends org.fogofwarlabs.sc4j.engine.client.hud.HudBlock {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public int findButtonAt(float, float);
+  public long findLoopAt(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.hud.ReplayPanel(org.fogofwarlabs.sc4j.engine.client.hud.ReplayPanel$Playback, org.fogofwarlabs.sc4j.engine.client.text.Font, long);
+  public static final int BUTTON_COUNT = 4;
+  public static final int FASTER_BUTTON = 2;
+  public static final int NO_BUTTON = -1;
+  public static final int PAUSE_BUTTON = 0;
+  public static final int PLAYER_BUTTON = 3;
+  public static final int SLOWER_BUTTON = 1;
+  public static final java.lang.String FASTER_LABEL = "Faster";
+  public static final java.lang.String FASTER_SHORT_LABEL = "+";
+  public static final java.lang.String PAUSE_LABEL = "Pause";
+  public static final java.lang.String PLAY_LABEL = "Play";
+  public static final java.lang.String SLOWER_LABEL = "Slower";
+  public static final java.lang.String SLOWER_SHORT_LABEL = "-";
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.hud.ReplayPanel$Playback {
+  public abstract boolean isPaused();
+  public abstract int getSpeed();
+  public abstract java.lang.String getViewedPlayerName();
+  public abstract long getLoop();
+  public abstract long getLoopCount();
+  public abstract void decreaseSpeed();
+  public abstract void increaseSpeed();
+  public abstract void seek(long);
+  public abstract void setPaused(boolean);
+  public abstract void viewNextPlayer();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.ResourceBar extends org.fogofwarlabs.sc4j.engine.client.hud.HudBlock {
+  public org.fogofwarlabs.sc4j.engine.client.hud.ResourceBar(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.text.Font, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind, java.lang.String>, java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.player.Player getViewedPlayer();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public void setViewedPlayer(org.fogofwarlabs.sc4j.engine.player.Player, java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.SelectionPanel extends org.fogofwarlabs.sc4j.engine.client.hud.HudBlock {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public org.fogofwarlabs.sc4j.engine.client.hud.OrderTexts getOrderTexts();
+  public org.fogofwarlabs.sc4j.engine.client.hud.SelectionPanel(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.command.OrderedSelection, org.fogofwarlabs.sc4j.engine.client.text.Font, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.UnitType, java.lang.String>, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind, java.lang.String>);
+  public org.fogofwarlabs.sc4j.engine.entity.Unit findUnitAt(float, float);
+  public org.fogofwarlabs.sc4j.engine.player.Player getOverviewPlayer();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public void setOrderTexts(org.fogofwarlabs.sc4j.engine.client.hud.OrderTexts);
+  public void setOverviewPlayer(org.fogofwarlabs.sc4j.engine.player.Player);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.StandardCommandCardSource implements org.fogofwarlabs.sc4j.engine.client.hud.CommandCardSource {
+  public java.util.List<org.fogofwarlabs.sc4j.engine.client.hud.CommandButton> createButtons(org.fogofwarlabs.sc4j.engine.player.Player, java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+  public org.fogofwarlabs.sc4j.engine.client.command.CancelAction getCancelAction();
+  public org.fogofwarlabs.sc4j.engine.client.command.RallyAction getRallyAction();
+  public org.fogofwarlabs.sc4j.engine.client.hud.StandardCommandCardSource(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.order.IssueOrderCommandType, org.fogofwarlabs.sc4j.engine.production.TrainUnitCommandType, org.fogofwarlabs.sc4j.engine.production.ConstructBuildingCommandType, org.fogofwarlabs.sc4j.engine.production.CancelProductionCommandType, org.fogofwarlabs.sc4j.engine.production.SetRallyPointCommandType, java.util.List<org.fogofwarlabs.sc4j.engine.client.hud.OrderButton>, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.UnitType, java.lang.String>, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.StandardMinimapStyle implements org.fogofwarlabs.sc4j.engine.client.hud.MinimapStyle {
+  public float getPingSize(int, int);
+  public int getCameraColor();
+  public int getFogColor(boolean);
+  public int getUnitColor(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.entity.Unit, org.fogofwarlabs.sc4j.engine.player.Player);
+  public org.fogofwarlabs.sc4j.engine.client.hud.StandardMinimapStyle();
+  public static final float PING_END_SIZE = 4.0f;
+  public static final float PING_START_SIZE = 24.0f;
+  public static final int CAMERA_COLOR = -1;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.Tooltip {
+  public org.fogofwarlabs.sc4j.engine.client.hud.Tooltip(org.fogofwarlabs.sc4j.engine.client.text.Font);
+  public static final float GAP = 4.0f;
+  public void addLine(java.lang.CharSequence, int);
+  public void clear();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.skin.HudSkin, float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.hud.WaitingDialog extends org.fogofwarlabs.sc4j.engine.client.hud.HudBlock {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean isDropButtonAt(float, float);
+  public boolean isShown();
+  public org.fogofwarlabs.sc4j.engine.client.hud.WaitingDialog(org.fogofwarlabs.sc4j.engine.lockstep.LockstepSession, org.fogofwarlabs.sc4j.engine.client.text.Font);
+  public static final java.lang.String DROP_LABEL = "Drop";
+  public static final java.lang.String TITLE = "Waiting for players";
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public void placeAt(float, float);
+  public void setPeerNames(java.util.function.Function<org.fogofwarlabs.sc4j.engine.lockstep.LockstepPeer, java.lang.String>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.DoublePressDetector {
+  public boolean press(org.fogofwarlabs.sc4j.engine.client.input.PointerButton, long, int, int);
+  public long getTimeLimit();
+  public org.fogofwarlabs.sc4j.engine.client.input.DoublePressDetector();
+  public org.fogofwarlabs.sc4j.engine.client.input.DoublePressDetector(long);
+  public static final long DEFAULT_TIME_LIMIT = 500l;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.InputEvent {
+  public boolean isDoublePress();
+  public boolean isKeyDown();
+  public boolean isKeyEvent();
+  public boolean isModifierDown(org.fogofwarlabs.sc4j.engine.client.input.KeyModifier);
+  public boolean isPointerEvent();
+  public double getHorizontalOffset();
+  public double getVerticalOffset();
+  public float getX();
+  public float getY();
+  public int getCodePoint();
+  public int getModifiers();
+  public org.fogofwarlabs.sc4j.engine.client.input.InputEvent createAt(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type getType();
+  public org.fogofwarlabs.sc4j.engine.client.input.Key getKey();
+  public org.fogofwarlabs.sc4j.engine.client.input.PointerButton getButton();
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputEvent createButtonPressed(org.fogofwarlabs.sc4j.engine.client.input.PointerButton, int, float, float, boolean);
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputEvent createButtonReleased(org.fogofwarlabs.sc4j.engine.client.input.PointerButton, int, float, float);
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputEvent createCharacterTyped(int);
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputEvent createKey(org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type, org.fogofwarlabs.sc4j.engine.client.input.Key, int);
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputEvent createPointerMoved(float, float);
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputEvent createWheelScrolled(double, double, float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type> {
+  public static final org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type BUTTON_PRESSED;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type BUTTON_RELEASED;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type CHARACTER_TYPED;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type KEY_PRESSED;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type KEY_RELEASED;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type KEY_REPEATED;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type POINTER_MOVED;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type WHEEL_SCROLLED;
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputEvent$Type[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.input.InputListener {
+  public abstract void onInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.InputScript {
+  public boolean isFinished();
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputScript load(java.nio.file.Path) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.client.input.InputScript parse(java.util.List<java.lang.String>);
+  public void advance(long, org.fogofwarlabs.sc4j.engine.client.input.InputScript$Sink);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.input.InputScript$Sink {
+  public abstract int getFramebufferHeight();
+  public abstract int getFramebufferWidth();
+  public abstract void captureNext(java.nio.file.Path);
+  public abstract void exit();
+  public abstract void onCharacterTyped(int);
+  public abstract void onKeyEvent(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public abstract void onPointerButton(org.fogofwarlabs.sc4j.engine.client.input.PointerButton, boolean, int);
+  public abstract void onPointerMoved(float, float);
+  public abstract void onWheelScrolled(double);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.Key extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.input.Key> {
+  public int getDigit();
+  public int getFunctionNumber();
+  public int getKeypadDigit();
+  public int getLetterIndex();
+  public static final int DIGIT_COUNT = 10;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key A;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key APOSTROPHE;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key B;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key BACKSLASH;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key BACKSPACE;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key C;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key CAPS_LOCK;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key COMMA;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key D;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DELETE;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_0;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_1;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_2;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_3;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_4;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_5;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_6;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_7;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_8;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DIGIT_9;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key DOWN;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key E;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key END;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key ENTER;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key EQUAL;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key ESCAPE;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F10;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F11;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F12;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F13;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F14;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F15;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F16;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F17;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F18;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F19;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F1;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F20;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F21;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F22;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F23;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F24;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F25;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F2;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F3;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F4;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F5;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F6;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F7;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F8;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F9;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key F;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key G;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key GRAVE_ACCENT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key H;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key HOME;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key I;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key INSERT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key J;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key K;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_0;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_1;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_2;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_3;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_4;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_5;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_6;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_7;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_8;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_9;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_ADD;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_DECIMAL;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_DIVIDE;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_ENTER;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_EQUAL;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_MULTIPLY;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key KEYPAD_SUBTRACT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key L;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key LEFT_ALT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key LEFT_BRACKET;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key LEFT_CONTROL;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key LEFT_SHIFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key LEFT_SUPER;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key M;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key MENU;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key MINUS;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key N;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key NUM_LOCK;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key O;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key P;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key PAGE_DOWN;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key PAGE_UP;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key PAUSE;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key PERIOD;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key PRINT_SCREEN;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key Q;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key R;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key RIGHT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key RIGHT_ALT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key RIGHT_BRACKET;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key RIGHT_CONTROL;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key RIGHT_SHIFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key RIGHT_SUPER;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key S;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key SCROLL_LOCK;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key SEMICOLON;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key SLASH;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key SPACE;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key T;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key TAB;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key U;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key UNKNOWN;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key UP;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key V;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key W;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key WORLD_1;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key WORLD_2;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key X;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key Y;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.Key Z;
+  public static org.fogofwarlabs.sc4j.engine.client.input.Key ofDigit(int);
+  public static org.fogofwarlabs.sc4j.engine.client.input.Key ofLetter(char);
+  public static org.fogofwarlabs.sc4j.engine.client.input.Key valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.input.Key[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.KeyBinding<A> {
+  public A getAction();
+  public boolean isRepeatable();
+  public int getModifiers();
+  public org.fogofwarlabs.sc4j.engine.client.input.Key getKey();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.KeyBindingTable<A> {
+  public int getComparedModifiers();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.client.input.KeyBinding<A>> getBindings();
+  public org.fogofwarlabs.sc4j.engine.client.input.KeyBinding<A> bind(org.fogofwarlabs.sc4j.engine.client.input.Key, int, A, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.input.KeyBinding<A> find(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public org.fogofwarlabs.sc4j.engine.client.input.KeyBinding<A> find(org.fogofwarlabs.sc4j.engine.client.input.Key, int, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.input.KeyBinding<A> unbind(org.fogofwarlabs.sc4j.engine.client.input.Key, int);
+  public org.fogofwarlabs.sc4j.engine.client.input.KeyBindingTable();
+  public org.fogofwarlabs.sc4j.engine.client.input.KeyBindingTable(int);
+  public static final int DEFAULT_COMPARED_MODIFIERS;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.KeyModifier extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.input.KeyModifier> {
+  public boolean isIn(int);
+  public int getMask();
+  public static final int ALL_MASK;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.KeyModifier ALT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.KeyModifier CAPS_LOCK;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.KeyModifier CONTROL;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.KeyModifier NUM_LOCK;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.KeyModifier SHIFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.KeyModifier SUPER;
+  public static org.fogofwarlabs.sc4j.engine.client.input.KeyModifier valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.input.KeyModifier[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.input.PointerButton extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.input.PointerButton> {
+  public static final org.fogofwarlabs.sc4j.engine.client.input.PointerButton BUTTON_4;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.PointerButton BUTTON_5;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.PointerButton BUTTON_6;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.PointerButton BUTTON_7;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.PointerButton BUTTON_8;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.PointerButton LEFT;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.PointerButton MIDDLE;
+  public static final org.fogofwarlabs.sc4j.engine.client.input.PointerButton RIGHT;
+  public static org.fogofwarlabs.sc4j.engine.client.input.PointerButton valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.input.PointerButton[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.projection.IsometricProjection implements org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection {
+  public float getDepth(float, float);
+  public float toProjectedX(float, float);
+  public float toProjectedY(float, float);
+  public float toWorldX(float, float);
+  public float toWorldY(float, float);
+  public int getCellSize();
+  public int getTileHeight();
+  public int getTileWidth();
+  public int toScreenDirection(int);
+  public org.fogofwarlabs.sc4j.engine.client.projection.IsometricProjection(int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.projection.SquareProjection implements org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection {
+  public float getDepth(float, float);
+  public float toProjectedX(float, float);
+  public float toProjectedY(float, float);
+  public float toWorldX(float, float);
+  public float toWorldY(float, float);
+  public int toScreenDirection(int);
+  public org.fogofwarlabs.sc4j.engine.client.projection.SquareProjection();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection {
+  public abstract float getDepth(float, float);
+  public abstract float toProjectedX(float, float);
+  public abstract float toProjectedY(float, float);
+  public abstract float toWorldX(float, float);
+  public abstract float toWorldY(float, float);
+  public abstract int toScreenDirection(int);
+  public default float getProjectedBottom(float, float);
+  public default float getProjectedLeft(float, float);
+  public default float getProjectedRight(float, float);
+  public default float getProjectedTop(float, float);
+  public default void outlineFootprint(float, float, float, float, float[]);
+  public static final int DIRECTION_COUNT = 256;
+  public static final int OUTLINE_LENGTH = 8;
+  public static int toWorldDirection(int, int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.render.Canvas {
+  public abstract int getHeight();
+  public abstract int getWidth();
+  public abstract org.fogofwarlabs.sc4j.engine.client.render.Texture uploadTexture(int, int, int[]);
+  public abstract void begin(int, int);
+  public abstract void drawLine(float, float, float, float, float, int);
+  public abstract void drawRectangle(float, float, float, float, float, int);
+  public abstract void drawTexture(org.fogofwarlabs.sc4j.engine.client.render.Texture, float, float, float, float, float, float, float, float, int);
+  public abstract void drawTexture(org.fogofwarlabs.sc4j.engine.client.render.Texture, float, float, float, float, int);
+  public abstract void end();
+  public abstract void fillRectangle(float, float, float, float, int);
+  public abstract void setClip(int, int, int, int);
+  public default float getPixelScale();
+  public default void begin(org.fogofwarlabs.sc4j.engine.client.display.UiSurface);
+  public default void drawQuadrilateral(float[], float, int);
+  public default void fillQuadrilateral(float[], int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.GlyphAtlas implements java.lang.AutoCloseable {
+  public org.fogofwarlabs.sc4j.engine.client.render.GlyphAtlas$Slot add(byte[], int, int);
+  public org.fogofwarlabs.sc4j.engine.client.render.GlyphAtlas(org.fogofwarlabs.sc4j.engine.client.render.GpuCanvas);
+  public static final int PAGE_SIZE = 1024;
+  public void close();
+  public void upload();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.GlyphAtlas$Slot {
+  public int getHeight();
+  public int getTexture();
+  public int getWidth();
+  public int getX();
+  public int getY();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.render.GpuCanvas extends org.fogofwarlabs.sc4j.engine.client.render.Canvas,java.lang.AutoCloseable {
+  public abstract int createDynamicTexture(int, int, boolean);
+  public abstract int createSdfTexture(int, int);
+  public abstract int createTexture(int, int, byte[]);
+  public abstract void begin(int, int, int, int, int);
+  public abstract void close();
+  public abstract void deleteTexture(int);
+  public abstract void drawSdfTexture(int, float, float, float, float, float, float, float, float, int, float, float);
+  public abstract void drawTexture(int, float, float, float, float, float, float, float, float, int);
+  public abstract void drawTexture(int, float, float, float, float, int);
+  public abstract void updateSdfTexture(int, int, int, int, int, java.nio.ByteBuffer);
+  public abstract void updateTexture(int, int, int, int[]);
+  public abstract void updateTextureRows(int, int, int, int, int[]);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.render.GpuTimestamps extends java.lang.AutoCloseable {
+  public abstract boolean isAvailable(int);
+  public abstract int getCount();
+  public abstract long read(int);
+  public abstract void close();
+  public abstract void write(int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.render.GraphicsDevice {
+  public abstract org.fogofwarlabs.sc4j.engine.client.render.GpuCanvas createCanvas(int);
+  public abstract org.fogofwarlabs.sc4j.engine.client.render.GpuTimestamps createTimestamps(int);
+  public abstract org.fogofwarlabs.sc4j.engine.client.render.ShaderProgram createShaderProgram(java.lang.String, java.lang.String, java.lang.String);
+  public abstract void flush();
+  public abstract void selectColorTargets(int);
+  public static final int MAXIMUM_COLOR_TARGETS = 8;
+  public static final int QUAD_VERTICES = 6;
+  public static org.fogofwarlabs.sc4j.engine.client.render.GraphicsDevice getCurrent();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.PictureRenderer implements java.lang.AutoCloseable {
+  public int findDrawnMultiple(org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, float);
+  public org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.Picture> getDetails(org.fogofwarlabs.sc4j.engine.resource.ResourceKey) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.engine.client.render.Canvas getCanvas();
+  public org.fogofwarlabs.sc4j.engine.client.render.PictureRenderer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.ResourceProvider);
+  public org.fogofwarlabs.sc4j.engine.client.render.Texture getTexture(org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, int);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findPicture(org.fogofwarlabs.sc4j.engine.resource.ResourceKey) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture getPicture(org.fogofwarlabs.sc4j.engine.resource.ResourceKey) throws java.io.IOException;
+  public static final int NO_TEAM_COLOR = 0;
+  public static final int OPAQUE_WHITE = -1;
+  public void close();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, float, float, float, float, org.fogofwarlabs.sc4j.engine.client.render.PictureScaling, int, int);
+  public void drawSliced(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, float, float, float, float, int);
+  public void drawSliced(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, float, float, float, float, org.fogofwarlabs.sc4j.engine.client.render.SliceFill, int);
+  public void drawTiled(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, float, float, float, float, float, float, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.PictureScaling extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.render.PictureScaling> {
+  public static final org.fogofwarlabs.sc4j.engine.client.render.PictureScaling FILL;
+  public static final org.fogofwarlabs.sc4j.engine.client.render.PictureScaling FIT;
+  public static final org.fogofwarlabs.sc4j.engine.client.render.PictureScaling STRETCH;
+  public static org.fogofwarlabs.sc4j.engine.client.render.PictureScaling valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.render.PictureScaling[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.QuadrilateralUtils {
+  public static boolean isRectangle(float[]);
+  public static boolean overlaps(float[], float, float, float, float);
+  public static final int CORNER_VALUES = 8;
+  public static float getBottom(float[]);
+  public static float getHeight(float[]);
+  public static float getLeft(float[]);
+  public static float getRight(float[]);
+  public static float getTop(float[]);
+  public static float getWidth(float[]);
+  public static void expand(float[], float);
+  public static void fillRows(org.fogofwarlabs.sc4j.engine.client.render.Canvas, float[], int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.render.ShaderProgram extends java.lang.AutoCloseable {
+  public abstract int getUniformLocation(java.lang.String);
+  public abstract void close();
+  public abstract void use();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.SliceFill extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.render.SliceFill> {
+  public static final org.fogofwarlabs.sc4j.engine.client.render.SliceFill STRETCH;
+  public static final org.fogofwarlabs.sc4j.engine.client.render.SliceFill TILE;
+  public static org.fogofwarlabs.sc4j.engine.client.render.SliceFill valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.render.SliceFill[] values();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.render.SpriteBatch extends java.lang.AutoCloseable {
+  public abstract void begin(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+  public abstract void close();
+  public abstract void draw(org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet, int, int, int, boolean, int);
+  public abstract void end();
+  public abstract void setPalette(org.fogofwarlabs.sc4j.engine.resource.graphics.Palette);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.TeamColorUtils {
+  public static int mix(int, int, int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.render.Texture extends java.lang.AutoCloseable {
+  public abstract int getHeight();
+  public abstract int getWidth();
+  public abstract void close();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.render.WorldLayer {
+  public abstract void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.WorldView {
+  public java.util.List<org.fogofwarlabs.sc4j.engine.client.render.WorldLayer> getLayers();
+  public org.fogofwarlabs.sc4j.engine.client.render.WorldView(java.util.List<org.fogofwarlabs.sc4j.engine.client.render.WorldLayer>);
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.WorldViewport {
+  public float getCameraBottom();
+  public float getCameraRight();
+  public float getCameraX();
+  public float getCameraY();
+  public float getZoom();
+  public float toScreenX(float);
+  public float toScreenY(float);
+  public float worldToScreenX(float, float);
+  public float worldToScreenY(float, float);
+  public int getHeight();
+  public int getWidth();
+  public org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection getProjection();
+  public org.fogofwarlabs.sc4j.engine.client.render.WorldViewport(org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection);
+  public void outlineOnScreen(float, float, float, float, float[]);
+  public void set(int, int, float, float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.render.image.ImageCanvas implements org.fogofwarlabs.sc4j.engine.client.render.Canvas {
+  public float getPixelScale();
+  public int getHeight();
+  public int getWidth();
+  public java.awt.image.BufferedImage getImage();
+  public org.fogofwarlabs.sc4j.engine.client.render.Texture uploadTexture(int, int, int[]);
+  public org.fogofwarlabs.sc4j.engine.client.render.image.ImageCanvas(int, int);
+  public void begin(int, int);
+  public void begin(org.fogofwarlabs.sc4j.engine.client.display.UiSurface);
+  public void drawLine(float, float, float, float, float, int);
+  public void drawRectangle(float, float, float, float, float, int);
+  public void drawTexture(org.fogofwarlabs.sc4j.engine.client.render.Texture, float, float, float, float, float, float, float, float, int);
+  public void drawTexture(org.fogofwarlabs.sc4j.engine.client.render.Texture, float, float, float, float, int);
+  public void end();
+  public void fillQuadrilateral(float[], int);
+  public void fillRectangle(float, float, float, float, int);
+  public void setClip(int, int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.scene.FadeTransition implements org.fogofwarlabs.sc4j.engine.client.scene.SceneTransition<org.fogofwarlabs.sc4j.engine.client.render.Canvas> {
+  public boolean update(long);
+  public org.fogofwarlabs.sc4j.engine.client.scene.FadeTransition(long, int);
+  public void draw(java.lang.Object) throws java.io.IOException;
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas);
+  public void start(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.scene.LoadingService {
+  public boolean isLoading();
+  public float getProgress();
+  public java.lang.String getTitle();
+  public org.fogofwarlabs.sc4j.engine.client.scene.LoadingService();
+  public void advance(long);
+  public void cancel();
+  public void enqueue(org.fogofwarlabs.sc4j.engine.client.scene.LoadingTask);
+  public void start(org.fogofwarlabs.sc4j.engine.client.scene.LoadingTask);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.scene.LoadingTask {
+  public abstract boolean isFinished();
+  public abstract float advance(long);
+  public abstract java.lang.String getTitle();
+  public abstract void cancel();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.scene.Scene<C, S> {
+  public abstract void close();
+  public abstract void draw(S) throws java.io.IOException;
+  public abstract void open(C) throws java.io.IOException;
+  public abstract void update(long);
+  public default boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.scene.SceneStack<C, S, T extends org.fogofwarlabs.sc4j.engine.client.scene.Scene<C, S>> {
+  public T getPendingScene();
+  public T getScene();
+  public T getTopScene();
+  public T requireScene();
+  public boolean closeModal(T);
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean hasModal();
+  public boolean switchTo(T);
+  public java.util.List<T> getModalScenes();
+  public org.fogofwarlabs.sc4j.engine.client.scene.SceneStack(C, org.fogofwarlabs.sc4j.engine.client.scene.SceneStack$Listener<T>);
+  public void addModal(T);
+  public void applyPendingScene(long);
+  public void clearPendingScene();
+  public void close();
+  public void draw(S) throws java.io.IOException;
+  public void popModal();
+  public void pushModal(T) throws java.io.IOException;
+  public void replace(T);
+  public void replace(T, org.fogofwarlabs.sc4j.engine.client.scene.SceneTransition<S>);
+  public void setInputRouter(org.fogofwarlabs.sc4j.engine.client.scene.SceneStack$InputRouter<T>);
+  public void setRetainedScene(T);
+  public void start(T) throws java.io.IOException;
+  public void update(long);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.scene.SceneStack$InputRouter<T> {
+  public abstract T findInputTarget(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.scene.SceneStack$Listener<T> {
+  public abstract void onOpenFailed(T, java.lang.Exception);
+  public abstract void onSwitched(T, T);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.scene.SceneTransition<S> {
+  public abstract boolean update(long);
+  public abstract void draw(S) throws java.io.IOException;
+  public abstract void start(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.settings.SettingsGroup {
+  public boolean getBoolean(java.lang.String);
+  public boolean hasValue(java.lang.String);
+  public int getInteger(java.lang.String, int, int);
+  public java.lang.Object getValue(java.lang.String);
+  public java.lang.String getName();
+  public java.lang.String getQualifiedName(java.lang.String);
+  public java.lang.String getString(java.lang.String);
+  public java.util.List<java.lang.String> getKeys();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.settings.SettingsStore {
+  public java.util.List<java.lang.String> getGroupNames();
+  public org.fogofwarlabs.sc4j.engine.client.settings.SettingsGroup getGroup(java.lang.String);
+  public static final java.lang.String FILE_NAME = "sc4j-settings.json";
+  public static org.fogofwarlabs.sc4j.engine.client.settings.SettingsStore read(java.nio.file.Path) throws java.io.IOException;
+  public static void write(java.nio.file.Path, java.lang.String, java.util.Map<java.lang.String, ?>) throws java.io.IOException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle {
+  public abstract void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, float, float, float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.skin.ButtonStyle {
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle findStyle(boolean, boolean, boolean);
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getDisabled();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getHovered();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getNormal();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getPressed();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getSelected();
+  public org.fogofwarlabs.sc4j.engine.client.skin.ButtonStyle(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.ButtonStyle(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.skin.ColorBoxStyle implements org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle {
+  public float getFrameThickness();
+  public int getFillColor();
+  public int getFrameColor();
+  public org.fogofwarlabs.sc4j.engine.client.skin.ColorBoxStyle(int);
+  public org.fogofwarlabs.sc4j.engine.client.skin.ColorBoxStyle(int, int, float);
+  public static final org.fogofwarlabs.sc4j.engine.client.skin.ColorBoxStyle NONE;
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, float, float, float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.skin.HudSkin {
+  public float getDialogPadding();
+  public float getSlotSize();
+  public float getTooltipPadding();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getCommandCardBackground();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getConsoleBackground();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getDialogBackground();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getMinimapBackground();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getMinimapBorder();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getQueuePanelBackground();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getResourceBarBackground();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getSelectionPanelBackground();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getSelectionSlot();
+  public org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle getTooltipBackground();
+  public org.fogofwarlabs.sc4j.engine.client.skin.ButtonStyle getCommandButton();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findButtonIcon(org.fogofwarlabs.sc4j.engine.client.command.CommandAction);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findCancelIcon();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findOrderIcon(org.fogofwarlabs.sc4j.engine.content.type.OrderType);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findPortrait(org.fogofwarlabs.sc4j.engine.content.type.UnitType);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findRallyIcon();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findResourceIcon(org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findSupplyIcon(org.fogofwarlabs.sc4j.engine.content.faction.Faction);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture findUnitIcon(org.fogofwarlabs.sc4j.engine.content.type.UnitType);
+  public static final float DEFAULT_DIALOG_PADDING = 8.0f;
+  public static final float DEFAULT_SLOT_SIZE = 32.0f;
+  public static final float DEFAULT_TOOLTIP_PADDING = 4.0f;
+  public static final org.fogofwarlabs.sc4j.engine.client.skin.HudSkin DEFAULT;
+  public static org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder builder();
+  public static org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder builder(org.fogofwarlabs.sc4j.engine.client.render.PictureRenderer);
+  public void drawPicture(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, float, float, float, float, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder {
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin build();
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setCancelIcon(org.fogofwarlabs.sc4j.engine.resource.graphics.Picture);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setCommandButton(org.fogofwarlabs.sc4j.engine.client.skin.ButtonStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setCommandCardBackground(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setConsoleBackground(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setDialog(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, float);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setMinimapBackground(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setMinimapBorder(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setOrderIcon(org.fogofwarlabs.sc4j.engine.content.type.OrderType, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setPortrait(org.fogofwarlabs.sc4j.engine.content.type.UnitType, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setQueuePanelBackground(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setRallyIcon(org.fogofwarlabs.sc4j.engine.resource.graphics.Picture);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setResourceBarBackground(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setResourceIcon(org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setSelectionPanelBackground(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setSelectionSlot(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, float);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setSupplyIcon(org.fogofwarlabs.sc4j.engine.content.faction.Faction, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setTooltip(org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle, float);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin$Builder setUnitIcon(org.fogofwarlabs.sc4j.engine.content.type.UnitType, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.skin.HudSkinTable {
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin findSkin(org.fogofwarlabs.sc4j.engine.content.faction.Faction);
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkin getDefaultSkin();
+  public org.fogofwarlabs.sc4j.engine.client.skin.HudSkinTable(org.fogofwarlabs.sc4j.engine.client.skin.HudSkin);
+  public void setFactionSkin(org.fogofwarlabs.sc4j.engine.content.faction.Faction, org.fogofwarlabs.sc4j.engine.client.skin.HudSkin);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.skin.PictureBoxStyle implements org.fogofwarlabs.sc4j.engine.client.skin.BoxStyle {
+  public org.fogofwarlabs.sc4j.engine.client.render.SliceFill getSliceFill();
+  public org.fogofwarlabs.sc4j.engine.client.skin.PictureBoxStyle(org.fogofwarlabs.sc4j.engine.client.render.PictureRenderer, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture);
+  public org.fogofwarlabs.sc4j.engine.client.skin.PictureBoxStyle(org.fogofwarlabs.sc4j.engine.client.render.PictureRenderer, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, int);
+  public org.fogofwarlabs.sc4j.engine.client.skin.PictureBoxStyle(org.fogofwarlabs.sc4j.engine.client.render.PictureRenderer, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, org.fogofwarlabs.sc4j.engine.resource.graphics.Picture, org.fogofwarlabs.sc4j.engine.client.render.SliceFill, int);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture getFill();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture getPicture();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, float, float, float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.text.BitmapFont implements org.fogofwarlabs.sc4j.engine.client.text.Font,java.lang.AutoCloseable {
+  public float draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, java.lang.CharSequence, float, float, int, org.fogofwarlabs.sc4j.engine.client.text.TextStyle);
+  public float measure(java.lang.CharSequence, org.fogofwarlabs.sc4j.engine.client.text.TextStyle);
+  public int findDrawnMultiple(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.text.TextStyle);
+  public int getKerning();
+  public int getLineHeight();
+  public int[] getDetailMultiples();
+  public org.fogofwarlabs.sc4j.engine.client.text.BitmapFont(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.text.FontFace, int, org.fogofwarlabs.sc4j.engine.client.text.TextStyle);
+  public org.fogofwarlabs.sc4j.engine.client.text.BitmapFont(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.text.FontFace, java.util.List<org.fogofwarlabs.sc4j.engine.resource.text.FontFace>, int, org.fogofwarlabs.sc4j.engine.client.text.TextStyle);
+  public org.fogofwarlabs.sc4j.engine.client.text.BitmapFont(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.text.FontFace, org.fogofwarlabs.sc4j.engine.client.text.TextColorHook);
+  public org.fogofwarlabs.sc4j.engine.client.text.TextStyle getDefaultStyle();
+  public org.fogofwarlabs.sc4j.engine.resource.text.FontFace getFace();
+  public static final int NO_KERNING = 0;
+  public static org.fogofwarlabs.sc4j.engine.client.text.BitmapFont load(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.resource.ResourceProvider, org.fogofwarlabs.sc4j.engine.resource.ResourceKey, org.fogofwarlabs.sc4j.engine.client.text.TextColorHook) throws java.io.IOException;
+  public void close();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.text.Font {
+  public abstract float draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, java.lang.CharSequence, float, float, int, org.fogofwarlabs.sc4j.engine.client.text.TextStyle);
+  public abstract float measure(java.lang.CharSequence, org.fogofwarlabs.sc4j.engine.client.text.TextStyle);
+  public abstract int getLineHeight();
+  public abstract org.fogofwarlabs.sc4j.engine.client.text.TextStyle getDefaultStyle();
+  public default float draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, java.lang.CharSequence, float, float, int);
+  public default float measure(java.lang.CharSequence);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.text.NameSubstitution implements org.fogofwarlabs.sc4j.engine.client.text.TextSubstitutionHook {
+  public java.lang.String substitute(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.text.NameSubstitution(java.lang.String, java.lang.String);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.text.TextColorHook {
+  public abstract boolean isColorCode(int);
+  public abstract int getColor(int, int, int, int);
+  public static final org.fogofwarlabs.sc4j.engine.client.text.TextColorHook NONE;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.text.TextColorTable implements org.fogofwarlabs.sc4j.engine.client.text.TextColorHook {
+  public boolean isColorCode(int);
+  public int getColor(int, int, int, int);
+  public static org.fogofwarlabs.sc4j.engine.client.text.TextColorTable$Builder builder();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.text.TextColorTable$Builder {
+  public org.fogofwarlabs.sc4j.engine.client.text.TextColorTable build();
+  public org.fogofwarlabs.sc4j.engine.client.text.TextColorTable$Builder setColor(int, int);
+  public org.fogofwarlabs.sc4j.engine.client.text.TextColorTable$Builder setLineColorCode(int);
+  public org.fogofwarlabs.sc4j.engine.client.text.TextColorTable$Builder setRestoreCode(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.text.TextCutUtils {
+  public static final java.lang.String CUT_MARK = "...";
+  public static void cut(org.fogofwarlabs.sc4j.engine.client.text.Font, java.lang.StringBuilder, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.text.TextLayout {
+  public float draw(org.fogofwarlabs.sc4j.engine.client.render.Canvas, java.lang.String, float, float, org.fogofwarlabs.sc4j.engine.resource.dialog.TextAlignment, int);
+  public float getWidth();
+  public java.util.List<java.lang.String> wrap(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.client.text.Font getFont();
+  public org.fogofwarlabs.sc4j.engine.client.text.TextLayout(org.fogofwarlabs.sc4j.engine.client.text.Font, float);
+  public org.fogofwarlabs.sc4j.engine.client.text.TextLayout(org.fogofwarlabs.sc4j.engine.client.text.Font, org.fogofwarlabs.sc4j.engine.client.text.TextStyle, float);
+  public org.fogofwarlabs.sc4j.engine.client.text.TextStyle getStyle();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.text.TextStyle {
+  public boolean isKerning();
+  public boolean isPixelSnapped();
+  public float getScale();
+  public org.fogofwarlabs.sc4j.engine.client.text.TextColorHook getColors();
+  public static final float UNIT_SCALE = 1.0f;
+  public static final org.fogofwarlabs.sc4j.engine.client.text.TextStyle DEFAULT;
+  public static org.fogofwarlabs.sc4j.engine.client.text.TextStyle$Builder builder();
+  public static org.fogofwarlabs.sc4j.engine.client.text.TextStyle$Builder builder(org.fogofwarlabs.sc4j.engine.client.text.TextStyle);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.text.TextStyle$Builder {
+  public org.fogofwarlabs.sc4j.engine.client.text.TextStyle build();
+  public org.fogofwarlabs.sc4j.engine.client.text.TextStyle$Builder setColors(org.fogofwarlabs.sc4j.engine.client.text.TextColorHook);
+  public org.fogofwarlabs.sc4j.engine.client.text.TextStyle$Builder setKerning(boolean);
+  public org.fogofwarlabs.sc4j.engine.client.text.TextStyle$Builder setPixelSnapped(boolean);
+  public org.fogofwarlabs.sc4j.engine.client.text.TextStyle$Builder setScale(float);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.text.TextSubstitutionHook {
+  public abstract java.lang.String substitute(java.lang.String);
+  public default org.fogofwarlabs.sc4j.engine.resource.text.StringTable substitute(org.fogofwarlabs.sc4j.engine.resource.text.StringTable);
+  public static final org.fogofwarlabs.sc4j.engine.client.text.TextSubstitutionHook NONE;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.video.VideoClip {
+  public byte[] getFrame(int);
+  public int getFrameCount();
+  public int getHeight();
+  public int getWidth();
+  public long getDuration(int);
+  public long getTotalDuration();
+  public org.fogofwarlabs.sc4j.engine.client.video.VideoClip(int, int, byte[][], long[]);
+  public static org.fogofwarlabs.sc4j.engine.client.video.VideoClip read(org.fogofwarlabs.sc4j.engine.client.video.VideoStream);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.video.VideoClipDecoder {
+  public abstract org.fogofwarlabs.sc4j.engine.client.video.VideoClip decode(byte[]) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.client.video.VideoClipDecoder getDefault();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.video.VideoStream extends java.lang.AutoCloseable {
+  public abstract boolean isFinished();
+  public abstract byte[] readAudio(long);
+  public abstract byte[] readFrameAt(long);
+  public abstract byte[] readNextFrame();
+  public abstract byte[] readNextLoopedFrame();
+  public abstract int getAudioChannels();
+  public abstract int getAudioSampleRate();
+  public abstract int getHeight();
+  public abstract int getWidth();
+  public abstract long getFrameMilliseconds();
+  public abstract long getLastFrameMilliseconds();
+  public abstract void close();
+  public static org.fogofwarlabs.sc4j.engine.client.video.VideoStream open(byte[], boolean) throws java.io.IOException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.view.GameView {
+  public abstract boolean isExplored(org.fogofwarlabs.sc4j.engine.player.Player, int, int);
+  public abstract boolean isUnitVisible(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public abstract boolean isVisible(org.fogofwarlabs.sc4j.engine.player.Player, int, int);
+  public abstract int getFrame();
+  public abstract int getResourceAmount(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind);
+  public abstract int getSupplyProvided(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.content.faction.Faction);
+  public abstract int getSupplyUsed(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.content.faction.Faction);
+  public abstract int getTeamColor(org.fogofwarlabs.sc4j.engine.player.Player);
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind> getResourceKinds();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit> getUnits();
+  public abstract java.util.List<org.fogofwarlabs.sc4j.engine.player.Player> getPlayers();
+  public abstract org.fogofwarlabs.sc4j.engine.client.view.UnitView getUnitView(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public abstract org.fogofwarlabs.sc4j.engine.content.faction.Faction getFaction(org.fogofwarlabs.sc4j.engine.player.Player);
+  public abstract org.fogofwarlabs.sc4j.engine.entity.Unit findUnitAt(int, int);
+  public abstract org.fogofwarlabs.sc4j.engine.player.Player getLocalPlayer();
+  public abstract org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid getTerrain();
+  public abstract void findUnits(int, int, int, int, java.util.Collection<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+  public default int getMapHeight();
+  public default int getMapWidth();
+  public default java.util.List<org.fogofwarlabs.sc4j.engine.client.view.ProjectileView> getProjectiles();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.view.ProjectileView {
+  public abstract int getFlight();
+  public abstract int getHeading();
+  public abstract int getX();
+  public abstract int getY();
+  public abstract org.fogofwarlabs.sc4j.engine.content.type.MotionProfile getMotionProfile();
+  public abstract org.fogofwarlabs.sc4j.engine.entity.Projectile getProjectile();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.view.StandardGameView implements org.fogofwarlabs.sc4j.engine.client.view.GameView {
+  public boolean isExplored(org.fogofwarlabs.sc4j.engine.player.Player, int, int);
+  public boolean isUnitVisible(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public boolean isVisible(org.fogofwarlabs.sc4j.engine.player.Player, int, int);
+  public int getFrame();
+  public int getResourceAmount(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind);
+  public int getSupplyProvided(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.content.faction.Faction);
+  public int getSupplyUsed(org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.content.faction.Faction);
+  public int getTeamColor(org.fogofwarlabs.sc4j.engine.player.Player);
+  public java.util.List<org.fogofwarlabs.sc4j.engine.client.view.ProjectileView> getProjectiles();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind> getResourceKinds();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit> getUnits();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.player.Player> getPlayers();
+  public org.fogofwarlabs.sc4j.engine.client.view.StandardGameView(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.player.Player, org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, org.fogofwarlabs.sc4j.engine.spatial.UnitBounds<org.fogofwarlabs.sc4j.engine.entity.Unit>, int, java.util.List<org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind>, int[]);
+  public org.fogofwarlabs.sc4j.engine.client.view.UnitView getUnitView(org.fogofwarlabs.sc4j.engine.entity.Unit);
+  public org.fogofwarlabs.sc4j.engine.content.faction.Faction getFaction(org.fogofwarlabs.sc4j.engine.player.Player);
+  public org.fogofwarlabs.sc4j.engine.entity.Unit findUnitAt(int, int);
+  public org.fogofwarlabs.sc4j.engine.player.Player getLocalPlayer();
+  public org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid getTerrain();
+  public void findUnits(int, int, int, int, java.util.Collection<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.view.StandardProjectileView implements org.fogofwarlabs.sc4j.engine.client.view.ProjectileView {
+  public int getFlight();
+  public int getHeading();
+  public int getX();
+  public int getY();
+  public org.fogofwarlabs.sc4j.engine.client.view.StandardProjectileView(org.fogofwarlabs.sc4j.engine.entity.pool.EntityPool<org.fogofwarlabs.sc4j.engine.entity.Projectile>, org.fogofwarlabs.sc4j.engine.entity.Projectile, int);
+  public org.fogofwarlabs.sc4j.engine.content.type.MotionProfile getMotionProfile();
+  public org.fogofwarlabs.sc4j.engine.entity.Projectile getProjectile();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.view.StandardUnitView implements org.fogofwarlabs.sc4j.engine.client.view.UnitView {
+  public boolean hasRallyPoint();
+  public boolean isAttacking();
+  public boolean isMoving();
+  public boolean isPlaced();
+  public boolean isPlacementBlocker();
+  public boolean isWaitingForSupply();
+  public int getArmor();
+  public int getBottom();
+  public int getCarriedAmount();
+  public int getConstructionProgress();
+  public int getDamageLayerCount();
+  public int getDamageLayerPoints(int);
+  public int getHeading();
+  public int getHitPoints();
+  public int getKillCount();
+  public int getLeft();
+  public int getMaximumDamageLayerPoints(int);
+  public int getMaximumHitPoints();
+  public int getQueueCapacity();
+  public int getQueueLength();
+  public int getQueueProgress();
+  public int getRallyPointX();
+  public int getRallyPointY();
+  public int getResourceAmount();
+  public int getRight();
+  public int getTop();
+  public int getWeaponDamage();
+  public int getX();
+  public int getY();
+  public java.lang.String getDamageLayerName(int);
+  public org.fogofwarlabs.sc4j.engine.client.view.StandardUnitView(org.fogofwarlabs.sc4j.engine.game.Game, org.fogofwarlabs.sc4j.engine.entity.Unit, org.fogofwarlabs.sc4j.engine.spatial.UnitBounds<org.fogofwarlabs.sc4j.engine.entity.Unit>, int);
+  public org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind getCarriedKind();
+  public org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind getResourceKind();
+  public org.fogofwarlabs.sc4j.engine.content.type.OrderType getOrderType();
+  public org.fogofwarlabs.sc4j.engine.content.type.UnitType getQueuedType(int);
+  public org.fogofwarlabs.sc4j.engine.content.type.UnitType getType();
+  public org.fogofwarlabs.sc4j.engine.entity.Unit getOrderTarget();
+  public org.fogofwarlabs.sc4j.engine.entity.Unit getUnit();
+  public org.fogofwarlabs.sc4j.engine.player.Player getOwner();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.view.UnitView {
+  public abstract boolean isPlaced();
+  public abstract int getBottom();
+  public abstract int getHitPoints();
+  public abstract int getLeft();
+  public abstract int getMaximumHitPoints();
+  public abstract int getRight();
+  public abstract int getTop();
+  public abstract int getX();
+  public abstract int getY();
+  public abstract org.fogofwarlabs.sc4j.engine.content.type.OrderType getOrderType();
+  public abstract org.fogofwarlabs.sc4j.engine.content.type.UnitType getType();
+  public abstract org.fogofwarlabs.sc4j.engine.entity.Unit getUnit();
+  public abstract org.fogofwarlabs.sc4j.engine.player.Player getOwner();
+  public default boolean hasRallyPoint();
+  public default boolean isAttacking();
+  public default boolean isMoving();
+  public default boolean isPlacementBlocker();
+  public default boolean isWaitingForSupply();
+  public default int getArmor();
+  public default int getCarriedAmount();
+  public default int getConstructionProgress();
+  public default int getDamageLayerCount();
+  public default int getDamageLayerPoints(int);
+  public default int getHeading();
+  public default int getKillCount();
+  public default int getMaximumDamageLayerPoints(int);
+  public default int getQueueCapacity();
+  public default int getQueueLength();
+  public default int getQueueProgress();
+  public default int getRallyPointX();
+  public default int getRallyPointY();
+  public default int getResourceAmount();
+  public default int getWeaponDamage();
+  public default java.lang.String getDamageLayerName(int);
+  public default org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind getCarriedKind();
+  public default org.fogofwarlabs.sc4j.engine.content.economy.ResourceKind getResourceKind();
+  public default org.fogofwarlabs.sc4j.engine.content.type.UnitType getQueuedType(int);
+  public default org.fogofwarlabs.sc4j.engine.entity.Unit getOrderTarget();
+  public static final int COMPLETE = 1000;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.Camera implements org.fogofwarlabs.sc4j.engine.client.world.CameraControl {
+  public float getBoundsBottom();
+  public float getBoundsLeft();
+  public float getBoundsRight();
+  public float getBoundsTop();
+  public float getMaximumX();
+  public float getMaximumY();
+  public float getMaximumZoom();
+  public float getMinimumX();
+  public float getMinimumY();
+  public float getMinimumZoom();
+  public float getViewHeight();
+  public float getViewWidth();
+  public float getX();
+  public float getY();
+  public float getZoom();
+  public float toWorldX(float, float);
+  public float toWorldY(float, float);
+  public int getMapHeight();
+  public int getMapWidth();
+  public int getScreenHeight();
+  public int getScreenWidth();
+  public org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection getProjection();
+  public org.fogofwarlabs.sc4j.engine.client.world.Camera(org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection, int, int);
+  public static final float DEFAULT_MAXIMUM_ZOOM = 2.0f;
+  public static final float DEFAULT_MINIMUM_ZOOM = 0.5f;
+  public void applyTo(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+  public void centerOn(float, float);
+  public void moveTo(float, float);
+  public void scroll(float, float);
+  public void setScreenSize(int, int);
+  public void setZoom(float);
+  public void setZoomLimits(float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.CameraCommandUtils {
+  public static void register(org.fogofwarlabs.sc4j.engine.client.console.ConsoleCommandRegistry, org.fogofwarlabs.sc4j.engine.client.world.Camera, org.fogofwarlabs.sc4j.engine.client.world.CameraScroll, org.fogofwarlabs.sc4j.engine.client.world.ContinuousScrollRate);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.world.CameraControl {
+  public abstract float getMaximumX();
+  public abstract float getMaximumY();
+  public abstract float getMinimumX();
+  public abstract float getMinimumY();
+  public abstract float getViewHeight();
+  public abstract float getViewWidth();
+  public abstract float getX();
+  public abstract float getY();
+  public abstract float getZoom();
+  public abstract void moveTo(float, float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.CameraScroll {
+  public boolean isEdgeScrolling();
+  public boolean isKeyScrolling();
+  public int getEdgeDirection();
+  public int getEdgeWidth();
+  public int getEdgeX();
+  public int getEdgeY();
+  public org.fogofwarlabs.sc4j.engine.client.world.CameraScroll(int, org.fogofwarlabs.sc4j.engine.client.world.ScrollRate);
+  public org.fogofwarlabs.sc4j.engine.client.world.ScrollRate getRate();
+  public static final int DEFAULT_EDGE_WIDTH = 4;
+  public static final int NO_DIRECTION = -1;
+  public static int[] getKeyboardDirection(java.util.function.Predicate<org.fogofwarlabs.sc4j.engine.client.input.Key>);
+  public void clearEdge();
+  public void reset();
+  public void setEdgeScrolling(boolean);
+  public void setKeyScrolling(boolean);
+  public void update(org.fogofwarlabs.sc4j.engine.client.world.CameraControl, int, int, float, float, boolean, float, float, long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.CameraTargetScroll {
+  public boolean isActive();
+  public boolean tick(org.fogofwarlabs.sc4j.engine.client.world.CameraControl);
+  public org.fogofwarlabs.sc4j.engine.client.world.CameraTargetScroll(int, int, org.fogofwarlabs.sc4j.engine.client.world.ScrollStepTable);
+  public void finish();
+  public void reset();
+  public void start(int, int, java.lang.Runnable);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.ContinuousScrollRate implements org.fogofwarlabs.sc4j.engine.client.world.ScrollRate {
+  public float getEdgeDistance(int, long, float);
+  public float getEdgeSpeed();
+  public float getKeyDistance(int, long, float);
+  public float getKeySpeed();
+  public int getStepCount();
+  public org.fogofwarlabs.sc4j.engine.client.world.ContinuousScrollRate();
+  public static final float DEFAULT_EDGE_SPEED = 900.0f;
+  public static final float DEFAULT_KEY_SPEED = 900.0f;
+  public void setEdgeSpeed(float);
+  public void setKeySpeed(float);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.FogLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer {
+  public org.fogofwarlabs.sc4j.engine.client.world.FogLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView);
+  public org.fogofwarlabs.sc4j.engine.client.world.FogLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView, int, int);
+  public static final float COVER_PIXELS = 2.0f;
+  public static final int DEFAULT_FOG_COLOR = 128;
+  public static final int DEFAULT_UNEXPLORED_COLOR = 255;
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.LinearScrollStepTable implements org.fogofwarlabs.sc4j.engine.client.world.ScrollStepTable {
+  public int getSpeedCount();
+  public int getStep(int, int);
+  public int getStepCount();
+  public int getUnit();
+  public org.fogofwarlabs.sc4j.engine.client.world.LinearScrollStepTable(int, int);
+  public org.fogofwarlabs.sc4j.engine.client.world.LinearScrollStepTable(int, int, int);
+  public static final int DEFAULT_UNIT = 2;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.world.PlacementGhost {
+  public abstract void drawGhost(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport, org.fogofwarlabs.sc4j.engine.content.type.UnitType, int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.PlacementLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer {
+  public boolean isBuildable();
+  public boolean isShown();
+  public int getCenterX();
+  public int getCenterY();
+  public org.fogofwarlabs.sc4j.engine.client.world.PlacementGhost getGhost();
+  public org.fogofwarlabs.sc4j.engine.client.world.PlacementLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.world.WorldPicker);
+  public org.fogofwarlabs.sc4j.engine.content.type.UnitType getType();
+  public static final int BLOCKED_GHOST_COLOR = -8355680;
+  public static final int GHOST_COLOR = -96;
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+  public void hide();
+  public void moveTo(float, float);
+  public void setGhost(org.fogofwarlabs.sc4j.engine.client.world.PlacementGhost);
+  public void show(org.fogofwarlabs.sc4j.engine.content.type.UnitType, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.ProjectileSprite {
+  public int getImpactStepFrames();
+  public int getStepFrames();
+  public int selectFrame(int, int);
+  public int selectImpactFrame(int);
+  public org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet> getImpactSheets();
+  public org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet> getSheets();
+  public org.fogofwarlabs.sc4j.engine.client.world.ProjectileSprite(org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet>, int, int, org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet>, int);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet getImpactSheet();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet getSheet();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.ProjectileSpriteLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer,java.lang.AutoCloseable {
+  public int getImpactCount();
+  public org.fogofwarlabs.sc4j.engine.client.world.ProjectileSpriteLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.MotionProfile, org.fogofwarlabs.sc4j.engine.client.world.ProjectileSprite>);
+  public void close();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.RallyLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer {
+  public org.fogofwarlabs.sc4j.engine.client.world.RallyLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.command.Selection);
+  public static final int RALLY_COLOR = -254787360;
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.world.ScrollRate {
+  public abstract float getEdgeDistance(int, long, float);
+  public abstract float getKeyDistance(int, long, float);
+  public abstract int getStepCount();
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.world.ScrollStepTable {
+  public abstract int getSpeedCount();
+  public abstract int getStep(int, int);
+  public abstract int getStepCount();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.SelectionBox {
+  public boolean handleInput(org.fogofwarlabs.sc4j.engine.client.input.InputEvent);
+  public boolean isDragging();
+  public float getBottom();
+  public float getLeft();
+  public float getRight();
+  public float getTop();
+  public org.fogofwarlabs.sc4j.engine.client.world.SelectionBox(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.world.WorldPicker, org.fogofwarlabs.sc4j.engine.client.command.OrderedSelection);
+  public org.fogofwarlabs.sc4j.engine.client.world.SelectionBox(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.world.WorldPicker, org.fogofwarlabs.sc4j.engine.client.command.OrderedSelection, org.fogofwarlabs.sc4j.engine.client.command.SelectionRules<org.fogofwarlabs.sc4j.engine.entity.Unit>);
+  public static final float DRAG_DISTANCE = 4.0f;
+  public void cancel();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.SelectionLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer {
+  public org.fogofwarlabs.sc4j.engine.client.world.SelectionLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.command.Selection, org.fogofwarlabs.sc4j.engine.client.world.SelectionBox);
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.StatusBarUtils {
+  public static final int CRITICAL_COLOR = -533190401;
+  public static final int CRITICAL_PERCENT = 33;
+  public static final int DAMAGE_LAYER_COLOR = 813752575;
+  public static final int EMPTY_COLOR = 538976448;
+  public static final int HIT_POINT_COLOR = 817901823;
+  public static final int WOUNDED_COLOR = -524275457;
+  public static final int WOUNDED_PERCENT = 66;
+  public static int findHitPointColor(int, int);
+  public static void drawBar(org.fogofwarlabs.sc4j.engine.client.render.Canvas, float, float, float, float, int, int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.SteppedScrollRate implements org.fogofwarlabs.sc4j.engine.client.world.ScrollRate {
+  public float getEdgeDistance(int, long, float);
+  public float getKeyDistance(int, long, float);
+  public int getEdgeSpeed();
+  public int getKeySpeed();
+  public int getStepCount();
+  public org.fogofwarlabs.sc4j.engine.client.world.ScrollStepTable getSteps();
+  public org.fogofwarlabs.sc4j.engine.client.world.SteppedScrollRate(org.fogofwarlabs.sc4j.engine.client.world.ScrollStepTable);
+  public void setEdgeSpeed(int);
+  public void setKeySpeed(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.TerrainColors {
+  public int getColor(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, int, int);
+  public int getDrawColor(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, int, int);
+  public int getImageHeight(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection);
+  public int getImageWidth(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection);
+  public int[] createImage(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection);
+  public int[] createImage(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection, int, int);
+  public org.fogofwarlabs.sc4j.engine.client.world.TerrainColors();
+  public org.fogofwarlabs.sc4j.engine.client.world.TerrainColors(int[], int);
+  public static int[] findPixelTiles(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.TerrainLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer {
+  public org.fogofwarlabs.sc4j.engine.client.world.TerrainLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.world.TerrainColors);
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.TilesetLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer,java.lang.AutoCloseable {
+  public org.fogofwarlabs.sc4j.engine.client.world.TilesetLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.TileGraphics>, org.fogofwarlabs.sc4j.engine.map.TilesetLegend, org.fogofwarlabs.sc4j.engine.map.TileCodeGrid);
+  public void close();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.UnitDrawOrder {
+  public java.util.List<org.fogofwarlabs.sc4j.engine.entity.Unit> sort(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.projection.WorldProjection);
+  public org.fogofwarlabs.sc4j.engine.client.world.UnitDrawOrder();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.UnitLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer {
+  public org.fogofwarlabs.sc4j.engine.client.world.UnitLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView);
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.world.UnitPickOrder {
+  public abstract org.fogofwarlabs.sc4j.engine.entity.Unit findUnitAt(int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.UnitPose extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.world.UnitPose> {
+  public static final org.fogofwarlabs.sc4j.engine.client.world.UnitPose ATTACKING;
+  public static final org.fogofwarlabs.sc4j.engine.client.world.UnitPose CONSTRUCTING;
+  public static final org.fogofwarlabs.sc4j.engine.client.world.UnitPose IDLE;
+  public static final org.fogofwarlabs.sc4j.engine.client.world.UnitPose MOVING;
+  public static org.fogofwarlabs.sc4j.engine.client.world.UnitPose valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.client.world.UnitPose[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.UnitSprite {
+  public int getColumnCount();
+  public int getRowCount();
+  public int getStepFrames();
+  public int selectFrame(org.fogofwarlabs.sc4j.engine.client.view.UnitView, int, int);
+  public int selectIdleFrame();
+  public org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet> getSheets();
+  public org.fogofwarlabs.sc4j.engine.client.world.UnitPose findPose(org.fogofwarlabs.sc4j.engine.client.view.UnitView);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet getSheet();
+  public static final int DEFAULT_STEP_FRAMES = 4;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.UnitSprite$Builder {
+  public org.fogofwarlabs.sc4j.engine.client.world.UnitSprite build();
+  public org.fogofwarlabs.sc4j.engine.client.world.UnitSprite$Builder setColumns(org.fogofwarlabs.sc4j.engine.client.world.UnitPose, int...);
+  public org.fogofwarlabs.sc4j.engine.client.world.UnitSprite$Builder setStepFrames(int);
+  public org.fogofwarlabs.sc4j.engine.client.world.UnitSprite$Builder(org.fogofwarlabs.sc4j.engine.client.display.DetailSet<org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet>, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.UnitSpriteLayer implements org.fogofwarlabs.sc4j.engine.client.render.WorldLayer,org.fogofwarlabs.sc4j.engine.client.world.PlacementGhost,java.lang.AutoCloseable {
+  public org.fogofwarlabs.sc4j.engine.client.world.UnitSpriteLayer(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.view.GameView, java.util.function.Function<org.fogofwarlabs.sc4j.engine.content.type.UnitType, org.fogofwarlabs.sc4j.engine.client.world.UnitSprite>);
+  public void close();
+  public void draw(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport);
+  public void drawGhost(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport, org.fogofwarlabs.sc4j.engine.content.type.UnitType, int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.ViewJumps {
+  public int getSlotCount();
+  public org.fogofwarlabs.sc4j.engine.client.world.ViewJumps(org.fogofwarlabs.sc4j.engine.client.world.CameraControl, int, int);
+  public org.fogofwarlabs.sc4j.engine.client.world.ViewJumps(org.fogofwarlabs.sc4j.engine.client.world.CameraControl, org.fogofwarlabs.sc4j.engine.client.world.ViewJumps$AlertPosition, int, int);
+  public void centerOn(int, int);
+  public void jumpToAlert();
+  public void jumpToSlot(int);
+  public void saveSlot(int);
+  public void startAlert();
+  public void storeAlert(int, int);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.client.world.ViewJumps$AlertPosition {
+  public abstract int getAlertX();
+  public abstract int getAlertY();
+  public abstract void setAlert(int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.VisibleCellRange {
+  public int getFirstColumn();
+  public int getFirstRow();
+  public int getLastColumn();
+  public int getLastRow();
+  public org.fogofwarlabs.sc4j.engine.client.world.VisibleCellRange();
+  public void outlineCell(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport, org.fogofwarlabs.sc4j.engine.map.grid.GridTopology, int, int, float[]);
+  public void update(org.fogofwarlabs.sc4j.engine.client.render.WorldViewport, org.fogofwarlabs.sc4j.engine.map.grid.GridTopology);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.world.WorldPicker implements org.fogofwarlabs.sc4j.engine.client.command.TargetPicker {
+  public boolean contains(float, float);
+  public int getScreenHeight();
+  public int getScreenWidth();
+  public int toWorldX(float, float);
+  public int toWorldY(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.command.CommandTarget pick(float, float);
+  public org.fogofwarlabs.sc4j.engine.client.world.WorldPicker(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.world.Camera);
+  public org.fogofwarlabs.sc4j.engine.client.world.WorldPicker(org.fogofwarlabs.sc4j.engine.client.view.GameView, org.fogofwarlabs.sc4j.engine.client.world.Camera, org.fogofwarlabs.sc4j.engine.client.world.UnitPickOrder);
+  public org.fogofwarlabs.sc4j.engine.entity.Unit pickUnit(float, float);
+  public void outlineOnScreen(float, float, float, float, float[]);
+}

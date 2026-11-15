@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "id": "demo",
+  "name": {"en": "SC4J Demo: Dawnhold and Cindermaw", "ko": "SC4J 데모: 던홀드와 신더모"},
+  "version": "0.1.0",
+  "engine": "0.1",
+  "entry": "org.fogofwarlabs.sc4j.demo.DemoMod",
+  "description": {
+    "en": "Real-time strategy demo on the SC4J engine. Dawnhold against Cindermaw.",
+    "ko": "SC4J 엔진 실시간 전략 데모. 던홀드 대 신더모."
+  },
+  "authors": ["Fog of War Labs"],
+  "notices": [
+    {
+      "en": "Pictures made from CC0 models and textures by Kay Lousberg (KayKit) and Poly Haven.",
+      "ko": "그림 원본: Kay Lousberg(KayKit), Poly Haven의 CC0 모델과 텍스처."
+    }
+  ],
+  "website": "https://github.com/fogofwarlabs/sc4j",
+  "images": {"icon": "meta/icon.png", "banner": "meta/banner.png"}
+}

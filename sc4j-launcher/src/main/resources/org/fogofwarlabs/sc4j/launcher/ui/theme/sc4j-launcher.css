@@ -1,0 +1,1343 @@
+/*
+ * SC4J launcher theme (JavaFX CSS).
+ *
+ * Dark metal panels, cyan accents and chamfered controls, built on top of Modena. Every colour comes from the
+ * looked-up colours ("tokens") in the .root block; components use only the semantic tokens, never raw hex values,
+ * except for translucent washes (JavaFX CSS cannot add alpha to a looked-up colour).
+ *
+ * Layers of this file, in order:
+ *   1. Tokens: raw palette, semantic colours, paints, Modena mapping.
+ *   2. Typography.
+ *   3. Layout utilities (spacing scale).
+ *   4. Application chrome: backdrop, app bar, navigation, status bar.
+ *   5. Surfaces: panel, panel header, sunken area, banner, notices, modal scrim.
+ *   6. Controls: button, text input, combo box, check box, spinner, list view, tab pane, scroll bar, progress, tooltip,
+ *      dialog, separator, hyperlink.
+ *   7. Launcher specific parts: badges, status markers, form fields, log and code areas.
+ *
+ * State pseudo-classes added by the launcher (set with Node.pseudoClassStateChanged):
+ *   :invalid   on a text field, combo box, spinner or check box whose value fails declarative validation.
+ *
+ * Fonts: JavaFX CSS accepts one family per declaration. Segoe UI ships with Windows 10 and 11, Cascadia Mono with
+ * Windows 11. When either is missing, load sc4j-launcher-portable.css after this file. For a Korean UI, also load
+ * sc4j-launcher-ko.css (Malgun Gothic).
+ * Images are resolved relative to this file.
+ */
+
+/* ===================================================================================================================
+ * 1. Tokens
+ * =================================================================================================================== */
+
+.root {
+    /* Raw palette. Steel, cyan and green are taken from the SC4J / Fog of War Labs logos (docs/branding/README.md). */
+    -sc4j-void: #020509;
+    -sc4j-ink-950: #05090e;
+    -sc4j-ink-900: #0a1119;
+    -sc4j-ink-850: #0f1822;
+    -sc4j-ink-800: #14202c;
+    -sc4j-ink-700: #1b2a39;
+    -sc4j-ink-600: #253748;
+    -sc4j-steel-700: #26394f;
+    -sc4j-steel-500: #4b6687;
+    -sc4j-steel-300: #8aa3c2;
+    -sc4j-steel-100: #e2edfa;
+    -sc4j-cyan-900: #0c3343;
+    -sc4j-cyan-700: #1477c9;
+    -sc4j-cyan-600: #1a9fd8;
+    -sc4j-cyan-500: #38d6ff;
+    -sc4j-cyan-200: #b9f3ff;
+    -sc4j-green-800: #14614a;
+    -sc4j-green-500: #3fd39a;
+    -sc4j-amber-800: #6b4a12;
+    -sc4j-amber-500: #ffb547;
+    -sc4j-red-800: #7a1c1f;
+    -sc4j-red-500: #ff5a52;
+    -sc4j-red-200: #ffc9c4;
+
+    /* Semantic colours: components use these. */
+    -sc4j-bg: -sc4j-ink-950;
+    -sc4j-surface: -sc4j-ink-850;
+    -sc4j-surface-raised: -sc4j-ink-800;
+    -sc4j-surface-sunken: -sc4j-void;
+    -sc4j-border: -sc4j-ink-600;
+    -sc4j-border-strong: -sc4j-steel-500;
+    -sc4j-accent: -sc4j-cyan-500;
+    -sc4j-accent-strong: -sc4j-cyan-200;
+    -sc4j-accent-deep: -sc4j-cyan-600;
+    -sc4j-accent-muted: -sc4j-cyan-900;
+    -sc4j-text: #d6e4f0;
+    -sc4j-text-strong: -sc4j-steel-100;
+    -sc4j-text-muted: #8a9cb0;
+    -sc4j-text-faint: #56677a;
+    -sc4j-text-on-accent: #03141c;
+    -sc4j-success: -sc4j-green-500;
+    -sc4j-success-deep: -sc4j-green-800;
+    -sc4j-warning: -sc4j-amber-500;
+    -sc4j-warning-deep: -sc4j-amber-800;
+    -sc4j-danger: -sc4j-red-500;
+    -sc4j-danger-deep: -sc4j-red-800;
+    -sc4j-danger-text: -sc4j-red-200;
+
+    /* Paints (gradients). The steel edge is lit from the upper left like the logo frame. */
+    -sc4j-steel-edge: linear-gradient(to bottom right, -sc4j-steel-300 0%, -sc4j-steel-500 14%, -sc4j-steel-700 45%, #141f2b 100%);
+    -sc4j-panel-fill: linear-gradient(to bottom, #162230 0%, -sc4j-ink-850 45%, #0c141d 100%);
+    -sc4j-header-fill: linear-gradient(to right, #13303d 0%, #111d29 45%, #0f1822 100%);
+    -sc4j-input-edge: linear-gradient(to bottom, #0b1118 0%, #2b3d50 100%);
+    -sc4j-input-fill: linear-gradient(to bottom, #020509 0%, #070d13 100%);
+    -sc4j-button-edge: linear-gradient(to bottom right, #7d97b5 0%, #3a5069 40%, #1c2a38 100%);
+    -sc4j-button-fill: linear-gradient(to bottom, #22344a 0%, #172433 50%, #101b26 100%);
+    -sc4j-button-fill-hover: linear-gradient(to bottom, #284058 0%, #1b2c3d 50%, #132130 100%);
+    -sc4j-button-fill-pressed: linear-gradient(to bottom, #0c151e 0%, #142130 100%);
+    -sc4j-accent-edge: linear-gradient(to bottom right, -sc4j-cyan-200 0%, -sc4j-accent 40%, -sc4j-accent-deep 100%);
+    -sc4j-primary-fill: linear-gradient(to bottom, #8fe9ff 0%, -sc4j-accent 42%, -sc4j-accent-deep 100%);
+    -sc4j-primary-fill-hover: linear-gradient(to bottom, #b9f3ff 0%, #5fdfff 42%, #22b3ea 100%);
+    -sc4j-primary-fill-pressed: linear-gradient(to bottom, -sc4j-accent-deep 0%, #1fb6ec 100%);
+    -sc4j-danger-edge: linear-gradient(to bottom right, #ff9a93 0%, -sc4j-danger 40%, #8f2420 100%);
+    -sc4j-danger-fill: linear-gradient(to bottom, #4a171a 0%, #2f0d10 55%, #24090b 100%);
+    -sc4j-danger-fill-hover: linear-gradient(to bottom, #5e1d21 0%, #3d1114 55%, #2c0b0e 100%);
+
+    /* Modena mapping, so that controls this file does not restyle still come out dark. */
+    -fx-base: -sc4j-ink-800;
+    -fx-background: -sc4j-bg;
+    -fx-control-inner-background: -sc4j-ink-950;
+    -fx-control-inner-background-alt: -sc4j-ink-900;
+    -fx-accent: -sc4j-accent-deep;
+    -fx-default-button: -sc4j-accent;
+    -fx-focus-color: -sc4j-accent;
+    -fx-faint-focus-color: #38d6ff22;
+    -fx-light-text-color: -sc4j-text;
+    -fx-mid-text-color: -sc4j-text-muted;
+    -fx-dark-text-color: -sc4j-text-on-accent;
+    -fx-selection-bar: -sc4j-accent-deep;
+    -fx-selection-bar-non-focused: -sc4j-ink-600;
+    -fx-box-border: -sc4j-border;
+    -fx-text-box-border: -sc4j-border;
+
+    -fx-background-color: -sc4j-bg;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+}
+
+/* ===================================================================================================================
+ * 2. Typography
+ *    display font: Segoe UI Semibold (titles, headings, buttons, navigation, labels); Segoe UI Bold for the largest
+ *                  titles and badges
+ *    body font:    Segoe UI (root default)
+ *    mono font:    Cascadia Mono (logs, paths, addresses)
+ * =================================================================================================================== */
+
+.label {
+    -fx-text-fill: -sc4j-text;
+}
+
+.text-display {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sc4j-text-strong;
+}
+
+.text-title {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 21px;
+    -fx-text-fill: -sc4j-text-strong;
+}
+
+.text-subtitle {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 16px;
+    -fx-text-fill: -sc4j-text;
+}
+
+.text-heading {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 13px;
+    -fx-text-fill: -sc4j-accent;
+}
+
+.text-body {
+    -fx-font-size: 13px;
+    -fx-text-fill: -sc4j-text;
+    -fx-line-spacing: 2px;
+}
+
+.text-caption {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -sc4j-text-muted;
+}
+
+.text-mono {
+    -fx-font-family: "Cascadia Mono";
+    -fx-font-size: 12px;
+}
+
+.text-muted {
+    -fx-text-fill: -sc4j-text-muted;
+}
+
+.text-faint {
+    -fx-text-fill: -sc4j-text-faint;
+}
+
+.text-accent {
+    -fx-text-fill: -sc4j-accent;
+}
+
+.text-success {
+    -fx-text-fill: -sc4j-success;
+}
+
+.text-warning {
+    -fx-text-fill: -sc4j-warning;
+}
+
+.text-danger {
+    -fx-text-fill: -sc4j-danger;
+}
+
+/* ===================================================================================================================
+ * 3. Layout utilities. Spacing scale: xs 4, s 8, m 12, l 16, xl 24, xxl 32 (pixels).
+ *    Use these classes instead of setSpacing / setPadding in code, so the scale stays in one place.
+ * =================================================================================================================== */
+
+.spacing-xs { -fx-spacing: 4; -fx-hgap: 4; -fx-vgap: 4; }
+.spacing-s { -fx-spacing: 8; -fx-hgap: 8; -fx-vgap: 8; }
+.spacing-m { -fx-spacing: 12; -fx-hgap: 12; -fx-vgap: 12; }
+.spacing-l { -fx-spacing: 16; -fx-hgap: 16; -fx-vgap: 16; }
+.spacing-xl { -fx-spacing: 24; -fx-hgap: 24; -fx-vgap: 24; }
+.spacing-xxl { -fx-spacing: 32; -fx-hgap: 32; -fx-vgap: 32; }
+
+.padding-s { -fx-padding: 8; }
+.padding-m { -fx-padding: 12; }
+.padding-l { -fx-padding: 16; }
+.padding-xl { -fx-padding: 24; }
+
+/* ===================================================================================================================
+ * 4. Application chrome
+ * =================================================================================================================== */
+
+/* Window background: the ground grid of the logo under a dark radial "sight" gradient. */
+.app-backdrop {
+    -fx-background-color: radial-gradient(center 50% 35%, radius 80%, #0e1c22 0%, #070d13 55%, -sc4j-void 100%);
+    -fx-background-image: url("images/grid-tile.png");
+    -fx-background-repeat: repeat;
+}
+
+/* Fog of war over the backdrop: clear in the middle, black at the edges. Mouse transparent. */
+.app-fog {
+    -fx-background-color: radial-gradient(center 50% 45%, radius 75%, transparent 0%, transparent 45%, #000000c0 100%);
+}
+
+.app-content {
+    -fx-padding: 16;
+}
+
+.app-bar {
+    -fx-background-color: -sc4j-steel-edge, linear-gradient(to bottom, #121d29 0%, #0a1119 100%);
+    -fx-background-insets: 0, 0 0 1 0;
+    -fx-padding: 0 16;
+    -fx-min-height: 56;
+    -fx-pref-height: 56;
+    -fx-spacing: 12;
+    -fx-alignment: center-left;
+}
+
+.app-title {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sc4j-text-strong;
+}
+
+/* The font's line box adds leading above and below each line; the negative spacing sets the two lines tight. */
+.app-brand {
+    -fx-spacing: -6;
+}
+
+.app-subtitle {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 10.5px;
+    -fx-text-fill: -sc4j-accent;
+}
+
+/* Top navigation: toggle buttons with a cyan bar under the selected item. */
+.toggle-button.nav-button {
+    -fx-background-radius: 0;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 3 0;
+    -fx-text-fill: -sc4j-text-muted;
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 14px;
+    -fx-padding: 0 14;
+    -fx-min-width: 0;
+    -fx-min-height: 55;
+    -fx-pref-height: 55;
+    -fx-effect: null;
+    -fx-cursor: hand;
+}
+
+.toggle-button.nav-button:hover,
+.toggle-button.nav-button:focused {
+    -fx-background-color: linear-gradient(to top, #38d6ff14 0%, transparent 100%);
+    -fx-text-fill: -sc4j-text;
+}
+
+.toggle-button.nav-button:selected,
+.toggle-button.nav-button:armed {
+    -fx-background-color: linear-gradient(to top, #38d6ff2e 0%, transparent 100%);
+    -fx-border-color: transparent transparent -sc4j-accent transparent;
+    -fx-text-fill: -sc4j-accent-strong;
+}
+
+.status-bar {
+    -fx-background-color: -sc4j-border, #070c12;
+    -fx-background-insets: 0, 1 0 0 0;
+    -fx-padding: 5 16;
+    -fx-spacing: 16;
+    -fx-alignment: center-left;
+}
+
+.status-bar .label {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -sc4j-text-muted;
+}
+
+/* ===================================================================================================================
+ * 5. Surfaces
+ * =================================================================================================================== */
+
+/* Raised metal panel: steel edge, dark brushed fill, soft drop shadow. Children: .panel-header and .panel-body. */
+.panel {
+    -fx-background-color: -sc4j-steel-edge, -sc4j-panel-fill;
+    -fx-background-insets: 0, 1;
+    -fx-effect: dropshadow(gaussian, #000000a0, 18, 0.15, 0, 4);
+}
+
+.panel-header {
+    -fx-background-color: -sc4j-header-fill;
+    -fx-background-insets: 1 1 0 1;
+    -fx-border-color: transparent transparent -sc4j-border -sc4j-accent;
+    -fx-border-width: 0 0 1 3;
+    -fx-border-insets: 1 0 0 1;
+    -fx-padding: 9 14 9 13;
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+.panel-header > .panel-title {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 13px;
+    -fx-text-fill: -sc4j-accent-strong;
+}
+
+.panel-body {
+    -fx-padding: 16;
+    -fx-spacing: 12;
+}
+
+/* Panel body whose content (a list) runs edge to edge. */
+.panel-body.flush {
+    -fx-padding: 0 1 0 1;
+    -fx-spacing: 0;
+}
+
+.panel-footer {
+    -fx-background-color: -sc4j-border, #0b131c;
+    -fx-background-insets: 0 1 1 1, 1 1 1 1;
+    -fx-padding: 10 16;
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+/* Sunken area inside a panel (metadata blocks, code). */
+.panel-sunken {
+    -fx-background-color: -sc4j-input-edge, -sc4j-surface-sunken;
+    -fx-background-insets: 0, 1;
+    -fx-padding: 12;
+    -fx-spacing: 8;
+}
+
+/* Failure report and other blocking errors. */
+.panel-danger {
+    -fx-background-color: -sc4j-danger-edge, linear-gradient(to bottom, #2a0d10 0%, #170709 100%);
+    -fx-background-insets: 0, 1;
+    -fx-border-color: transparent transparent transparent -sc4j-danger;
+    -fx-border-width: 0 0 0 4;
+    -fx-padding: 14 16;
+    -fx-spacing: 8;
+    -fx-effect: dropshadow(gaussian, #ff5a5233, 14, 0, 0, 0);
+}
+
+/* Mod banner frame. */
+.banner {
+    -fx-background-color: -sc4j-steel-edge, -sc4j-void;
+    -fx-background-insets: 0, 1;
+    -fx-padding: 1;
+    -fx-effect: dropshadow(gaussian, #000000a0, 18, 0.15, 0, 4);
+}
+
+.banner-caption {
+    -fx-background-color: linear-gradient(to top, #000000e0 0%, #000000a0 55%, transparent 100%);
+    -fx-padding: 28 18 14 18;
+    -fx-spacing: 14;
+    -fx-alignment: bottom-left;
+}
+
+/* Mod name and version line in the banner, set tight like the app brand. */
+.banner-heading {
+    -fx-spacing: -8;
+}
+
+/* Thumbnail frame (screenshots, icons). */
+.thumbnail {
+    -fx-background-color: -sc4j-border, -sc4j-void;
+    -fx-background-insets: 0, 1;
+    -fx-padding: 1;
+}
+
+.thumbnail:hover {
+    -fx-background-color: -sc4j-accent, -sc4j-void;
+}
+
+/* Inline notice: a bar on the left and a tinted wash. Variants: notice-info (default), -success, -warning, -danger. */
+.notice {
+    -fx-background-color: #0a1119, #38d6ff12;
+    -fx-border-color: transparent transparent transparent -sc4j-accent;
+    -fx-border-width: 0 0 0 3;
+    -fx-padding: 10 12;
+    -fx-spacing: 10;
+    -fx-alignment: top-left;
+}
+
+.notice .label {
+    -fx-text-fill: -sc4j-text;
+    -fx-font-size: 12px;
+}
+
+.notice-success {
+    -fx-background-color: #0a1119, #3fd39a12;
+    -fx-border-color: transparent transparent transparent -sc4j-success;
+}
+
+.notice-warning {
+    -fx-background-color: #0a1119, #ffb54714;
+    -fx-border-color: transparent transparent transparent -sc4j-warning;
+}
+
+.notice-danger {
+    -fx-background-color: #0a1119, #ff5a5216;
+    -fx-border-color: transparent transparent transparent -sc4j-danger;
+}
+
+/* Dims the launcher behind an in-scene dialog. */
+.modal-scrim {
+    -fx-background-color: #000000b0;
+}
+
+/* ===================================================================================================================
+ * 6. Controls
+ * =================================================================================================================== */
+
+/*
+ * Chamfered controls (buttons, badges, tabs): the launcher's ChamferUtils draws a region whose -fx-scale-shape and
+ * -fx-position-shape are false as its rectangle with 45-degree cuts, each as large in pixels as the background radius
+ * of its corner (top-left, top-right, bottom-right, bottom-left), at any size. The background is one fill without
+ * insets and the 1 px edge is the border, drawn inside along the cuts; the padding is one less where the border is.
+ */
+
+/* ---- Button: secondary is the default look; add .primary or .danger. Chamfered top-left and bottom-right. ---- */
+
+.button,
+.toggle-button {
+    -fx-scale-shape: false;
+    -fx-position-shape: false;
+    -fx-background-color: -sc4j-button-fill;
+    -fx-background-insets: 0;
+    -fx-background-radius: 6 0 6 0;
+    -fx-border-color: -sc4j-button-edge;
+    -fx-border-width: 1;
+    -fx-text-fill: -sc4j-text;
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 13.5px;
+    -fx-padding: 0 17;
+    -fx-min-width: 96;
+    -fx-min-height: 34;
+    -fx-pref-height: 34;
+    -fx-graphic-text-gap: 8;
+    -fx-cursor: hand;
+}
+
+.button:hover,
+.toggle-button:hover {
+    -fx-background-color: -sc4j-button-fill-hover;
+    -fx-border-color: -sc4j-accent-edge;
+    -fx-text-fill: -sc4j-text-strong;
+}
+
+.button:focused,
+.toggle-button:focused {
+    -fx-background-color: -sc4j-button-fill;
+    -fx-border-color: -sc4j-accent;
+}
+
+.button:armed,
+.toggle-button:armed,
+.toggle-button:selected {
+    -fx-background-color: -sc4j-button-fill-pressed;
+    -fx-border-color: -sc4j-accent-deep;
+    -fx-text-fill: -sc4j-accent-strong;
+}
+
+.button:disabled,
+.toggle-button:disabled {
+    -fx-opacity: 0.45;
+    -fx-effect: null;
+}
+
+/* Primary: the one main action of a screen (Run, Save). The default button of a dialog looks the same. */
+.button.primary,
+.button:default {
+    -fx-background-color: -sc4j-primary-fill;
+    -fx-border-color: -sc4j-accent-strong;
+    -fx-text-fill: -sc4j-text-on-accent;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, #38d6ff59, 12, 0, 0, 0);
+}
+
+.button.primary:hover,
+.button:default:hover {
+    -fx-background-color: -sc4j-primary-fill-hover;
+    -fx-border-color: #ffffff;
+    -fx-text-fill: -sc4j-text-on-accent;
+    -fx-effect: dropshadow(gaussian, #38d6ff99, 16, 0.1, 0, 0);
+}
+
+.button.primary:armed,
+.button:default:armed {
+    -fx-background-color: -sc4j-primary-fill-pressed;
+    -fx-border-color: -sc4j-accent;
+    -fx-text-fill: -sc4j-text-on-accent;
+    -fx-effect: null;
+}
+
+/* A disabled Run button must still read as the Run button, so it keeps its shape and text but drops the colour. */
+.button.primary:disabled,
+.button:default:disabled {
+    -fx-opacity: 1;
+    -fx-background-color: linear-gradient(to bottom, #1b2836 0%, #131d28 100%);
+    -fx-border-color: #34495f;
+    -fx-text-fill: -sc4j-text-faint;
+    -fx-effect: null;
+}
+
+/* Danger: destructive actions (Remove). */
+.button.danger {
+    -fx-background-color: -sc4j-danger-fill;
+    -fx-border-color: -sc4j-danger-edge;
+    -fx-text-fill: -sc4j-danger-text;
+}
+
+.button.danger:hover {
+    -fx-background-color: -sc4j-danger-fill-hover;
+    -fx-border-color: #ffc9c4;
+    -fx-text-fill: #ffe4e1;
+    -fx-effect: dropshadow(gaussian, #ff5a5266, 12, 0, 0, 0);
+}
+
+.button.danger:armed {
+    -fx-background-color: #1c0608;
+    -fx-border-color: -sc4j-danger;
+}
+
+/* Size modifiers. */
+.button.small {
+    -fx-font-size: 12px;
+    -fx-padding: 0 11;
+    -fx-min-width: 64;
+    -fx-min-height: 26;
+    -fx-pref-height: 26;
+}
+
+.button.icon-button {
+    -fx-background-radius: 5 0 5 0;
+    -fx-padding: 0;
+    -fx-min-width: 34;
+    -fx-pref-width: 34;
+    -fx-max-width: 34;
+}
+
+/* ---- Text input (text field, text area, password field) ---- */
+
+.text-input {
+    -fx-background-color: -sc4j-input-edge, -sc4j-input-fill;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 0;
+    -fx-text-fill: -sc4j-text;
+    -fx-prompt-text-fill: -sc4j-text-faint;
+    -fx-highlight-fill: -sc4j-accent-deep;
+    -fx-highlight-text-fill: #ffffff;
+    -fx-padding: 7 10;
+    -fx-min-height: 34;
+}
+
+.text-input:hover {
+    -fx-background-color: -sc4j-steel-500, -sc4j-input-fill;
+}
+
+.text-input:focused {
+    -fx-background-color: -sc4j-accent, -sc4j-input-fill;
+    -fx-effect: dropshadow(gaussian, #38d6ff4d, 8, 0, 0, 0);
+}
+
+.text-input:readonly {
+    -fx-background-color: -sc4j-border, -sc4j-ink-900;
+    -fx-text-fill: -sc4j-text-muted;
+    -fx-effect: null;
+}
+
+.text-input:invalid {
+    -fx-background-color: -sc4j-danger, linear-gradient(to bottom, #1f070a 0%, #130507 100%);
+}
+
+.text-input:invalid:focused {
+    -fx-effect: dropshadow(gaussian, #ff5a5259, 8, 0, 0, 0);
+}
+
+.text-input:disabled {
+    -fx-opacity: 0.45;
+}
+
+.text-area {
+    -fx-padding: 0;
+    -fx-cursor: default;
+}
+
+.text-area .content {
+    -fx-background-color: transparent;
+    -fx-padding: 7 10;
+    -fx-cursor: text;
+}
+
+.text-area .scroll-pane,
+.text-area .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* ---- Combo box ---- */
+
+.combo-box-base {
+    -fx-background-color: -sc4j-input-edge, -sc4j-input-fill;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+    -fx-min-height: 34;
+    -fx-cursor: hand;
+}
+
+.combo-box-base:hover {
+    -fx-background-color: -sc4j-steel-500, -sc4j-input-fill;
+}
+
+.combo-box-base:focused,
+.combo-box-base:showing {
+    -fx-background-color: -sc4j-accent, -sc4j-input-fill;
+    -fx-effect: dropshadow(gaussian, #38d6ff4d, 8, 0, 0, 0);
+}
+
+.combo-box-base:invalid {
+    -fx-background-color: -sc4j-danger, #130507;
+}
+
+.combo-box-base:disabled {
+    -fx-opacity: 0.45;
+}
+
+.combo-box > .list-cell {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: -sc4j-text;
+    -fx-padding: 7 10;
+}
+
+.combo-box-base > .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 12 0 8;
+}
+
+.combo-box-base > .arrow-button > .arrow {
+    -fx-background-color: -sc4j-accent;
+    -fx-shape: "M0,0 L10,0 L5,6 Z";
+    -fx-padding: 3 5;
+}
+
+.combo-box-popup > .list-view {
+    -fx-background-color: -sc4j-accent, -sc4j-ink-900;
+    -fx-background-insets: 0, 1;
+    -fx-padding: 1;
+    -fx-effect: dropshadow(gaussian, #000000c0, 14, 0.2, 0, 4);
+}
+
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell {
+    -fx-padding: 7 10;
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
+}
+
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:hover {
+    -fx-background-color: #38d6ff1f;
+}
+
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected {
+    -fx-background-color: -sc4j-accent-deep;
+    -fx-text-fill: #ffffff;
+}
+
+/* ---- Check box ---- */
+
+.check-box {
+    -fx-text-fill: -sc4j-text;
+    -fx-label-padding: 0 0 0 8;
+    -fx-cursor: hand;
+}
+
+.check-box > .box {
+    -fx-background-color: -sc4j-input-edge, -sc4j-input-fill;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 0;
+    -fx-padding: 4;
+}
+
+.check-box > .box > .mark {
+    -fx-background-color: transparent;
+    -fx-padding: 5;
+}
+
+.check-box:hover > .box {
+    -fx-background-color: -sc4j-steel-300, -sc4j-input-fill;
+}
+
+.check-box:focused > .box {
+    -fx-background-color: -sc4j-accent, -sc4j-input-fill;
+}
+
+.check-box:selected > .box {
+    -fx-background-color: -sc4j-accent-strong, -sc4j-primary-fill;
+}
+
+.check-box:selected > .box > .mark {
+    -fx-background-color: -sc4j-text-on-accent;
+}
+
+.check-box:invalid > .box {
+    -fx-background-color: -sc4j-danger, #130507;
+}
+
+.check-box:disabled {
+    -fx-opacity: 0.45;
+}
+
+/* ---- Spinner ---- */
+
+.spinner {
+    -fx-background-color: -sc4j-input-edge, -sc4j-input-fill;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 0;
+    -fx-min-height: 34;
+}
+
+.spinner:focus-within {
+    -fx-background-color: -sc4j-accent, -sc4j-input-fill;
+    -fx-effect: dropshadow(gaussian, #38d6ff4d, 8, 0, 0, 0);
+}
+
+.spinner:invalid {
+    -fx-background-color: -sc4j-danger, #130507;
+}
+
+.spinner > .text-field {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-effect: null;
+}
+
+.spinner > .increment-arrow-button,
+.spinner > .decrement-arrow-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 4 10;
+    -fx-cursor: hand;
+}
+
+.spinner > .increment-arrow-button:hover,
+.spinner > .decrement-arrow-button:hover {
+    -fx-background-color: #38d6ff1f;
+}
+
+/* The indeterminate ProgressIndicator also has a child with the style class "spinner"; keep it plain. */
+.progress-indicator > .spinner {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-min-height: 0;
+    -fx-effect: null;
+}
+
+.spinner > .increment-arrow-button > .increment-arrow,
+.spinner > .decrement-arrow-button > .decrement-arrow {
+    -fx-background-color: -sc4j-accent;
+}
+
+/* ---- List view and cells. Selected cell: cyan bar on the left and a fading wash. ---- */
+
+.list-view {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.list-view:focused {
+    -fx-background-color: transparent;
+}
+
+.list-view > .corner {
+    -fx-background-color: transparent;
+}
+
+.list-view .placeholder .label {
+    -fx-text-fill: -sc4j-text-faint;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #8aa3c21a transparent;
+    -fx-border-width: 0 0 1 3;
+    -fx-text-fill: -sc4j-text;
+    -fx-padding: 10 12 10 11;
+}
+
+.list-cell:empty {
+    -fx-border-color: transparent;
+}
+
+.list-cell:filled:hover {
+    -fx-background-color: #8aa3c212;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: linear-gradient(to right, #38d6ff33 0%, #38d6ff0a 100%);
+    -fx-border-color: transparent transparent #38d6ff33 -sc4j-accent;
+}
+
+/* Main line of a rich list cell; add .text-mono for addresses and paths. */
+.list-title {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 14.5px;
+    -fx-text-fill: -sc4j-text-strong;
+}
+
+.list-title.text-mono {
+    -fx-font-family: "Cascadia Mono";
+    -fx-font-size: 13.5px;
+}
+
+/* ---- Tab pane: chamfered tabs, selected tab in cyan. ---- */
+
+.tab-pane {
+    -fx-tab-min-height: 30;
+    -fx-tab-max-height: 30;
+}
+
+.tab-pane > .tab-header-area {
+    -fx-padding: 0;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -sc4j-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-scale-shape: false;
+    -fx-position-shape: false;
+    -fx-background-color: -sc4j-ink-850;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0 8 0 0;
+    -fx-border-color: -sc4j-border;
+    -fx-border-width: 1 1 0 1;
+    -fx-padding: 3 21 4 13;
+    -fx-cursor: hand;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:hover {
+    -fx-background-color: -sc4j-ink-800;
+    -fx-border-color: -sc4j-steel-500;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: linear-gradient(to bottom, #15394a 0%, -sc4j-ink-850 100%);
+    -fx-border-color: -sc4j-accent;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab .tab-label {
+    -fx-text-fill: -sc4j-text-muted;
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 13px;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected .tab-label {
+    -fx-text-fill: -sc4j-accent-strong;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab .focus-indicator,
+.tab-pane:focused > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+}
+
+.tab-pane > .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* A text area that fills a tab joins the tab header: the header's bottom line is its top edge. */
+.tab-pane > .tab-content-area > .text-area {
+    -fx-background-insets: 0, 0 1 1 1;
+}
+
+/* ---- Scroll bar: thin steel thumb without arrow buttons. ---- */
+
+.scroll-bar {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 2;
+}
+
+.scroll-bar > .track,
+.scroll-bar > .track-background {
+    -fx-background-color: #ffffff08;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+.scroll-bar > .thumb {
+    -fx-background-color: -sc4j-steel-700;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+.scroll-bar > .thumb:hover {
+    -fx-background-color: -sc4j-steel-500;
+}
+
+.scroll-bar > .thumb:pressed {
+    -fx-background-color: -sc4j-accent-deep;
+}
+
+.scroll-bar > .increment-button,
+.scroll-bar > .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-bar:vertical > .increment-button > .increment-arrow,
+.scroll-bar:vertical > .decrement-button > .decrement-arrow {
+    -fx-shape: " ";
+    -fx-padding: 0 4 0 4;
+}
+
+.scroll-bar:horizontal > .increment-button > .increment-arrow,
+.scroll-bar:horizontal > .decrement-button > .decrement-arrow {
+    -fx-shape: " ";
+    -fx-padding: 4 0 4 0;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .corner {
+    -fx-background-color: transparent;
+}
+
+/* ---- Progress ---- */
+
+.progress-bar {
+    -fx-indeterminate-bar-length: 90;
+    -fx-indeterminate-bar-escape: true;
+    -fx-indeterminate-bar-flip: false;
+}
+
+.progress-bar > .track {
+    -fx-background-color: -sc4j-input-edge, -sc4j-input-fill;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 0;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: linear-gradient(to right, -sc4j-accent-deep 0%, -sc4j-accent 75%, -sc4j-accent-strong 100%);
+    -fx-background-insets: 3;
+    -fx-background-radius: 0;
+    -fx-padding: 6;
+}
+
+.progress-indicator {
+    -fx-progress-color: -sc4j-accent;
+}
+
+.progress-indicator > .determinate-indicator > .indicator {
+    -fx-background-color: -sc4j-border, -sc4j-surface-sunken;
+    -fx-background-insets: 0, 1;
+}
+
+.progress-indicator > .determinate-indicator > .progress {
+    -fx-background-color: -sc4j-accent;
+}
+
+.progress-indicator > .determinate-indicator > .percentage {
+    -fx-fill: -sc4j-text-muted;
+}
+
+/* ---- Tooltip. Add .error for a validation tooltip. ---- */
+
+.tooltip {
+    -fx-background-color: -sc4j-accent-deep, #0a1520;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 0;
+    -fx-text-fill: -sc4j-text;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-padding: 6 10;
+    -fx-effect: dropshadow(gaussian, #000000c0, 10, 0.2, 0, 3);
+}
+
+.tooltip.error {
+    -fx-background-color: -sc4j-danger, #1f080a;
+    -fx-text-fill: -sc4j-danger-text;
+}
+
+/* ---- Dialog ---- */
+
+.dialog-pane {
+    -fx-background-color: -sc4j-steel-edge, -sc4j-panel-fill;
+    -fx-background-insets: 0, 1;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, #000000e0, 30, 0.25, 0, 8);
+}
+
+.dialog-pane > .header-panel,
+.dialog-pane .dialog-header {
+    -fx-background-color: -sc4j-header-fill;
+    -fx-background-insets: 1 1 0 1;
+    -fx-border-color: transparent transparent -sc4j-border -sc4j-accent;
+    -fx-border-width: 0 0 1 3;
+    -fx-border-insets: 1 0 0 1;
+    -fx-padding: 16 20;
+    -fx-spacing: 16;
+    -fx-alignment: center-left;
+}
+
+.dialog-pane > .header-panel .label {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 18px;
+    -fx-text-fill: -sc4j-text-strong;
+}
+
+.dialog-pane > .content {
+    -fx-padding: 18 20;
+    -fx-spacing: 12;
+}
+
+.dialog-pane > .content.label {
+    -fx-text-fill: -sc4j-text;
+}
+
+.dialog-pane > .button-bar > .container {
+    -fx-padding: 0 20 18 20;
+}
+
+/* ---- Separator ---- */
+
+.separator:horizontal .line {
+    -fx-border-color: -sc4j-border transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-border-insets: 0;
+}
+
+.separator:vertical .line {
+    -fx-border-color: transparent transparent transparent -sc4j-border;
+    -fx-border-width: 0 0 0 1;
+    -fx-border-insets: 0;
+}
+
+/* ---- Hyperlink ---- */
+
+.hyperlink {
+    -fx-text-fill: -sc4j-accent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-underline: false;
+}
+
+.hyperlink:hover {
+    -fx-text-fill: -sc4j-accent-strong;
+    -fx-underline: true;
+}
+
+.hyperlink:visited {
+    -fx-text-fill: -sc4j-accent;
+}
+
+/* ===================================================================================================================
+ * 7. Launcher parts
+ * =================================================================================================================== */
+
+/* ---- Badge: a small chamfered status tag. Variants: badge-neutral (default), -accent, -success, -warning, -danger. */
+
+.badge {
+    -fx-scale-shape: false;
+    -fx-position-shape: false;
+    -fx-background-color: #111b26;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4 0 4 0;
+    -fx-border-color: -sc4j-steel-500;
+    -fx-border-width: 1;
+    -fx-text-fill: -sc4j-text-muted;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 10.5px;
+    -fx-font-weight: bold;
+    -fx-padding: 1 8;
+}
+
+.badge-accent {
+    -fx-background-color: #0b2632;
+    -fx-border-color: -sc4j-accent;
+    -fx-text-fill: -sc4j-accent;
+}
+
+.badge-success {
+    -fx-background-color: #0b261d;
+    -fx-border-color: -sc4j-success;
+    -fx-text-fill: -sc4j-success;
+}
+
+.badge-warning {
+    -fx-background-color: #2a1d07;
+    -fx-border-color: -sc4j-warning;
+    -fx-text-fill: -sc4j-warning;
+}
+
+.badge-danger {
+    -fx-background-color: #2a0b0d;
+    -fx-border-color: -sc4j-danger;
+    -fx-text-fill: -sc4j-danger;
+}
+
+/* ---- Status marker: a small diamond, the cell shape of the logo grid. ---- */
+
+.status-marker {
+    -fx-shape: "M5,0 L10,5 L5,10 L0,5 Z";
+    -fx-background-color: -sc4j-text-faint;
+    -fx-min-width: 10;
+    -fx-min-height: 10;
+    -fx-max-width: 10;
+    -fx-max-height: 10;
+}
+
+.status-marker-accent {
+    -fx-background-color: -sc4j-accent;
+    -fx-effect: dropshadow(gaussian, #38d6ff99, 6, 0.3, 0, 0);
+}
+
+.status-marker-success {
+    -fx-background-color: -sc4j-success;
+    -fx-effect: dropshadow(gaussian, #3fd39a99, 6, 0.3, 0, 0);
+}
+
+.status-marker-warning {
+    -fx-background-color: -sc4j-warning;
+}
+
+.status-marker-danger {
+    -fx-background-color: -sc4j-danger;
+    -fx-effect: dropshadow(gaussian, #ff5a5299, 6, 0.3, 0, 0);
+}
+
+/* ---- Form field generated from a settings schema entry: label, control, help or message. ---- */
+
+.form {
+    -fx-spacing: 12;
+}
+
+.field {
+    -fx-spacing: 5;
+}
+
+.field-label {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 13px;
+    -fx-text-fill: -sc4j-text;
+}
+
+.field-required {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 13px;
+    -fx-text-fill: -sc4j-accent;
+}
+
+.field-help {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -sc4j-text-faint;
+}
+
+/* Validation message under a field. The graphic is a .field-message-icon region. */
+.field-message {
+    -fx-font-size: 12px;
+    -fx-text-fill: -sc4j-danger;
+    -fx-graphic-text-gap: 6;
+}
+
+.field-message-icon {
+    -fx-shape: "M5,0 L10,5 L5,10 L0,5 Z";
+    -fx-background-color: -sc4j-danger;
+    -fx-min-width: 9;
+    -fx-min-height: 9;
+    -fx-max-width: 9;
+    -fx-max-height: 9;
+}
+
+/* Summary next to the Run button when a setting fails validation. */
+.run-blocker {
+    -fx-text-fill: -sc4j-danger;
+    -fx-font-size: 12px;
+}
+
+/* The logged-in account at the right end of the app bar; its graphic is the status marker of the account's state. */
+.button.account-button {
+    -fx-graphic-text-gap: 8;
+}
+
+/* The name of the selected account on the login step; the tag follows it in the muted colour. */
+.account-tag {
+    -fx-text-fill: -sc4j-text-muted;
+}
+
+/* ---- Account menu: a panel under the app bar with flat entries. The layer under it closes it on a click outside. ---- */
+
+.menu-layer {
+    -fx-background-color: transparent;
+}
+
+.account-menu {
+    -fx-padding: 6 1;
+}
+
+.account-menu-header {
+    -fx-padding: 8 16 10 16;
+}
+
+.account-menu > .separator {
+    -fx-padding: 4 0;
+}
+
+.button.menu-item {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: null;
+    -fx-alignment: center-left;
+    -fx-padding: 0 16;
+    -fx-min-width: 0;
+    -fx-min-height: 34;
+    -fx-pref-height: 34;
+    -fx-font-size: 13px;
+    -fx-text-fill: -sc4j-text;
+    -fx-effect: null;
+}
+
+.button.menu-item:hover,
+.button.menu-item:focused {
+    -fx-background-color: linear-gradient(to right, #38d6ff26 0%, #38d6ff08 100%);
+    -fx-text-fill: -sc4j-text-strong;
+}
+
+.button.menu-item:armed {
+    -fx-background-color: #38d6ff33;
+    -fx-text-fill: -sc4j-accent-strong;
+}
+
+/* The friends in the Friends dialog and the conversations and whispers in the Whispers dialog, in a sunken frame. */
+.list-view.friend-list,
+.list-view.conversation-list,
+.list-view.whisper-list {
+    -fx-background-color: -sc4j-input-edge, -sc4j-surface-sunken;
+    -fx-background-insets: 0, 1;
+    -fx-padding: 1;
+}
+
+/* ---- Key/value metadata grid. ---- */
+
+.meta-key {
+    -fx-font-size: 12px;
+    -fx-text-fill: -sc4j-text-faint;
+}
+
+.meta-value {
+    -fx-font-size: 12px;
+    -fx-text-fill: -sc4j-text;
+}
+
+/* ---- Log and code areas (read-only text areas in the mono font). ---- */
+
+.text-area.log-area,
+.text-area.code-area {
+    -fx-background-color: -sc4j-border, #02050a;
+    -fx-background-insets: 0, 1;
+    -fx-text-fill: #a9bccd;
+    -fx-font-family: "Cascadia Mono";
+    -fx-font-size: 12px;
+    -fx-highlight-fill: #1a9fd880;
+    -fx-highlight-text-fill: #ffffff;
+    -fx-effect: null;
+}
+
+.text-area.log-area:focused,
+.text-area.code-area:focused {
+    -fx-background-color: -sc4j-accent-deep, #02050a;
+}
+
+.text-area.log-area .content,
+.text-area.code-area .content {
+    -fx-padding: 8 12;
+}
+
+/* Last log lines inside the failure report. */
+.log-excerpt {
+    -fx-background-color: #00000080;
+    -fx-padding: 8 12;
+}
+
+.log-excerpt .label {
+    -fx-font-family: "Cascadia Mono";
+    -fx-font-size: 12px;
+    -fx-text-fill: -sc4j-danger-text;
+}
+
+/* ---- Component gallery only: colour token swatch. ---- */
+
+.swatch {
+    -fx-min-width: 44;
+    -fx-min-height: 28;
+    -fx-max-width: 44;
+    -fx-max-height: 28;
+    -fx-border-color: #ffffff24;
+    -fx-border-width: 1;
+}

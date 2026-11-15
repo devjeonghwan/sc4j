@@ -1,0 +1,55 @@
+plugins {
+    id 'java-library'
+    id 'application'
+}
+
+// The engine executable: it reads a mod jar's manifest and settings, loads the mod in its own class loader and runs it.
+// It never depends on a mod module; a mod reaches it only as a jar named on the command line.
+dependencies {
+    implementation project(':sc4j-engine')
+    // The Beacon.Link client behind the engine's Beacon.Link interface of the launch request; it opens nothing until a mod asks.
+    implementation project(':sc4j-beaconlink')
+
+    // Test mod jars (org.fogofwarlabs.sc4j.manifest.test.TestJarUtils).
+    testImplementation testFixtures(project(':sc4j-mod-manifest'))
+}
+
+application {
+    applicationName = 'sc4j-runtime'
+    mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
+}
+
+// Until the engine owns its libraries, a mod's third-party libraries (LWJGL, FFmpeg, ...) are copied next to the runtime's
+// own jars when an install is assembled; the start scripts therefore put every jar of lib/ on the class path.
+tasks.named('startScripts') {
+    doLast {
+        windowsScript.text = windowsScript.text.replaceFirst(/(?m)^set CLASSPATH=.*$/, 'set CLASSPATH=%APP_HOME%\\\\lib\\\\*')
+        unixScript.text = unixScript.text.replaceFirst(/(?m)^CLASSPATH=.*$/, 'CLASSPATH=\\$APP_HOME/lib/*')
+    }
+}
+
+// The test of the user package (@RequiresDistribution, tag distribution) unpacks build/distributions/SC4J-<version>.zip, which the root
+// project's distribution task builds with every mod, and starts its runtime: it runs only in its own task, never in test, check or
+// integrationTest (integrationTest includes the tag integration only).
+tasks.named('test') {
+    options {
+        excludeTags 'distribution'
+    }
+}
+
+def distribution = rootProject.tasks.named('distribution')
+tasks.register('distributionTest', Test) {
+    description = 'Runs the tests of the user package (@RequiresDistribution): it is unpacked and its runtime started headless.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'distribution'
+    }
+    dependsOn distribution
+    inputs.files(distribution)
+    jvmArgumentProviders.add({
+        ['-Dsc4j.distribution=' + distribution.get().archiveFile.get().asFile.absolutePath]
+    } as CommandLineArgumentProvider)
+    shouldRunAfter tasks.named('test')
+}

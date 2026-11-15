@@ -1,0 +1,8 @@
+{
+  "image": "dust-2x.png",
+  "frameWidth": 80,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "anchor": {"x": 40, "y": 44}
+}

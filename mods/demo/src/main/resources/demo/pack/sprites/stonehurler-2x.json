@@ -1,0 +1,10 @@
+{
+  "image": "stonehurler-2x.png",
+  "teamMask": "stonehurler-2x_team.png",
+  "shadow": "stonehurler-2x_shadow.png",
+  "frameWidth": 160,
+  "frameHeight": 138,
+  "columns": 8,
+  "rows": 8,
+  "anchor": {"x": 80, "y": 84}
+}

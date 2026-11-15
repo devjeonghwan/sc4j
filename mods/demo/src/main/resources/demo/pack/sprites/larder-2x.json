@@ -1,0 +1,10 @@
+{
+  "image": "larder-2x.png",
+  "teamMask": "larder-2x_team.png",
+  "shadow": "larder-2x_shadow.png",
+  "frameWidth": 260,
+  "frameHeight": 224,
+  "columns": 5,
+  "rows": 1,
+  "anchor": {"x": 130, "y": 146}
+}

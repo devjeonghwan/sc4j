@@ -1,0 +1,15 @@
+{
+  "image": "brawl-pit.png",
+  "teamMask": "brawl-pit_team.png",
+  "shadow": "brawl-pit_shadow.png",
+  "frameWidth": 142,
+  "frameHeight": 111,
+  "columns": 5,
+  "rows": 1,
+  "anchor": {"x": 71, "y": 55},
+  "animations": {
+    "construct": [{"frame": 0}, {"wait": 40}, {"frame": 1}, {"wait": 40}, {"frame": 2}, {"label": "rising"}, {"wait": 40}, {"jump": "rising"}],
+    "idle": [{"frame": 3}, {"wait": 60}, {"jump": "idle"}],
+    "death": [{"frame": 4}, {"wait": 240}, {"end": true}]
+  }
+}

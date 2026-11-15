@@ -1,0 +1,13 @@
+{
+  "image": "gold-mine.png",
+  "shadow": "gold-mine_shadow.png",
+  "frameWidth": 130,
+  "frameHeight": 120,
+  "columns": 2,
+  "rows": 1,
+  "anchor": {"x": 65, "y": 75},
+  "animations": {
+    "idle": [{"frame": 0}, {"wait": 60}, {"jump": "idle"}],
+    "death": [{"frame": 1}, {"wait": 60}, {"jump": "death"}]
+  }
+}

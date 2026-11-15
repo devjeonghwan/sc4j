@@ -1,0 +1,190 @@
+plugins {
+    id 'java-library'
+}
+
+// Demo 1: a small real-time strategy game made only of the engine, its standard data pack and its default systems. It depends on
+// the engine only; the runtime provides the engine when it loads mods/demo.jar. The tests also run the jar through the runtime.
+// The build tools of the demo's assets (src/assets/java): DemoArtExport turns the SVG font drawings (src/assets/svg/fonts) into the PNG font
+// pictures of the pack, DemoSoundSynthesis writes its sound effects (JDK only). They run at build time only; neither they nor Apache Batik are
+// on the demo's runtime classpath or in demo.jar. The sprite sheets, the tileset and the other pictures are PNG files of the pack itself
+// (src/main/resources/demo/pack); THIRD-PARTY.md names their sources.
+sourceSets {
+    assets {
+        java {
+            srcDir 'src/assets/java'
+        }
+    }
+    // The determinism harness (src/harness/java): DeterminismCheck starts runtime JVMs with demo.jar and compares what they wrote.
+    harness {
+        java {
+            srcDir 'src/harness/java'
+        }
+    }
+}
+
+// The class path of the runtime JVMs the determinism harness starts: the runtime and what it needs, never the demo's own classes.
+configurations {
+    determinismRuntime {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    implementation project(':sc4j-engine')
+
+    testImplementation project(':sc4j-runtime')
+    // The demo's network games over Beacon.Link run with real nodes and clients on 127.0.0.1 behind emulated NATs.
+    testImplementation testFixtures(project(':sc4j-beaconlink'))
+    // The Beacon.Link tab on a session and community part played by hand (RecordingBeaconLink, RecordingCommunitySession).
+    testImplementation testFixtures(project(':sc4j-engine'))
+
+    // The asset tools read the pack definitions with the engine's JSON reader. Apache Batik 1.19 (Apache License 2.0) is a
+    // build-only dependency for the SVG export.
+    assetsImplementation project(':sc4j-engine')
+    assetsImplementation 'org.apache.xmlgraphics:batik-bridge:1.19'
+
+    harnessImplementation project(':sc4j-base')
+    // The Beacon.Link run of the harness opens a peer on 127.0.0.1 in the harness JVM.
+    harnessImplementation project(':sc4j-beaconlink-peer')
+    harnessImplementation project(':sc4j-beaconlink-protocol')
+    determinismRuntime project(':sc4j-runtime')
+}
+
+// The generated pack files (font pictures, sounds) go under build/generated/demo-assets/demo/pack, next to the hand-written definitions of
+// src/main/resources/demo/pack; processResources merges both, so the jar and the tests read one pack.
+def packDefinitions = file('src/main/resources/demo/pack')
+def generatedAssets = layout.buildDirectory.dir('generated/demo-assets')
+def exportDemoArt = tasks.register('exportDemoArt', JavaExec) {
+    description = 'Exports the SVG font drawings of the demo to the PNG font pictures of its pack.'
+    group = 'build'
+    classpath = sourceSets.assets.runtimeClasspath
+    mainClass = 'org.fogofwarlabs.sc4j.demo.assets.DemoArtExport'
+    systemProperty 'java.awt.headless', 'true'
+    inputs.dir('src/assets/svg')
+    inputs.dir(packDefinitions)
+    def output = generatedAssets.map { directory -> directory.dir('art/demo/pack') }
+    outputs.dir(output)
+    argumentProviders.add({
+        [packDefinitions.absolutePath, file('src/assets/svg').absolutePath, output.get().asFile.absolutePath]
+    } as CommandLineArgumentProvider)
+    doFirst {
+        project.delete(output)
+    }
+}
+
+def synthesizeDemoSounds = tasks.register('synthesizeDemoSounds', JavaExec) {
+    description = 'Synthesizes the sound effects of the demo as PCM WAV files of its pack.'
+    group = 'build'
+    classpath = sourceSets.assets.runtimeClasspath
+    mainClass = 'org.fogofwarlabs.sc4j.demo.assets.DemoSoundSynthesis'
+    def output = generatedAssets.map { directory -> directory.dir('sound/demo/pack') }
+    outputs.dir(output)
+    argumentProviders.add({ [output.get().asFile.absolutePath] } as CommandLineArgumentProvider)
+    doFirst {
+        project.delete(output)
+    }
+}
+
+tasks.named('processResources') {
+    dependsOn exportDemoArt, synthesizeDemoSounds
+    from(generatedAssets.map { directory -> directory.dir('art') })
+    from(generatedAssets.map { directory -> directory.dir('sound') })
+}
+
+// The mod jar: the demo's classes and resources (sc4j-mod.json, the launcher images under meta, the pack under demo/pack, the maps under
+// demo/maps) and the notice of its third-party material (THIRD-PARTY.md). The engine, the manifest module and the base are not in it (the
+// runtime provides them).
+def modJar = tasks.register('modJar', Jar) {
+    description = 'Builds the demo mod jar demo.jar.'
+    group = 'build'
+    archiveFileName = 'demo.jar'
+    destinationDirectory = layout.buildDirectory.dir('mods')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    from(sourceSets.main.output)
+    from('THIRD-PARTY.md')
+    doLast {
+        rootProject.checkJarLicenses(archiveFile.get().asFile)
+    }
+}
+
+tasks.named('assemble') {
+    dependsOn modJar
+}
+
+// The development install (gradlew :mods:demo:devInstall): the SC:R mod's devInstall assembles build/dev-install with the runtime, then
+// demo.jar is copied into its mods/ folder next to scr.jar. Nothing under userdata/ is written here.
+evaluationDependsOn(':mods:scr')
+def scrDevInstall = project(':mods:scr').tasks.named('devInstall')
+tasks.register('devInstall', Copy) {
+    description = 'Copies demo.jar into the mods folder of the development install build/dev-install.'
+    group = 'distribution'
+    dependsOn scrDevInstall
+    from(modJar)
+    into scrDevInstall.map { task -> new File(task.destinationDir, 'mods') }
+}
+
+// The runtime tests of the demo start the built jar (org.fogofwarlabs.sc4j.demo.DemoModTest).
+tasks.withType(Test).configureEach {
+    dependsOn modJar
+    systemProperty 'sc4j.demo.jar', modJar.get().archiveFile.get().asFile.absolutePath
+}
+
+// The demo is original work: no source, resource or build file names another game, its factions or its publisher (the pattern below).
+// A small own check like the engine's checkModBoundary, which also runs on the demo; "check" (and so "build") runs it.
+def otherGameNamePattern = ~/(?i)\b(star\s*craft|terran|zerg|protoss|brood\s*war|blizzard|war\s*craft|battle\.net)\b/
+def demoFiles = files(buildFile, file('THIRD-PARTY.md'), fileTree(file('src')) {
+    include '**/*.java', '**/*.gradle', '**/*.json', '**/*.properties', '**/*.txt', '**/*.md', '**/*.svg'
+})
+def demoNamesReport = layout.buildDirectory.file('reports/demo-names.txt')
+def checkDemoNames = tasks.register('checkDemoNames') {
+    description = 'Checks that no file of the demo names another game.'
+    group = 'verification'
+    inputs.files(demoFiles)
+    inputs.property('namePattern', otherGameNamePattern.toString())
+    outputs.file(demoNamesReport)
+    doLast {
+        def problems = []
+        demoFiles.each { candidate ->
+            candidate.readLines('UTF-8').eachWithIndex { line, index ->
+                // The pattern itself is the one line that names them.
+                if (line =~ otherGameNamePattern && !line.startsWith('def otherGameNamePattern')) {
+                    problems << candidate.path + ':' + (index + 1) + ': ' + line.trim()
+                }
+            }
+        }
+        if (!problems.isEmpty()) {
+            throw new GradleException('The demo must not name another game:\n  ' + problems.join('\n  '))
+        }
+        demoNamesReport.get().asFile.text = 'No name of another game: ' + demoFiles.files.size() + ' files checked.\n'
+    }
+}
+
+// The two-JVM determinism harness: two runtime JVMs play the same headless computer game, then a host and a joiner JVM play a
+// network game on 127.0.0.1; their per-loop state hash files, outcomes and (network) replays must be equal, the people's orders of the
+// network game must change it (its hashes leave the local game's), and a fifth JVM plays the host's replay back to the same hashes. Then
+// a host and a joiner JVM play the same network game over Beacon.Link with a node on 127.0.0.1 in the harness JVM: equal hashes, outcomes
+// and replays, and the network game's hashes. Report: build/determinism/determinism-report.txt. It runs in under a minute, so "check" runs
+// it.
+def determinismCheck = tasks.register('determinismCheck', JavaExec) {
+    description = 'Plays the same demo games in two runtime JVMs, local and over the loopback network, and compares their state hashes.'
+    group = 'verification'
+    dependsOn modJar
+    classpath = sourceSets.harness.runtimeClasspath
+    mainClass = 'org.fogofwarlabs.sc4j.demo.harness.DeterminismCheck'
+    def runtimeClasspath = configurations.determinismRuntime
+    def workFolder = layout.buildDirectory.dir('determinism')
+    inputs.files(runtimeClasspath)
+    inputs.file(modJar.flatMap { jar -> jar.archiveFile })
+    outputs.dir(workFolder)
+    argumentProviders.add({
+        [runtimeClasspath.asPath, modJar.get().archiveFile.get().asFile.absolutePath, workFolder.get().asFile.absolutePath, '20261108',
+         'Ashen Ford']
+    } as CommandLineArgumentProvider)
+}
+
+tasks.named('check') {
+    dependsOn checkDemoNames, determinismCheck
+}

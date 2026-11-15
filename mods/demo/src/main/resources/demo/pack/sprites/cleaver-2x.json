@@ -1,0 +1,10 @@
+{
+  "image": "cleaver-2x.png",
+  "teamMask": "cleaver-2x_team.png",
+  "shadow": "cleaver-2x_shadow.png",
+  "frameWidth": 196,
+  "frameHeight": 162,
+  "columns": 8,
+  "rows": 8,
+  "anchor": {"x": 98, "y": 94}
+}

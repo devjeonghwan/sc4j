@@ -1,0 +1,11 @@
+{"width": 360, "height": 280, "controls": [
+  {"id": 1, "kind": "panel", "x": 0, "y": 0, "width": 360, "height": 280, "children": [
+    {"id": 2, "kind": "label", "x": 20, "y": 20, "width": 320, "height": 28, "text": "Menu", "align": "center"},
+    {"id": 10, "kind": "button", "x": 40, "y": 72, "width": 280, "height": 44, "text": "Resume", "align": "center",
+     "attributes": {"hotkey": "r", "default": "true", "cancel": "true"}},
+    {"id": 12, "kind": "button", "x": 40, "y": 136, "width": 280, "height": 44, "text": "Options", "align": "center",
+     "attributes": {"hotkey": "o"}},
+    {"id": 11, "kind": "button", "x": 40, "y": 200, "width": 280, "height": 44, "text": "Leave game", "align": "center",
+     "attributes": {"hotkey": "l"}}
+  ]}
+]}

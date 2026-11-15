@@ -1,0 +1,10 @@
+{
+  "image": "tiller-2x.png",
+  "teamMask": "tiller-2x_team.png",
+  "shadow": "tiller-2x_shadow.png",
+  "frameWidth": 180,
+  "frameHeight": 160,
+  "columns": 8,
+  "rows": 8,
+  "anchor": {"x": 90, "y": 92}
+}

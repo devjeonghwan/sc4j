@@ -1,0 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
+// The dependency-free generic base of the engine and the mods: exceptions, logging, binary and JSON helpers and small
+// generic utilities. It uses the JDK and the JetBrains annotations only.
+dependencies {
+    api 'org.jetbrains:annotations:23.0.0'
+}

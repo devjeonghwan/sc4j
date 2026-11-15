@@ -1,0 +1,34 @@
+/*
+ * Korean overlay for sc4j-launcher.css. Segoe UI has no Hangul, so JavaFX draws Hangul with an automatic fallback
+ * font, which mixes two fonts in one line (and showed colour fringes in offscreen snapshots). Add this stylesheet
+ * after sc4j-launcher.css (and after the portable stylesheet, if used) when the launcher UI language is Korean and
+ * Font.getFamilies() contains "Malgun Gothic" (a Windows system font). Selector lists follow sc4j-launcher.css.
+ * Mono rules stay in Cascadia Mono: paths and log lines are mostly Latin.
+ */
+
+/* Rules that use "Segoe UI". */
+.root,
+.text-display,
+.app-title,
+.tooltip,
+.badge {
+    -fx-font-family: "Malgun Gothic";
+}
+
+/* Rules that use "Segoe UI Semibold": Malgun Gothic has regular and bold faces only. */
+.text-title,
+.text-subtitle,
+.text-heading,
+.app-subtitle,
+.toggle-button.nav-button,
+.panel-header > .panel-title,
+.button,
+.toggle-button,
+.list-title,
+.tab-pane > .tab-header-area > .headers-region > .tab .tab-label,
+.dialog-pane > .header-panel .label,
+.field-label,
+.field-required {
+    -fx-font-family: "Malgun Gothic";
+    -fx-font-weight: bold;
+}

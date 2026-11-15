@@ -1,0 +1,10 @@
+{
+  "image": "smokehouse-2x.png",
+  "teamMask": "smokehouse-2x_team.png",
+  "shadow": "smokehouse-2x_shadow.png",
+  "frameWidth": 260,
+  "frameHeight": 182,
+  "columns": 5,
+  "rows": 1,
+  "anchor": {"x": 130, "y": 98}
+}

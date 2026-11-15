@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjdk.jmh/jmh-generator-annprocess/1.37/da93888682df163144edf9b13d2b78e54166063a/jmh-generator-annprocess-1.37.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjdk.jmh/jmh-core/1.37/896f27e49105b35ea1964319c83d12082e7a79ef/jmh-core-1.37.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.sf.jopt-simple/jopt-simple/5.0.4/4fdac2fbe92dfad86aa6e9301736f6b4342a3f5c/jopt-simple-5.0.4.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.6.1/e4ba98f1d4b3c80ec46392f25e094a6a2e58fcbf/commons-math3-3.6.1.jar" />
+        </processorPath>
+        <module name="sc4j.mods.scr.scr-benchmark.jmh" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="25" />
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="sc4j.mods.demo" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.demo.assets" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.demo.harness" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.demo.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.demo.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr-demo" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr-demo.clone" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr-demo.convert" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr-demo.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr-demo.mod" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr-demo.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr.scr-benchmark" options="-Xlint:all,-processing -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr.scr-benchmark.jmh" options="-Xlint:all,-processing -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr.scr-benchmark.main" options="-Xlint:all,-processing -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr.scr-benchmark.test" options="-Xlint:all,-processing -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr.scr-client" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-client.main" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-client.test" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-data" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-data.main" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-data.test" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-data.testFixtures" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-game" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-game.main" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-game.test" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-game.testFixtures" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-net" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-net.main" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-net.test" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-render" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-render.main" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.mods.scr.scr-render.test" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
+      <module name="sc4j.sc4j-base" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-base.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-base.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-node" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-node.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-node.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-peer" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-peer.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-peer.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-protocol" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-protocol.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-protocol.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink-protocol.testFixtures" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-beaconlink.testFixtures" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-client" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-client.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-client.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-core" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-core.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-core.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-net" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-net.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-net.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-sim" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-sim.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-sim.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine-sim.testFixtures" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-engine.testFixtures" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-launcher" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-launcher.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-launcher.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-mod-manifest" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-mod-manifest.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-mod-manifest.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-mod-manifest.testFixtures" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-runtime" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-runtime.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.sc4j-runtime.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.tools.api-check" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.tools.api-check.main" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.tools.api-check.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.tools.sc-recorder" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
+      <module name="sc4j.tools.sc-recorder.main" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
+      <module name="sc4j.tools.sc-recorder.test" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
+    </option>
+  </component>
+</project>

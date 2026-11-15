@@ -1,0 +1,10 @@
+{
+  "image": "longeye-2x.png",
+  "teamMask": "longeye-2x_team.png",
+  "shadow": "longeye-2x_shadow.png",
+  "frameWidth": 192,
+  "frameHeight": 158,
+  "columns": 8,
+  "rows": 8,
+  "anchor": {"x": 96, "y": 90}
+}

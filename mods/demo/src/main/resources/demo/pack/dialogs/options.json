@@ -1,0 +1,19 @@
+{"width": 520, "height": 388, "controls": [
+  {"id": 1, "kind": "panel", "x": 0, "y": 0, "width": 520, "height": 388, "children": [
+    {"id": 2, "kind": "label", "x": 20, "y": 20, "width": 480, "height": 28, "text": "Options", "align": "center"},
+    {"id": 3, "kind": "label", "x": 20, "y": 72, "width": 200, "height": 32, "text": "Sound"},
+    {"id": 10, "kind": "combo-box", "x": 240, "y": 72, "width": 260, "height": 32},
+    {"id": 7, "kind": "label", "x": 20, "y": 120, "width": 200, "height": 32, "text": "Music"},
+    {"id": 14, "kind": "combo-box", "x": 240, "y": 120, "width": 260, "height": 32},
+    {"id": 4, "kind": "label", "x": 20, "y": 168, "width": 200, "height": 32, "text": "Game speed"},
+    {"id": 11, "kind": "combo-box", "x": 240, "y": 168, "width": 260, "height": 32},
+    {"id": 5, "kind": "label", "x": 20, "y": 216, "width": 200, "height": 32, "text": "Scroll speed"},
+    {"id": 12, "kind": "combo-box", "x": 240, "y": 216, "width": 260, "height": 32},
+    {"id": 6, "kind": "label", "x": 20, "y": 264, "width": 200, "height": 32, "text": "Interface size"},
+    {"id": 13, "kind": "combo-box", "x": 240, "y": 264, "width": 260, "height": 32},
+    {"id": 20, "kind": "button", "x": 90, "y": 324, "width": 160, "height": 44, "text": "OK", "align": "center",
+     "attributes": {"default": "true"}},
+    {"id": 21, "kind": "button", "x": 270, "y": 324, "width": 160, "height": 44, "text": "Cancel", "align": "center",
+     "attributes": {"cancel": "true"}}
+  ]}
+]}

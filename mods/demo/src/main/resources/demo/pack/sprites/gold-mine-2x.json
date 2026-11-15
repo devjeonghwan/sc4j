@@ -1,0 +1,9 @@
+{
+  "image": "gold-mine-2x.png",
+  "shadow": "gold-mine-2x_shadow.png",
+  "frameWidth": 260,
+  "frameHeight": 240,
+  "columns": 2,
+  "rows": 1,
+  "anchor": {"x": 130, "y": 150}
+}

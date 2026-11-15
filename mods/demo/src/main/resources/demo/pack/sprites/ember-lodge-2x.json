@@ -1,0 +1,10 @@
+{
+  "image": "ember-lodge-2x.png",
+  "teamMask": "ember-lodge-2x_team.png",
+  "shadow": "ember-lodge-2x_shadow.png",
+  "frameWidth": 388,
+  "frameHeight": 280,
+  "columns": 5,
+  "rows": 1,
+  "anchor": {"x": 194, "y": 152}
+}

@@ -1,0 +1,23 @@
+{"width": 640, "height": 520, "controls": [
+  {"id": 1, "kind": "panel", "x": 0, "y": 0, "width": 640, "height": 520, "children": [
+    {"id": 30, "kind": "button", "x": 20, "y": 12, "width": 296, "height": 44, "text": "This computer", "align": "center",
+     "attributes": {"selected": "true"}},
+    {"id": 31, "kind": "button", "x": 324, "y": 12, "width": 296, "height": 44, "text": "Beacon.Link", "align": "center",
+     "attributes": {"hotkey": "b"}},
+    {"id": 3, "kind": "label", "x": 20, "y": 72, "width": 160, "height": 32, "text": "Your name"},
+    {"id": 10, "kind": "label", "x": 200, "y": 72, "width": 260, "height": 32, "text": ""},
+    {"id": 20, "kind": "button", "x": 480, "y": 66, "width": 140, "height": 44, "text": "Host", "align": "center",
+     "attributes": {"hotkey": "h"}},
+    {"id": 4, "kind": "label", "x": 20, "y": 128, "width": 160, "height": 32, "text": "Address"},
+    {"id": 11, "kind": "text-input", "x": 200, "y": 128, "width": 260, "height": 32, "attributes": {"maximumLength": "40"}},
+    {"id": 21, "kind": "button", "x": 480, "y": 122, "width": 140, "height": 44, "text": "Join", "align": "center",
+     "attributes": {"hotkey": "j"}},
+    {"id": 5, "kind": "label", "x": 20, "y": 184, "width": 440, "height": 28, "text": "Rooms"},
+    {"id": 12, "kind": "list-box", "x": 20, "y": 216, "width": 440, "height": 196},
+    {"id": 22, "kind": "button", "x": 480, "y": 216, "width": 140, "height": 44, "text": "Refresh", "align": "center",
+     "attributes": {"hotkey": "r"}},
+    {"id": 13, "kind": "label", "x": 20, "y": 424, "width": 600, "height": 24, "text": ""},
+    {"id": 23, "kind": "button", "x": 480, "y": 456, "width": 140, "height": 44, "text": "Back", "align": "center",
+     "attributes": {"cancel": "true"}}
+  ]}
+]}

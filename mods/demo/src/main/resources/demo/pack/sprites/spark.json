@@ -1,0 +1,11 @@
+{
+  "image": "spark.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 3,
+  "rows": 1,
+  "anchor": {"x": 12, "y": 17},
+  "animations": {
+    "idle": [{"sound": "hit"}, {"frame": 0}, {"wait": 2}, {"frame": 1}, {"wait": 2}, {"frame": 2}, {"wait": 2}, {"end": true}]
+  }
+}

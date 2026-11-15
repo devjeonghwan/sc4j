@@ -1,0 +1,11 @@
+{
+  "image": "dust.png",
+  "frameWidth": 40,
+  "frameHeight": 32,
+  "columns": 4,
+  "rows": 1,
+  "anchor": {"x": 20, "y": 22},
+  "animations": {
+    "idle": [{"frame": 0}, {"wait": 3}, {"frame": 1}, {"wait": 3}, {"frame": 2}, {"wait": 3}, {"frame": 3}, {"wait": 3}, {"end": true}]
+  }
+}

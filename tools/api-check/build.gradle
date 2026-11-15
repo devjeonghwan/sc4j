@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+}
+
+// The API tools of the engine (docs/api-policy.md): the public API listing of an engine module over the JDK's javap (apiDump,
+// apiCheck) and the scan of mod sources for the engine's internal packages and classes (checkApiUse). The root build runs them as JavaExec
+// tasks; no dependency beyond the JDK and the engine base.
+dependencies {
+    implementation project(':sc4j-base')
+}

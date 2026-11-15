@@ -1,0 +1,68 @@
+{
+  "format": 1,
+  "resourceKinds": ["gold"],
+  "motionProfiles": {
+    "steady-stride": {"topSpeed": 320, "acceleration": 64, "stoppingDistance": 1024, "turnRate": 40},
+    "loping-stride": {"topSpeed": 384, "acceleration": 64, "stoppingDistance": 1280, "turnRate": 40},
+    "arrow": {"topSpeed": 1536, "acceleration": 1536, "turnRate": 127},
+    "hurled-stone": {"topSpeed": 1280, "acceleration": 1280, "turnRate": 127}
+  },
+  "weapons": {
+    "pike": {"damage": 7, "cooldown": 22, "maximumRange": 20, "targets": ["ground"]},
+    "longbow": {"damage": 5, "cooldown": 28, "maximumRange": 96, "targets": ["ground"], "projectile": "arrow"},
+    "cleaver-blade": {"damage": 9, "cooldown": 26, "maximumRange": 20, "targets": ["ground"]},
+    "stone-throw": {"damage": 4, "cooldown": 30, "maximumRange": 88, "targets": ["ground"], "projectile": "hurled-stone", "homing": false,
+                    "splashInnerRadius": 6, "splashMiddleRadius": 12, "splashOuterRadius": 18}
+  },
+  "factions": {
+    "dawnhold": {"worker": "tiller", "townHall": "hearthstead", "supplyProvider": "larder", "resourceKinds": ["gold"],
+                 "startUnits": ["tiller", "tiller", "tiller", "tiller"]},
+    "cindermaw": {"worker": "grubber", "townHall": "ember-lodge", "supplyProvider": "smokehouse", "resourceKinds": ["gold"],
+                  "startUnits": ["grubber", "grubber", "grubber", "grubber"]}
+  },
+  "units": {
+    "gold-mine": {"collision": 31, "placementWidth": 64, "placementHeight": 64, "traits": ["resource-container"]},
+    "tiller": {"faction": "dawnhold", "motionProfile": "steady-stride", "hitPoints": 40, "sightRange": 7, "cost": {"gold": 50}, "buildTime": 60,
+               "supplyRequired": 1, "collision": 6, "traits": ["worker"], "idleOrders": {"human": "idle", "computer": "idle"}},
+    "hearthstead": {"faction": "dawnhold", "hitPoints": 600, "armor": 1, "sightRange": 8, "cost": {"gold": 400}, "buildTime": 600,
+                    "supplyProvided": 10, "collision": 47, "placementWidth": 96, "placementHeight": 96, "traits": ["building", "resource-depot"]},
+    "larder": {"faction": "dawnhold", "hitPoints": 200, "armor": 1, "sightRange": 8, "cost": {"gold": 100}, "buildTime": 240,
+               "supplyProvided": 8, "collision": 31, "placementWidth": 64, "placementHeight": 64, "traits": ["building"]},
+    "muster-yard": {"faction": "dawnhold", "hitPoints": 400, "armor": 1, "sightRange": 8, "cost": {"gold": 150}, "buildTime": 360,
+                    "collision": 31, "placementWidth": 64, "placementHeight": 64, "traits": ["building"]},
+    "pikeward": {"faction": "dawnhold", "motionProfile": "steady-stride", "hitPoints": 70, "armor": 1, "sightRange": 7, "targetAcquisitionRange": 160,
+                 "groundWeapon": "pike", "cost": {"gold": 50}, "buildTime": 150, "supplyRequired": 2, "collision": 7,
+                 "idleOrders": {"human": "guard", "computer": "guard"}},
+    "longeye": {"faction": "dawnhold", "motionProfile": "steady-stride", "hitPoints": 45, "sightRange": 7, "targetAcquisitionRange": 160,
+                "groundWeapon": "longbow", "cost": {"gold": 60}, "buildTime": 180, "supplyRequired": 2, "collision": 7,
+                "idleOrders": {"human": "guard", "computer": "guard"}},
+    "grubber": {"faction": "cindermaw", "motionProfile": "loping-stride", "hitPoints": 40, "sightRange": 7, "cost": {"gold": 50}, "buildTime": 60,
+                "supplyRequired": 1, "collision": 6, "traits": ["worker"], "idleOrders": {"human": "idle", "computer": "idle"}},
+    "ember-lodge": {"faction": "cindermaw", "hitPoints": 600, "armor": 1, "sightRange": 8, "cost": {"gold": 400}, "buildTime": 600,
+                    "supplyProvided": 10, "collision": 47, "placementWidth": 96, "placementHeight": 96, "traits": ["building", "resource-depot"]},
+    "smokehouse": {"faction": "cindermaw", "hitPoints": 200, "armor": 1, "sightRange": 8, "cost": {"gold": 100}, "buildTime": 240,
+                   "supplyProvided": 8, "collision": 31, "placementWidth": 64, "placementHeight": 64, "traits": ["building"]},
+    "brawl-pit": {"faction": "cindermaw", "hitPoints": 400, "armor": 1, "sightRange": 8, "cost": {"gold": 150}, "buildTime": 360,
+                  "collision": 31, "placementWidth": 64, "placementHeight": 64, "traits": ["building"]},
+    "cleaver": {"faction": "cindermaw", "motionProfile": "loping-stride", "hitPoints": 70, "sightRange": 7, "targetAcquisitionRange": 160,
+                "groundWeapon": "cleaver-blade", "cost": {"gold": 50}, "buildTime": 150, "supplyRequired": 2, "collision": 7,
+                "idleOrders": {"human": "guard", "computer": "guard"}},
+    "stonehurler": {"faction": "cindermaw", "motionProfile": "loping-stride", "hitPoints": 45, "sightRange": 7, "targetAcquisitionRange": 160,
+                    "groundWeapon": "stone-throw", "cost": {"gold": 60}, "buildTime": 180, "supplyRequired": 2, "collision": 7,
+                    "idleOrders": {"human": "guard", "computer": "guard"}}
+  },
+  "requirements": {
+    "tiller": [{"actor": "hearthstead"}],
+    "hearthstead": [{"actor": "tiller"}],
+    "larder": [{"actor": "tiller"}],
+    "muster-yard": [{"actor": "tiller"}, {"completed": "hearthstead"}],
+    "pikeward": [{"actor": "muster-yard"}],
+    "longeye": [{"actor": "muster-yard"}],
+    "grubber": [{"actor": "ember-lodge"}],
+    "ember-lodge": [{"actor": "grubber"}],
+    "smokehouse": [{"actor": "grubber"}],
+    "brawl-pit": [{"actor": "grubber"}, {"completed": "ember-lodge"}],
+    "cleaver": [{"actor": "brawl-pit"}],
+    "stonehurler": [{"actor": "brawl-pit"}]
+  }
+}

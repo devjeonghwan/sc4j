@@ -1,0 +1,419 @@
+public abstract class org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  protected org.fogofwarlabs.sc4j.engine.content.type.ContentType(java.lang.String);
+  public final boolean isRegistered();
+  public final int getIndex();
+  public final java.lang.String getDebugName();
+  public final java.lang.String toString();
+  public static final int NO_INDEX = -1;
+  public static int indexOf(org.fogofwarlabs.sc4j.engine.content.type.ContentType);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.DefinitionRegistry<T extends org.fogofwarlabs.sc4j.engine.content.type.ContentType, D> {
+  public D getDefinition(T);
+  public D getDefinition(int);
+  public T register(T, D);
+  public int getCount();
+  public org.fogofwarlabs.sc4j.engine.content.type.DefinitionRegistry(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.content.type.TypeRegistry<T> getTypes();
+  public void freeze();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.ImageType extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.ImageType(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.MotionProfile extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.MotionProfile(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.OrderType extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.OrderType(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.SoundType extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.SoundType(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.SpriteType extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.SpriteType(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.TechType extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.TechType(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.TypeRegistry<T extends org.fogofwarlabs.sc4j.engine.content.type.ContentType> {
+  public T get(int);
+  public T register(T);
+  public boolean contains(org.fogofwarlabs.sc4j.engine.content.type.ContentType);
+  public boolean isFrozen();
+  public int getCount();
+  public int requireIndex(T);
+  public java.lang.String getKindName();
+  public java.util.List<T> getTypes();
+  public org.fogofwarlabs.sc4j.engine.content.type.TypeRegistry(java.lang.String);
+  public void freeze();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.UnitType extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.UnitType(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.UpgradeType extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.UpgradeType(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.content.type.WeaponType extends org.fogofwarlabs.sc4j.engine.content.type.ContentType {
+  public org.fogofwarlabs.sc4j.engine.content.type.WeaponType(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.json.JsonObjectReader {
+  public boolean getBoolean(java.lang.String, boolean) throws java.io.IOException;
+  public boolean has(java.lang.String);
+  public int getInt(java.lang.String) throws java.io.IOException;
+  public int getInt(java.lang.String, int) throws java.io.IOException;
+  public java.lang.Object get(java.lang.String);
+  public java.lang.String findText(java.lang.String) throws java.io.IOException;
+  public java.lang.String getLocation();
+  public java.lang.String getLocation(java.lang.String);
+  public java.lang.String getText(java.lang.String) throws java.io.IOException;
+  public java.util.List<?> getArray(java.lang.String) throws java.io.IOException;
+  public java.util.List<java.lang.String> getTextList(java.lang.String) throws java.io.IOException;
+  public java.util.Map<java.lang.String, java.lang.String> getTextMap(java.lang.String) throws java.io.IOException;
+  public java.util.Set<?> getNames();
+  public org.fogofwarlabs.sc4j.engine.json.JsonObjectReader getObject(java.lang.String) throws java.io.IOException;
+  public static int toInt(java.lang.Object, java.lang.String) throws java.io.IOException;
+  public static java.lang.String toText(java.lang.Object, java.lang.String) throws java.io.IOException;
+  public static java.util.List<?> parseArray(byte[], java.lang.String) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.json.JsonObjectReader of(java.lang.Object, java.lang.String) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.json.JsonObjectReader parse(byte[], java.lang.String) throws java.io.IOException;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.map.grid.GridTopology {
+  public abstract boolean contains(int, int);
+  public abstract int findColumn(int, int);
+  public abstract int findRow(int, int);
+  public abstract int getCellHeight();
+  public abstract int getCellWidth();
+  public abstract int getCenterX(int, int);
+  public abstract int getCenterY(int, int);
+  public abstract int getColumnCount();
+  public abstract int getNeighbourColumn(int, int, int);
+  public abstract int getNeighbourCount();
+  public abstract int getNeighbourRow(int, int, int);
+  public abstract int getRowCount();
+  public abstract int getWorldHeight();
+  public abstract int getWorldWidth();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.map.grid.SquareGridTopology implements org.fogofwarlabs.sc4j.engine.map.grid.GridTopology {
+  public boolean contains(int, int);
+  public int findColumn(int, int);
+  public int findRow(int, int);
+  public int getCellHeight();
+  public int getCellWidth();
+  public int getCenterX(int, int);
+  public int getCenterY(int, int);
+  public int getColumnCount();
+  public int getNeighbourColumn(int, int, int);
+  public int getNeighbourCount();
+  public int getNeighbourRow(int, int, int);
+  public int getRowCount();
+  public int getWorldHeight();
+  public int getWorldWidth();
+  public org.fogofwarlabs.sc4j.engine.map.grid.SquareGridTopology(int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.math.FixedPointUtils {
+  public static final int DEFAULT_FRACTION_BITS = 8;
+  public static int divide(int, int, int);
+  public static int fromInteger(int, int);
+  public static int getFraction(int, int);
+  public static int multiply(int, int, int);
+  public static int toInteger(int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.math.IntegerMathUtils {
+  public static boolean isWithinDistance(int, int, int, int, int);
+  public static int getApproximateDistance(int, int, int, int);
+  public static int getDistance(int, int, int, int);
+  public static long squareRoot(long);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.math.MutablePoint {
+  public int getX();
+  public int getY();
+  public org.fogofwarlabs.sc4j.engine.math.MutablePoint();
+  public void set(int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.mod.identity.IdentityFileFrame {
+  public boolean matches(byte[]);
+  public byte[] write(org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, org.fogofwarlabs.sc4j.engine.mod.identity.IdentityFileFrame$BodyWriter);
+  public java.io.DataInputStream openBody(byte[], org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.engine.mod.identity.IdentityFileFrame(int, int, java.lang.String, java.lang.String);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.mod.identity.IdentityFileFrame$BodyWriter {
+  public abstract void write(java.io.DataOutputStream) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.mod.identity.ModContentDigestUtils {
+  public static byte[] compute(java.nio.file.Path) throws java.io.IOException;
+  public static final java.lang.String DIGEST_ALGORITHM = "SHA-256";
+}
+
+public final class org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity {
+  public boolean equals(java.lang.Object);
+  public byte[] getContentDigest();
+  public byte[] getDataDigest();
+  public int hashCode();
+  public java.lang.String describe();
+  public java.lang.String getModId();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch findMismatch(org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity);
+  public org.fogofwarlabs.sc4j.manifest.version.EngineVersion getEngine();
+  public org.fogofwarlabs.sc4j.manifest.version.ModVersion getModVersion();
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity create(org.fogofwarlabs.sc4j.manifest.version.EngineVersion, org.fogofwarlabs.sc4j.manifest.ModManifest, byte[], java.util.List<byte[]>);
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity createWithoutJar(org.fogofwarlabs.sc4j.manifest.version.EngineVersion, java.lang.String, org.fogofwarlabs.sc4j.manifest.version.ModVersion);
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity read(java.io.DataInput) throws java.io.IOException;
+  public void write(java.io.DataOutput) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityException extends java.io.IOException {
+  public org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity getRecordedIdentity();
+  public org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch getMismatch();
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityException create(java.lang.String, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch> {
+  public java.lang.String getDescription();
+  public static final org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch ENGINE_VERSION;
+  public static final org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch IDENTITY_DATA;
+  public static final org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch MOD_CONTENT;
+  public static final org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch MOD_ID;
+  public static final org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch MOD_VERSION;
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentityMismatch[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.player.Player {
+  public int getIndex();
+  public java.lang.String toString();
+  public org.fogofwarlabs.sc4j.engine.player.Player(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.audio.SoundClip {
+  public int getChannelCount();
+  public int getFrameCount();
+  public int getSampleRate();
+  public org.fogofwarlabs.sc4j.engine.resource.audio.SoundClip(int, int, short[]);
+  public short getSample(int);
+  public void copySamples(int, short[], int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.CompressedTexture {
+  public int getHeight();
+  public int getLevelCount();
+  public int getLevelSize(int);
+  public int getWidth();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.CompressedTexture(org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat, int, int, java.util.List<byte[]>);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat getFormat();
+  public void copyLevel(int, java.nio.ByteBuffer);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat> {
+  public int getBlockSize();
+  public long getStoredSize(int, int);
+  public static final int BLOCK_DIMENSION = 4;
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat BC1;
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat BC2;
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat BC3;
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat BC7;
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.CompressionFormat[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.Palette {
+  public int getColor(int);
+  public int getSize();
+  public int[] copyColors();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Palette(int[]);
+  public static final int MAXIMUM_SIZE = 256;
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.Picture {
+  public int getAnchorX();
+  public int getAnchorY();
+  public int getBorderBottom();
+  public int getBorderLeft();
+  public int getBorderRight();
+  public int getBorderTop();
+  public int getHeight();
+  public int getWidth();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture(int, int, org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.Picture(int, int, org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer, org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer, int, int, int, int, int, int);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer getColor();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer getTeamMask();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.PixelFormat extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.resource.graphics.PixelFormat> {
+  public boolean isByteStored();
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.PixelFormat ALPHA_8;
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.PixelFormat INDEXED_8;
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.PixelFormat RGBA_8888;
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.PixelFormat valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.PixelFormat[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer {
+  public int getLength();
+  public int getValue(int);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.PixelFormat getFormat();
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer ofAlpha(byte[]);
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer ofIndexed(byte[]);
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer ofRgba(int[]);
+  public void copyBytes(int, byte[], int, int);
+  public void copyValues(int, int[], int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteFrame {
+  public int getHeight();
+  public int getPixelOffset();
+  public int getWidth();
+  public int getX();
+  public int getY();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteFrame(int, int, int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet {
+  public int getAnchorX();
+  public int getAnchorY();
+  public int getFrameCount();
+  public int getHeight();
+  public int getWidth();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer getColor();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer getShadow();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer getTeamMask();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteFrame getFrame(int);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteSheet(int, int, int, int, java.util.List<org.fogofwarlabs.sc4j.engine.resource.graphics.SpriteFrame>, org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer, org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer, org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.TextureFrame {
+  public int getFlags();
+  public int getHeight();
+  public int getTextureX();
+  public int getTextureY();
+  public int getWidth();
+  public int getX();
+  public int getY();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.TextureFrame(int, int, int, int, int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.TextureSheet {
+  public int getFrameCount();
+  public int getHeight();
+  public int getUnitsPerTexel();
+  public int getWidth();
+  public java.util.Set<java.lang.String> getLayerNames();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.CompressedTexture findLayer(java.lang.String);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.TextureFrame getFrame(int);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.TextureSheet(int, int, int, java.util.List<org.fogofwarlabs.sc4j.engine.resource.graphics.TextureFrame>, java.util.Map<java.lang.String, org.fogofwarlabs.sc4j.engine.resource.graphics.CompressedTexture>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.TileGraphics {
+  public int getTileCount();
+  public int getTileHeight();
+  public int getTileOffset(int);
+  public int getTileWidth();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer getPixels();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.TileGraphics(int, int, org.fogofwarlabs.sc4j.engine.resource.graphics.TileShape, org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer);
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.TileShape getShape();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.graphics.TileShape extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.resource.graphics.TileShape> {
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.TileShape DIAMOND;
+  public static final org.fogofwarlabs.sc4j.engine.resource.graphics.TileShape SQUARE;
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.TileShape valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.resource.graphics.TileShape[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.text.FontFace {
+  public int getImageHeight();
+  public int getImageWidth();
+  public int getLineHeight();
+  public java.util.List<org.fogofwarlabs.sc4j.engine.resource.text.FontGlyph> getGlyphs();
+  public org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer getPixels();
+  public org.fogofwarlabs.sc4j.engine.resource.text.FontFace(int, int, org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer, java.util.List<org.fogofwarlabs.sc4j.engine.resource.text.FontGlyph>);
+  public org.fogofwarlabs.sc4j.engine.resource.text.FontGlyph findGlyph(int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.text.FontGlyph {
+  public int getAdvance();
+  public int getCodePoint();
+  public int getHeight();
+  public int getImageX();
+  public int getImageY();
+  public int getOffsetX();
+  public int getOffsetY();
+  public int getWidth();
+  public org.fogofwarlabs.sc4j.engine.resource.text.FontGlyph(int, int, int, int, int, int, int, int);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.resource.text.StringTable {
+  public int getSize();
+  public java.lang.String get(int);
+  public java.util.List<java.lang.String> getStrings();
+  public org.fogofwarlabs.sc4j.engine.resource.text.StringTable(java.util.List<java.lang.String>);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.state.StateHash {
+  public long getValue();
+  public org.fogofwarlabs.sc4j.engine.state.StateHash mix(int);
+  public org.fogofwarlabs.sc4j.engine.state.StateHash mixArray(int[]);
+  public org.fogofwarlabs.sc4j.engine.state.StateHash mixBoolean(boolean);
+  public org.fogofwarlabs.sc4j.engine.state.StateHash mixLong(long);
+  public org.fogofwarlabs.sc4j.engine.state.StateHash reset();
+  public org.fogofwarlabs.sc4j.engine.state.StateHash();
+  public static final int FOLD_SHIFT = 29;
+  public static final long OFFSET_BASIS = -3750763034362895579l;
+  public static final long PRIME = 1099511628211l;
+}
+
+public interface org.fogofwarlabs.sc4j.engine.state.StateHashContributor {
+  public abstract void contributeStateHash(org.fogofwarlabs.sc4j.engine.state.StateHash);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.terrain.ArrayTerrainGrid implements org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid,org.fogofwarlabs.sc4j.engine.state.StateHashContributor {
+  public boolean isBuildable(int, int);
+  public boolean isWalkable(int, int);
+  public int getElevation(int, int);
+  public int getHeight();
+  public int getTileSize();
+  public int getWalkCellSize();
+  public int getWalkHeight();
+  public int getWalkWidth();
+  public int getWidth();
+  public org.fogofwarlabs.sc4j.engine.map.grid.GridTopology getTileGrid();
+  public org.fogofwarlabs.sc4j.engine.map.grid.GridTopology getWalkGrid();
+  public org.fogofwarlabs.sc4j.engine.terrain.ArrayTerrainGrid(int, int, int, int);
+  public static final int MAXIMUM_ELEVATION = 7;
+  public void contributeStateHash(org.fogofwarlabs.sc4j.engine.state.StateHash);
+  public void setBuildable(int, int, boolean);
+  public void setElevation(int, int, int);
+  public void setWalkable(int, int, boolean);
+}
+
+public interface org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid {
+  public abstract boolean isBuildable(int, int);
+  public abstract boolean isWalkable(int, int);
+  public abstract int getElevation(int, int);
+  public abstract int getHeight();
+  public abstract int getTileSize();
+  public abstract int getWalkCellSize();
+  public abstract int getWidth();
+  public abstract org.fogofwarlabs.sc4j.engine.map.grid.GridTopology getTileGrid();
+  public abstract org.fogofwarlabs.sc4j.engine.map.grid.GridTopology getWalkGrid();
+  public default int getWalkHeight();
+  public default int getWalkWidth();
+}

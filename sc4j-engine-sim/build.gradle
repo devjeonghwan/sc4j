@@ -1,0 +1,15 @@
+plugins {
+    id 'java-library'
+    // The scenarios that the tests of the network, client and application modules share: the skirmish content and map
+    // (SkirmishScenario, MapTestResources with maps/) and the lockstep game (LockstepGameScenario).
+    id 'java-test-fixtures'
+}
+
+// The engine simulation: the game with its units and default systems, content, orders and commands, computer players, triggers, the standard
+// data pack and the resource provider, maps, lockstep, replays and saves. No client, network or mod API.
+dependencies {
+    api project(':sc4j-engine-core')
+
+    testFixturesApi platform("org.junit:junit-bom:5.11.4")
+    testFixturesApi "org.junit.jupiter:junit-jupiter-api"
+}

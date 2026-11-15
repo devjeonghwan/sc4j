@@ -1,0 +1,162 @@
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+
+plugins {
+    id 'base'
+}
+
+// Packaging of the SC:R mod: mods/scr.jar from the classes and resources of every mods/scr module (the benchmark module,
+// JMH only, is not part of the mod), and the development install that runs it with the runtime.
+evaluationDependsOnChildren()
+
+// The module folders of the mod; the clone of demo 2 (mods/scr-demo) copies the same list.
+ext.modModuleNames = ['scr-data', 'scr-game', 'scr-render', 'scr-net', 'scr-client']
+def modModules = modModuleNames.collect { name -> project(':mods:scr:' + name) }
+
+// The compiler arguments of every module of the mod; the clone of demo 2 (mods/scr-demo) compiles with the same list. -parameters records
+// the parameter names in the class files: javac names the constructor parameters of an anonymous class after those of its superclass's
+// constructor, which it knows from a class file only when they are recorded there. Without it a class compiled against the class file of
+// its superclass (another module, or an incremental compile) gets other bytes than when both are compiled together.
+ext.modCompilerArgs = ['-parameters']
+modModules.each { module ->
+    module.tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs += modCompilerArgs
+    }
+}
+def clientProject = project(':mods:scr:scr-client')
+def developmentInstall = rootProject.layout.buildDirectory.dir('dev-install')
+
+// The mod jar: sc4j-mod.json and meta/ come from the scr-client resources. The engine, the manifest module and the base are
+// not in it (the runtime provides them); the third-party libraries are installed with the runtime (devInstall).
+def modJar = tasks.register('modJar', Jar) {
+    description = 'Builds the SC:R mod jar scr.jar from the mods/scr modules.'
+    group = 'build'
+    archiveFileName = 'scr.jar'
+    destinationDirectory = layout.buildDirectory.dir('mods')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    modModules.each { module -> from(module.sourceSets.main.output) }
+    doLast {
+        rootProject.checkJarLicenses(archiveFile.get().asFile)
+    }
+}
+
+tasks.named('assemble') {
+    dependsOn modJar
+}
+
+// The third-party libraries of the client (LWJGL, FFmpeg/JavaCPP, ...): until the engine owns them, they go to the runtime's lib
+// folder of an install, next to the runtime's own jars.
+def clientLibraries = clientProject.configurations.runtimeClasspath.incoming.artifactView {
+    componentFilter { component -> component instanceof ModuleComponentIdentifier }
+}.files
+
+// The programs of an install: launcher/ (the launcher distribution with the shipped seed list), runtime/ (the runtime distribution with the
+// client's libraries and native libraries), mods/scr.jar, LICENSE, NOTICE and licenses/. The development install and the user package
+// (the root project's distribution task) both copy it; the runtime's lib folder holds a few jars twice, so a copy of it excludes duplicates.
+// The launcher and the runtime may be evaluated after this project, so their distributions are named when the copy runs.
+ext.installContents = copySpec {
+    from({ project(':sc4j-launcher').tasks.named('installDist') }) { into 'launcher' }
+    from({ project(':sc4j-runtime').tasks.named('installDist') }) { into 'runtime' }
+    from(clientLibraries) { into 'runtime/lib' }
+    from(clientProject.tasks.named('stageNativeLibraries')) { into 'runtime/lib/natives' }
+    from(modJar) { into 'mods' }
+    from(rootProject.licenseFiles)
+    from(rootProject.licenseTexts) { into 'licenses' }
+}
+
+// The development install build/dev-install of the repository: the programs of an install (installContents) and userdata/ (kept between
+// builds, like other jars in mods/). When the Gradle property sc4j.data names the SC:R installation and no shared settings file exists yet,
+// userdata/shared-settings.json is created with it as the value of the shared StarCraft: Remastered folder setting (shared name
+// starcraft-remastered) of the SC:R mod and its clones.
+def devInstall = tasks.register('devInstall', Sync) {
+    description = 'Assembles the development install build/dev-install with the runtime and mods/scr.jar.'
+    group = 'distribution'
+    into developmentInstall
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    preserve {
+        include 'userdata/**'
+        include 'runtime/.cache/**'
+        include 'launcher/.cache/**'
+        include 'mods/**'
+    }
+    with installContents
+
+    def installation = providers.gradleProperty('sc4j.data').getOrElse('')
+    doLast {
+        rootProject.checkDistributionLicenses(developmentInstall.get().asFile)
+        def sharedSettingsFile = developmentInstall.get().file('userdata/shared-settings.json').asFile
+        if (!installation.isBlank() && !sharedSettingsFile.exists()) {
+            sharedSettingsFile.parentFile.mkdirs()
+            def value = new File(installation).absolutePath.replace('\\', '\\\\').replace('"', '\\"')
+            sharedSettingsFile.setText('{\n  "format": 1,\n  "values": {"starcraft-remastered": "' + value + '"}\n}\n', 'UTF-8')
+        }
+    }
+}
+
+// Runs the runtime of the development install with scr.jar: gradlew :mods:scr:runDevInstall [--args="--headless ..."].
+// It opens the client window unless the arguments end the run first.
+tasks.register('runDevInstall', JavaExec) {
+    description = 'Runs the runtime of the development install with the SC:R mod.'
+    group = 'application'
+    dependsOn devInstall
+    def runtimeDirectory = developmentInstall.map { directory -> directory.dir('runtime').asFile }
+    classpath = files({ fileTree(new File(runtimeDirectory.get(), 'lib')) { include '*.jar' } })
+    mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
+    args '--install', developmentInstall.get().asFile.absolutePath, '--mod', developmentInstall.get().file('mods/scr.jar').asFile.absolutePath
+    doFirst {
+        def nativeDirectory = new File(runtimeDirectory.get(), 'lib/natives').absolutePath
+        jvmArgs '--enable-native-access=ALL-UNNAMED',
+                '-Dorg.lwjgl.librarypath=' + nativeDirectory,
+                '-Djava.library.path=' + nativeDirectory,
+                '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + new File(runtimeDirectory.get(), '.cache/natives').absolutePath,
+                '-Dorg.bytedeco.javacpp.cachedir=' + new File(runtimeDirectory.get(), '.cache/javacpp').absolutePath,
+                '-Dorg.bytedeco.javacpp.platform.linkpath=' + nativeDirectory,
+                '-Dorg.bytedeco.javacpp.platform.preloadpath=' + nativeDirectory,
+                '-Dorg.bytedeco.javacpp.pathsFirst=true',
+                '-Dorg.bytedeco.javacpp.cacheLibraries=false'
+    }
+}
+
+// Opens the launcher of the development install: gradlew :mods:scr:runDevLauncher. It lists the jars of build/dev-install/mods and
+// starts the runtime of the development install.
+tasks.register('runDevLauncher', Exec) {
+    description = 'Opens the launcher of the development install.'
+    group = 'application'
+    dependsOn devInstall
+    def scriptName = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows') ? 'sc4j-launcher.bat' : 'sc4j-launcher'
+    executable = developmentInstall.get().file('launcher/bin/' + scriptName).asFile.absolutePath
+}
+
+// A broken test mod for checking the launcher's error display: gradlew :mods:scr:devInstallBrokenMod copies broken-test.jar (a
+// manifest without "entry" and with an invalid "engine") into build/dev-install/mods. It is never installed by default; delete
+// build/dev-install/mods/broken-test.jar to remove it.
+def brokenModManifest = resources.text.fromString("""{
+  "format": 1,
+  "id": "broken-test",
+  "name": {"en": "Broken Test Mod", "ko": "깨진 테스트 모드"},
+  "version": "0.0.1",
+  "engine": "one",
+  "description": {"en": "A deliberately broken mod for checking the launcher."}
+}
+""")
+
+def brokenModJar = tasks.register('brokenModJar', Jar) {
+    description = 'Builds the broken test mod jar broken-test.jar.'
+    group = 'build'
+    archiveFileName = 'broken-test.jar'
+    destinationDirectory = layout.buildDirectory.dir('broken-mod')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    from(brokenModManifest.asFile('UTF-8')) {
+        rename { name -> 'sc4j-mod.json' }
+    }
+}
+
+tasks.register('devInstallBrokenMod', Copy) {
+    description = 'Copies the broken test mod broken-test.jar into the development install.'
+    group = 'distribution'
+    dependsOn devInstall
+    from(brokenModJar)
+    into developmentInstall.map { directory -> directory.dir('mods') }
+}

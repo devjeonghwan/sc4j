@@ -1,0 +1,16 @@
+{
+  "image": "grubber.png",
+  "teamMask": "grubber_team.png",
+  "shadow": "grubber_shadow.png",
+  "frameWidth": 80,
+  "frameHeight": 76,
+  "columns": 8,
+  "rows": 8,
+  "anchor": {"x": 40, "y": 42},
+  "animations": {
+    "idle": [{"frame": 0}, {"wait": 30}, {"jump": "idle"}],
+    "walk": [{"frame": 1}, {"wait": 4}, {"frame": 0}, {"wait": 2}, {"frame": 2}, {"wait": 4}, {"frame": 0}, {"wait": 2}, {"jump": "walk"}],
+    "attack": [{"frame": 3}, {"wait": 4}, {"sound": "attack"}, {"frame": 4}, {"wait": 6}, {"frame": 0}, {"wait": 8}, {"jump": "idle"}],
+    "death": [{"sound": "death"}, {"frame": 5}, {"wait": 4}, {"frame": 6}, {"wait": 20}, {"frame": 7}, {"wait": 40}, {"end": true}]
+  }
+}

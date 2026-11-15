@@ -1,0 +1,128 @@
+public final class org.fogofwarlabs.sc4j.base.binary.BigEndianUtils {
+  public static int readInt32(byte[], int);
+  public static int readUnsigned16(byte[], int);
+  public static long readUnsigned(byte[], int, int);
+  public static long readUnsigned32(byte[], int);
+}
+
+public final class org.fogofwarlabs.sc4j.base.binary.LittleEndianUtils {
+  public static int readInt(byte[], int, int);
+  public static int readInt32(byte[], int);
+  public static int readUnsigned16(byte[], int);
+  public static int replaceByte(int, int, int);
+  public static long readUnsigned(byte[], int, int);
+  public static long readUnsigned32(byte[], int);
+  public static void writeInt16(byte[], int, int);
+  public static void writeInt32(byte[], int, int);
+  public static void writeInt64(byte[], int, long);
+}
+
+public final class org.fogofwarlabs.sc4j.base.exception.Exceptions {
+  public static java.io.IOException newIOException(java.lang.String, java.lang.Object...);
+  public static java.io.IOException newIOException(java.lang.Throwable, java.lang.String, java.lang.Object...);
+  public static java.io.UncheckedIOException newUncheckedIOException(java.io.IOException);
+  public static java.io.UncheckedIOException newUncheckedIOException(java.io.IOException, java.lang.String, java.lang.Object...);
+  public static java.lang.ArithmeticException newArithmeticException(java.lang.String, java.lang.Object...);
+  public static java.lang.AssertionError newAssertionError();
+  public static java.lang.AssertionError newAssertionError(java.lang.String, java.lang.Object...);
+  public static java.lang.AssertionError newAssertionError(java.lang.Throwable, java.lang.String, java.lang.Object...);
+  public static java.lang.IllegalArgumentException newIllegalArgumentException(java.lang.String, java.lang.Object...);
+  public static java.lang.IllegalArgumentException newIllegalArgumentException(java.lang.Throwable, java.lang.String, java.lang.Object...);
+  public static java.lang.IllegalStateException newIllegalStateException(java.lang.String, java.lang.Object...);
+  public static java.lang.IllegalStateException newIllegalStateException(java.lang.Throwable, java.lang.String, java.lang.Object...);
+  public static java.lang.IndexOutOfBoundsException newIndexOutOfBoundsException(java.lang.String, java.lang.Object...);
+  public static java.lang.NullPointerException newNullPointerException();
+  public static java.lang.NullPointerException newNullPointerException(java.lang.String, java.lang.Object...);
+  public static java.lang.String format(java.lang.String, java.lang.Object...);
+  public static java.lang.String format(java.lang.String, java.lang.Object[], java.util.function.BiConsumer<java.lang.StringBuilder, java.lang.Object>);
+  public static java.lang.UnsupportedOperationException newUnsupportedOperationException(java.lang.String, java.lang.Object...);
+  public static java.lang.UnsupportedOperationException newUnsupportedOperationException(java.lang.Throwable, java.lang.String, java.lang.Object...);
+}
+
+public final class org.fogofwarlabs.sc4j.base.exception.IgnoreException {
+  public static void execute(org.fogofwarlabs.sc4j.base.exception.IgnoreException$Callback...);
+}
+
+public interface org.fogofwarlabs.sc4j.base.exception.IgnoreException$Callback {
+  public abstract void run() throws java.lang.Exception;
+}
+
+public final class org.fogofwarlabs.sc4j.base.io.AtomicFileUtils {
+  public static void write(java.nio.file.Path, byte[]) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.base.io.AuditedResourceUtils {
+  public static byte[] require(byte[], java.lang.String, java.lang.String);
+  public static java.lang.String computeSha256(byte[]);
+}
+
+public final class org.fogofwarlabs.sc4j.base.json.JsonReader {
+  public static java.lang.Object parse(byte[]) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.base.json.JsonWriterUtils {
+  public static java.lang.String write(java.lang.Object);
+}
+
+public final class org.fogofwarlabs.sc4j.base.log.LogLevel extends java.lang.Enum<org.fogofwarlabs.sc4j.base.log.LogLevel> {
+  public int getPriority();
+  public java.lang.String getTitle();
+  public static final org.fogofwarlabs.sc4j.base.log.LogLevel DEBUG;
+  public static final org.fogofwarlabs.sc4j.base.log.LogLevel ERROR;
+  public static final org.fogofwarlabs.sc4j.base.log.LogLevel INFO;
+  public static final org.fogofwarlabs.sc4j.base.log.LogLevel OFF;
+  public static final org.fogofwarlabs.sc4j.base.log.LogLevel TRACE;
+  public static final org.fogofwarlabs.sc4j.base.log.LogLevel WARNING;
+  public static org.fogofwarlabs.sc4j.base.log.LogLevel parse(java.lang.String);
+  public static org.fogofwarlabs.sc4j.base.log.LogLevel valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.base.log.LogLevel[] values();
+}
+
+public final class org.fogofwarlabs.sc4j.base.log.Logger {
+  public boolean isEnabled(org.fogofwarlabs.sc4j.base.log.LogLevel);
+  public java.lang.String getName();
+  public static org.fogofwarlabs.sc4j.base.log.Logger of(java.lang.Class<?>);
+  public void debug(java.lang.String, java.lang.Object...);
+  public void debug(java.util.function.Supplier<java.lang.String>);
+  public void error(java.lang.String, java.lang.Object...);
+  public void exception(org.fogofwarlabs.sc4j.base.log.LogLevel, java.lang.Throwable, java.lang.String, java.lang.Object...);
+  public void info(java.lang.String, java.lang.Object...);
+  public void log(org.fogofwarlabs.sc4j.base.log.LogLevel, java.lang.String, java.lang.Object...);
+  public void log(org.fogofwarlabs.sc4j.base.log.LogLevel, java.util.function.Supplier<java.lang.String>);
+  public void trace(java.lang.String, java.lang.Object...);
+  public void warning(java.lang.String, java.lang.Object...);
+}
+
+public final class org.fogofwarlabs.sc4j.base.log.Logging {
+  public static boolean isEnabled(org.fogofwarlabs.sc4j.base.log.LogLevel);
+  public static boolean isFileEnabled();
+  public static final int FILE_COUNT = 5;
+  public static final java.lang.String FILE_NAME = "sc4j.log";
+  public static final long FILE_SIZE_LIMIT = 10485760l;
+  public static org.fogofwarlabs.sc4j.base.log.LogLevel getLevel();
+  public static void disableFile();
+  public static void enableFile(java.nio.file.Path) throws java.io.IOException;
+  public static void setLevel(org.fogofwarlabs.sc4j.base.log.LogLevel);
+}
+
+public final class org.fogofwarlabs.sc4j.base.text.AsciiCaseUtils {
+  public static boolean equalsIgnoreCase(byte[], byte[]);
+  public static boolean equalsIgnoreCase(java.lang.String, java.lang.String);
+  public static int toLowerCase(int);
+  public static java.lang.String toLowerCase(java.lang.String);
+}
+
+public final class org.fogofwarlabs.sc4j.base.text.TerminatedStringUtils {
+  public static byte[] copyPrintableText(byte[], int);
+  public static byte[] cutText(byte[], int);
+  public static byte[] cutText(java.lang.String, int);
+  public static byte[] cutTextWithoutControlBytes(byte[], int);
+  public static byte[] cutWholeCharacters(byte[], int);
+  public static int getTerminatedLength(byte[], int, int);
+  public static int getTextLength(byte[]);
+  public static int getTextLength(byte[], int);
+  public static int getTextLength(byte[], int, int);
+  public static java.lang.String readText(byte[]);
+  public static void putText(byte[], int, int, byte[], int, int);
+  public static void putWholeCharacters(byte[], int, int, byte[], int, int);
+}

@@ -1,0 +1,18 @@
+plugins {
+    id 'java-library'
+    // The run values and digests (org.fogofwarlabs.sc4j.scr.core.test.golden), the external inputs, the tier annotations, the test
+    // resource lookup and the result tables (org.fogofwarlabs.sc4j.scr.core.test) are shared with the test source sets of the other modules.
+    id 'java-test-fixtures'
+}
+
+dependencies {
+    api project(':sc4j-base')
+    // The deterministic random contract and the state hash that the SC:R generator implements.
+    api project(':sc4j-engine')
+
+    testFixturesApi platform("org.junit:junit-bom:5.11.4")
+    testFixturesApi "org.junit.jupiter:junit-jupiter-api"
+
+    // The replays of the scr-game test resources (replays/focused/...), read as files by TestResourceUtils.
+    testRuntimeOnly files(rootProject.file('mods/scr/scr-game/src/test/resources'))
+}

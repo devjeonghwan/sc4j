@@ -1,0 +1,968 @@
+def operatingSystem = System.getProperty("os.name").toUpperCase()
+def architecture = System.getProperty("os.arch").toUpperCase()
+
+def platformOperatingSystem = ""
+def platformArchitecture = ""
+
+if (operatingSystem.contains("WINDOWS")) {
+    platformOperatingSystem = "windows"
+} else if (operatingSystem.contains("LINUX")) {
+    platformOperatingSystem = "linux"
+} else {
+    throw new GradleException("Not supported operating system.")
+}
+
+if (architecture.contains("AMD64") || architecture.contains("X86_64")) {
+    platformArchitecture = "x86_64"
+} else if (architecture.contains("AARCH64") || architecture.contains("ARM64")) {
+    platformArchitecture = "arm64"
+} else {
+    throw new GradleException("Not supported system architecture.")
+}
+
+ext {
+    OS = platformOperatingSystem
+    ARCH = platformArchitecture
+    PLATFORM = OS + '-' + ARCH
+
+    LWJGL_VERSION = '3.3.6'
+    LWJGL_NATIVES = "natives-" + OS + (ARCH == "arm64" ? "-arm64" : "")
+}
+
+// The licence files of every distribution: LICENSE, NOTICE and the third-party licence texts of licenses/ that NOTICE names. A
+// distribution folder carries all three, a jar LICENSE and NOTICE in META-INF/. The distribution tasks check their output with the two
+// closures below and fail when a file is missing, when NOTICE does not name a text of licenses/ or names one that does not exist.
+def licenseNames = ['LICENSE', 'NOTICE']
+def licenseTextFolder = file('licenses')
+def licenseTextReference = ~/licenses\/[A-Za-z0-9_.-]*[A-Za-z0-9]/
+ext.licenseFiles = files(licenseNames)
+ext.licenseTexts = licenseTextFolder
+ext.checkDistributionLicenses = { File directory ->
+    def texts = licenseTextFolder.listFiles().findAll { file -> file.isFile() }.collect { file -> 'licenses/' + file.name }
+    def missing = (licenseNames + texts).findAll { path -> !new File(directory, path).isFile() }
+    if (!missing.isEmpty()) {
+        throw new GradleException('The distribution ' + directory + ' lacks ' + missing.join(', ') + '.')
+    }
+    def named = (new File(directory, 'NOTICE').getText('UTF-8') =~ licenseTextReference).collect { match -> match }.toSet()
+    def problems = []
+    def unnamed = texts.findAll { path -> !named.contains(path) }
+    if (!unnamed.isEmpty()) {
+        problems << 'does not name ' + unnamed.join(', ')
+    }
+    def unknown = named.findAll { path -> !texts.contains(path) }
+    if (!unknown.isEmpty()) {
+        problems << 'names the missing ' + unknown.join(', ')
+    }
+    if (!problems.isEmpty()) {
+        throw new GradleException('The NOTICE of ' + directory + ' ' + problems.join(' and ') + '.')
+    }
+}
+ext.checkJarLicenses = { File jar ->
+    def missing = new java.util.zip.ZipFile(jar).withCloseable { archive ->
+        licenseNames.collect { name -> 'META-INF/' + name }.findAll { name -> archive.getEntry(name) == null }
+    }
+    if (!missing.isEmpty()) {
+        throw new GradleException('The jar ' + jar + ' lacks ' + missing.join(', ') + '.')
+    }
+}
+
+allprojects {
+    group = 'org.fogofwarlabs.sc4j'
+    version = "$project.version"
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+// External test inputs, passed as Gradle properties (-P<name>=<path>, or <name>=<path> in the user's
+// GRADLE_USER_HOME/gradle.properties) and forwarded as system properties. The shared test fixture
+// org.fogofwarlabs.sc4j.scr.core.test.ExternalInput reads them.
+def externalTestProperties = [
+    'sc4j.data',                  // SC:R installation (CASC storage, Maps, x86_64/StarCraft.exe)
+    'sc4j.replays',               // STARDATA replay corpus root (stardata_original_replays)
+    'sc4j.replays.limit',         // corpus file limit of the replay parse test
+    'sc4j.maps',                  // the client's maps folder with the large EUD maps (mods/scr/scr-client/build/install/sc4j/maps)
+    'sc4j.corpus'                 // replay corpus folder that the corpus survey plays (any folder layout)
+]
+
+// The integration tier needs the SC:R installation: fail before any task runs instead of skipping every test.
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { task -> task.name == 'integrationTest' }) {
+        def data = providers.gradleProperty('sc4j.data').getOrElse('')
+
+        if (data.isBlank()) {
+            throw new GradleException("integrationTest needs the SC:R installation: set the Gradle property sc4j.data, either as the line " +
+                                      "'sc4j.data=<installation directory>' in %USERPROFILE%\\.gradle\\gradle.properties (GRADLE_USER_HOME) " +
+                                      "or with -Psc4j.data=<installation directory> (CI: ORG_GRADLE_PROJECT_sc4j.data).")
+        }
+
+        if (!new File(data).isDirectory()) {
+            throw new GradleException("integrationTest needs the SC:R installation, but the Gradle property sc4j.data names no directory: " + data)
+        }
+    }
+}
+
+subprojects {
+
+    // These options must precede JVM startup: the JDK caches its default temporary directory during initialization.
+    [Test, JavaExec].each { taskType ->
+        tasks.withType(taskType).configureEach { processTask ->
+            def temporaryDirectory = layout.buildDirectory.dir("tmp/${processTask.name}-io")
+            ext.processTemporaryDirectory = temporaryDirectory
+            ext.processStorageArguments = ['-XX:-UsePerfData', '-Djava.io.tmpdir=' + temporaryDirectory.get().asFile.absolutePath]
+            jvmArgs processStorageArguments
+            doFirst {
+                def directory = processTask.processTemporaryDirectory.get().asFile
+                if (!directory.isDirectory() && !directory.mkdirs()) {
+                    throw new GradleException("Cannot create the JVM temporary directory: " + directory)
+                }
+            }
+        }
+    }
+
+    if (name in ['sc4j-engine-client', 'scr-render', 'scr-client']) {
+        def nativeLibraries = configurations.create('nativeLibraries') {
+            canBeConsumed = true
+            canBeResolved = true
+        }
+        def nativeDirectory = layout.buildDirectory.dir('native-libraries')
+        def stageNativeLibraries = tasks.register('stageNativeLibraries', Sync) {
+            description = 'Stages the existing native dependencies outside the Java runtime classpath.'
+            from({ nativeLibraries.collect { archive -> zipTree(archive) } }) {
+                include '**/*.dll', '**/*.so', '**/*.so.*'
+                exclude 'META-INF/**', '**/*.sha1', '**/*.git'
+                eachFile { details -> details.path = details.name }
+                includeEmptyDirs = false
+            }
+            into nativeDirectory
+            duplicatesStrategy = DuplicatesStrategy.FAIL
+            doLast {
+                def directory = nativeDirectory.get().asFile
+                def libraries = directory.isDirectory() ? directory.listFiles().findAll { file ->
+                    file.isFile() && file.name != 'libraries.list'
+                }.collect { file -> file.name }.sort() : []
+                if (libraries.isEmpty()) {
+                    throw new GradleException('No native libraries were staged.')
+                }
+                new File(directory, 'libraries.list').setText(libraries.join('\n') + '\n', 'UTF-8')
+            }
+        }
+        [Test, JavaExec].each { taskType ->
+            tasks.withType(taskType).configureEach {
+                dependsOn stageNativeLibraries
+                systemProperty 'org.lwjgl.librarypath', nativeDirectory.get().asFile.absolutePath
+                systemProperty 'java.library.path', nativeDirectory.get().asFile.absolutePath
+                systemProperty 'org.lwjgl.system.SharedLibraryExtractPath', layout.buildDirectory.dir('tmp/native-extract').get().asFile.absolutePath
+                systemProperty 'org.bytedeco.javacpp.cachedir', layout.buildDirectory.dir('tmp/javacpp-cache').get().asFile.absolutePath
+                systemProperty 'org.bytedeco.javacpp.platform.linkpath', nativeDirectory.get().asFile.absolutePath
+                systemProperty 'org.bytedeco.javacpp.platform.preloadpath', nativeDirectory.get().asFile.absolutePath
+                systemProperty 'org.bytedeco.javacpp.pathsFirst', 'true'
+                systemProperty 'org.bytedeco.javacpp.cacheLibraries', 'false'
+                jvmArgs '--enable-native-access=ALL-UNNAMED'
+            }
+        }
+        plugins.withId('application') {
+            distributions.main.contents {
+                from(stageNativeLibraries) { into 'lib/natives' }
+            }
+        }
+    }
+
+    // The installed client and the runtime load the native libraries from lib/natives. The runtime carries the JavaCPP options
+    // too: the engine's video default decodes with FFmpeg through JavaCPP.
+    plugins.withId('application') {
+        tasks.named('startScripts') {
+            defaultJvmOpts = providers.provider {
+                application.applicationDefaultJvmArgs + ['-XX:-UsePerfData', '-Djava.io.tmpdir=APP_HOME_PLACEHOLDER/.cache/tmp'] +
+                        (project.name in ['scr-client', 'sc4j-runtime'] ? [
+                                '--enable-native-access=ALL-UNNAMED',
+                                '-Dorg.lwjgl.librarypath=APP_HOME_PLACEHOLDER/lib/natives',
+                                '-Djava.library.path=APP_HOME_PLACEHOLDER/lib/natives',
+                                '-Dorg.lwjgl.system.SharedLibraryExtractPath=APP_HOME_PLACEHOLDER/.cache/natives',
+                                '-Dorg.bytedeco.javacpp.cachedir=APP_HOME_PLACEHOLDER/.cache/javacpp',
+                                '-Dorg.bytedeco.javacpp.platform.linkpath=APP_HOME_PLACEHOLDER/lib/natives',
+                                '-Dorg.bytedeco.javacpp.platform.preloadpath=APP_HOME_PLACEHOLDER/lib/natives',
+                                '-Dorg.bytedeco.javacpp.pathsFirst=true',
+                                '-Dorg.bytedeco.javacpp.cacheLibraries=false'
+                        ] : [])
+            }.get()
+            doLast {
+                def windowsText = windowsScript.text.replace('APP_HOME_PLACEHOLDER', '%APP_HOME%')
+                def windowsPreparation = 'if not exist "%APP_HOME%\\.cache\\tmp\\" mkdir "%APP_HOME%\\.cache\\tmp"\r\n' +
+                        'if not exist "%APP_HOME%\\.cache\\tmp\\" (\r\n' +
+                        '    echo ERROR: Cannot create the JVM temporary directory. 1>&2\r\n    exit /b 1\r\n)\r\n\r\n'
+                windowsText = windowsText.replace('@rem Add default JVM options here.', windowsPreparation + '@rem Add default JVM options here.')
+                windowsText = windowsText.replace('%JAVA_EXE% -version', '%JAVA_EXE% %DEFAULT_JVM_OPTS% -version')
+                // The Java runtime of the user package (<install>/java, beside launcher/ and runtime/) comes before JAVA_HOME and PATH.
+                def windowsJava = 'if exist "%APP_HOME%\\..\\java\\bin\\java.exe" set "JAVA_HOME=%APP_HOME%\\..\\java"\r\n\r\n'
+                windowsText = windowsText.replace('@rem Find java.exe', windowsJava + '@rem Find java.exe')
+                windowsScript.text = windowsText
+                def unixText = unixScript.text.replace('APP_HOME_PLACEHOLDER', '\'"$APP_HOME"\'')
+                def unixPreparation = 'mkdir -p "$APP_HOME/.cache/tmp" || die "Cannot create the JVM temporary directory"\n' +
+                        '[ -d "$APP_HOME/.cache/tmp" ] || die "The JVM temporary path is not a directory"\n\n'
+                unixText = unixText.replace('# Add default JVM options here.', unixPreparation + '# Add default JVM options here.')
+                def unixJava = 'if [ -x "$APP_HOME/../java/bin/java" ] ; then\n    JAVA_HOME=$APP_HOME/../java\nfi\n\n'
+                unixScript.text = unixText.replace('# Determine the Java command to use to start the JVM.',
+                                                   unixJava + '# Determine the Java command to use to start the JVM.')
+            }
+        }
+    }
+    // Every jar carries LICENSE and NOTICE in META-INF/, every application distribution LICENSE, NOTICE and licenses/ at its root; the
+    // install task fails when its folder misses one of them.
+    tasks.withType(Jar).configureEach {
+        metaInf {
+            from(rootProject.licenseFiles)
+        }
+    }
+    plugins.withId('application') {
+        distributions.main.contents {
+            from(rootProject.licenseFiles)
+            from(rootProject.licenseTexts) { into 'licenses' }
+        }
+        tasks.named('installDist', Sync) { task ->
+            doLast {
+                rootProject.checkDistributionLicenses(task.destinationDir)
+            }
+        }
+    }
+    plugins.withType(JavaLibraryPlugin).configureEach {
+        dependencies {
+            testImplementation platform("org.junit:junit-bom:5.11.4")
+            testImplementation "org.junit.jupiter:junit-jupiter"
+            testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+        }
+
+        // Warnings are printed in full so that they can be counted. javac reports every
+        // lint category; javadoc and javac lift their default limit of 100 printed warnings per task.
+        // Javadoc leaves out the doclint group "missing" by default: it reports the getters documented
+        // with @return only as "no main description". Missing comments and tags are checked by the style checker
+        // instead; -Psc4j.javadoc.doclint=all restores the full javadoc default for a raw count.
+        tasks.withType(JavaCompile).configureEach {
+            options.compilerArgs += ['-Xlint:all', '-Xmaxwarns', '100000']
+        }
+        tasks.withType(Javadoc).configureEach {
+            options.addBooleanOption('Xdoclint:' + providers.gradleProperty('sc4j.javadoc.doclint').getOrElse('all,-missing'), true)
+            options.addStringOption('Xmaxwarns', '100000')
+            options.addStringOption('Xmaxerrs', '100000')
+            options.tags('apiNote:a:API Note:', 'implSpec:a:Implementation Requirements:')
+        }
+
+        // Unit tier: tests without input from outside the repository. The external properties are forwarded blank so a -P
+        // value never turns this tier into an external run.
+        tasks.named("test") {
+            useJUnitPlatform {
+                excludeTags 'integration', 'corpus'
+            }
+            externalTestProperties.each { name -> systemProperty name, "" }
+        }
+
+        // Integration tier: the tests marked @RequiresInstallation (tag integration), with the SC:R installation sc4j.data.
+        // The build fails before it starts when sc4j.data is not set (gradle.taskGraph.whenReady above).
+        def integrationTest = tasks.register("integrationTest", Test) {
+            description = "Runs the integration tier: the tests that need the SC:R installation (sc4j.data)."
+            group = "verification"
+            testClassesDirs = sourceSets.test.output.classesDirs
+            classpath = sourceSets.test.runtimeClasspath
+            useJUnitPlatform {
+                includeTags 'integration'
+                excludeTags 'corpus'
+            }
+            shouldRunAfter tasks.named("test")
+        }
+
+        // Corpus tier: the tests marked @CorpusTest (tag corpus): long runs and tests over the external folders other than
+        // the installation. A test whose declared folder is not set is skipped.
+        def corpusTest = tasks.register("corpusTest", Test) {
+            description = "Runs the corpus tier over the external replay corpus and the other external folders."
+            group = "verification"
+            testClassesDirs = sourceSets.test.output.classesDirs
+            classpath = sourceSets.test.runtimeClasspath
+            useJUnitPlatform {
+                includeTags 'corpus'
+            }
+            shouldRunAfter integrationTest
+        }
+
+        [integrationTest, corpusTest].each { task ->
+            task.configure {
+                externalTestProperties.each { name -> systemProperty name, providers.gradleProperty(name).getOrElse("") }
+                // Changed external inputs must rerun the tier.
+                outputs.upToDateWhen { false }
+            }
+        }
+
+        // The folder-driven tests (replays/detection, replays/native, maps, captures/lan, ... of the test resources) write one
+        // result table per test task (org.fogofwarlabs.sc4j.scr.core.test.TestResultUtils).
+        [tasks.named("test"), integrationTest, corpusTest].each { task ->
+            task.configure {
+                systemProperty "sc4j.golden.results", project.layout.buildDirectory.dir("golden-results/" + task.name).get().asFile.absolutePath
+            }
+        }
+    }
+}
+
+// Engine boundary check: the engine-side root modules never depend on a project of the
+// SC:R mod (mods/scr) and none of their source, resource or build files names the SC:R mod's packages or an Scr* type. It is a small own check
+// (no ArchUnit); "check" (and so "build") runs it for every engine-side module.
+def engineSideModules = ['sc4j-base', 'sc4j-mod-manifest', 'sc4j-engine-core', 'sc4j-engine-sim', 'sc4j-engine-net', 'sc4j-engine-client', 'sc4j-engine', 'sc4j-runtime', 'sc4j-launcher', 'sc4j-beaconlink-protocol',
+                         'sc4j-beaconlink-peer', 'sc4j-beaconlink-node', 'sc4j-beaconlink']
+def modPackagePattern = ~/org[.\/]fogofwarlabs[.\/]sc4j[.\/]scr\b/
+// SC:R type names (ScrUnits, ScrNativeIds ...) belong to the mod; an engine-side module names none, not even in a comment.
+def scrTypeNamePattern = ~/\bScr[A-Z]\w*/
+// The EUD layer is SC:R mod code over the engine's public index accessors: an engine-side module names no EUD concept and
+// no native SC:R image address (0x14xxxxxxx), not even in a comment.
+def eudNamePattern = ~/(?i)\beuds?\b/
+def nativeAddressPattern = ~/\b0x14[0-9A-Fa-f]{7}\b/
+
+// Demo 1 (mods/demo) proves that the engine stands without SC:R, so the same check runs on it.
+def modBoundaryModules = engineSideModules + ['mods:demo']
+
+configure(modBoundaryModules.collect { name -> project(':' + name) }) { module ->
+    def checkedFiles = files(module.buildFile, fileTree(module.file('src')) {
+        include '**/*.java', '**/*.gradle', '**/*.json', '**/*.properties', '**/*.css', '**/*.txt', '**/*.md'
+    })
+    def projectDependencies = providers.provider {
+        module.configurations.collectMany { configuration ->
+            configuration.dependencies.withType(ProjectDependency).collect { dependency -> configuration.name + ' -> ' + dependency.path }
+        }.sort()
+    }
+    def report = module.layout.buildDirectory.file('reports/mod-boundary.txt')
+    def checkModBoundary = module.tasks.register('checkModBoundary') {
+        description = 'Checks that this module neither depends on nor names the SC:R mod (mods/scr, org.fogofwarlabs.sc4j.scr, Scr* types, ' +
+                'EUD, native SC:R addresses).'
+        group = 'verification'
+        inputs.files(checkedFiles)
+        inputs.property('projectDependencies', projectDependencies)
+        inputs.property('namePatterns', [modPackagePattern.toString(), scrTypeNamePattern.toString(), eudNamePattern.toString(),
+                                         nativeAddressPattern.toString()])
+        outputs.file(report)
+        doLast {
+            def problems = projectDependencies.get().findAll { dependency ->
+                dependency.contains(':mods:scr:') || dependency.endsWith(':mods:scr')
+            }.collect { dependency ->
+                'project dependency ' + dependency
+            }
+            checkedFiles.each { file ->
+                file.readLines('UTF-8').eachWithIndex { line, index ->
+                    if (line =~ modPackagePattern || line =~ scrTypeNamePattern || line =~ eudNamePattern || line =~ nativeAddressPattern) {
+                        problems << file.path + ':' + (index + 1) + ': ' + line.trim()
+                    }
+                }
+            }
+            if (!problems.isEmpty()) {
+                throw new GradleException(module.path + ' must not depend on or name the SC:R mod:\n  ' + problems.join('\n  '))
+            }
+            report.get().asFile.text = 'No dependency on the SC:R mod: ' + checkedFiles.files.size() + ' files, ' +
+                    projectDependencies.get().size() + ' project dependencies checked.\n'
+        }
+    }
+    module.plugins.withId('java-library') {
+        module.tasks.named('check') {
+            dependsOn checkModBoundary
+        }
+    }
+}
+
+// Engine simulation determinism check: the simulation packages of the engine core and simulation modules use no source of
+// nondeterminism. Comments, string and character literals are blanked first, so only code is checked. A small own check
+// like checkModBoundary; "check" (and so "build") runs it.
+def simulationPackages = ['random', 'math', 'game', 'entity', 'state', 'animation', 'content', 'hook', 'movement', 'path', 'collision',
+                          'spatial', 'visibility', 'combat', 'economy', 'production', 'order', 'player', 'lifecycle', 'command', 'controller',
+                          'trigger', 'computer', 'terrain', 'map', 'projectile', 'lockstep', 'replay', 'save']
+def commentsAndLiterals = java.util.regex.Pattern.compile($/(?s)""".*?"""|/\*.*?\*/|//[^\n]*|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/$)
+def forbiddenSimulationApis = [
+    'Math.random'                 : ~/\b(Strict)?Math\s*\.\s*random\b/,
+    'a clock'                     : ~/\bSystem\s*\.\s*(currentTimeMillis|nanoTime)\b|\bjava\s*\.\s*time\b/,
+    'a java.util random generator': ~/\b(Random|SecureRandom|SplittableRandom|ThreadLocalRandom)\b/,
+    'a hash-ordered collection'   : ~/\b(HashMap|HashSet|Hashtable|IdentityHashMap|WeakHashMap|ConcurrentHashMap)\b/,
+    'an identity hash code'       : ~/\bidentityHashCode\b/,
+    'floating point'              : ~/\b(float|double|Float|Double)\b/
+]
+
+configure([project(':sc4j-engine-core'), project(':sc4j-engine-sim')]) { module ->
+    def simulationFiles = files(simulationPackages.collect { name ->
+        fileTree(module.file('src/main/java/org/fogofwarlabs/sc4j/engine/' + name)) { include '**/*.java' }
+    })
+    def report = module.layout.buildDirectory.file('reports/simulation-determinism.txt')
+    def checkSimulationDeterminism = module.tasks.register('checkSimulationDeterminism') {
+        description = 'Checks that the engine simulation packages use no Math.random, clock, java.util random generator, hash-ordered ' +
+                'collection, identity hash code or floating point.'
+        group = 'verification'
+        inputs.files(simulationFiles)
+        outputs.file(report)
+        doLast {
+            def problems = []
+            simulationFiles.each { file ->
+                def text = file.getText('UTF-8')
+                def matcher = commentsAndLiterals.matcher(text)
+                def code = new StringBuilder()
+                while (matcher.find()) {
+                    matcher.appendReplacement(code, java.util.regex.Matcher.quoteReplacement(matcher.group().replaceAll('[^\n]', ' ')))
+                }
+                matcher.appendTail(code)
+                code.toString().split('\n', -1).eachWithIndex { line, index ->
+                    forbiddenSimulationApis.each { name, pattern ->
+                        if (line =~ pattern) {
+                            problems << file.path + ':' + (index + 1) + ': ' + name + ': ' + line.trim()
+                        }
+                    }
+                }
+            }
+            if (!problems.isEmpty()) {
+                throw new GradleException(module.path + ' simulation packages must stay deterministic:\n  ' + problems.join('\n  '))
+            }
+            report.get().asFile.text = 'No nondeterministic API in the simulation packages: ' + simulationFiles.files.size() + ' files checked.\n'
+        }
+    }
+    module.plugins.withId('java-library') {
+        module.tasks.named('check') {
+            dependsOn checkSimulationDeterminism
+        }
+    }
+}
+
+// Public API list (docs/api-policy.md): the API of an engine module is every public or protected class, constructor,
+// method and field of its main classes outside the internal elements below. apiDump writes it with the JDK's javap to api/<module>.api
+// (checked in); apiCheck, which "check" (and so "build") runs, fails when the compiled classes differ from that file, so every API change is
+// a visible diff of an .api file in the same commit. The base and the manifest are listed too: mods compile against them through the engine.
+def apiModules = ['sc4j-base', 'sc4j-mod-manifest', 'sc4j-engine-core', 'sc4j-engine-sim', 'sc4j-engine-net', 'sc4j-engine-client', 'sc4j-engine']
+// The internal elements: public for the engine's own modules and the runtime, but not API; the listing leaves them out and mods must not use
+// them (checkApiUse). A package covers its subpackages, a class its nested classes. Their package-info files say so too.
+def internalApiElements = [
+    // The mod loader of the runtime.
+    'org.fogofwarlabs.sc4j.engine.mod.loading',
+    // The OpenGL default of the renderer and the OpenAL default of the audio output.
+    'org.fogofwarlabs.sc4j.engine.client.render.gl',
+    'org.fogofwarlabs.sc4j.engine.client.audio.openal',
+    // The GLFW implementations of the runtime host (host, window, input, key codes, cursor) and the Windows implementations of the platform
+    // services (input method, pointer speed, tick clock); the host interfaces, value types and portable defaults are API.
+    'org.fogofwarlabs.sc4j.engine.client.host.GlfwClientHost',
+    'org.fogofwarlabs.sc4j.engine.client.host.GlfwHostWindow',
+    'org.fogofwarlabs.sc4j.engine.client.host.GlfwInput',
+    'org.fogofwarlabs.sc4j.engine.client.host.GlfwKeyCodes',
+    'org.fogofwarlabs.sc4j.engine.client.host.GlfwCursorSurface',
+    'org.fogofwarlabs.sc4j.engine.client.host.WindowsTextInputMethod',
+    'org.fogofwarlabs.sc4j.engine.client.host.WindowsSystemPointerSpeed',
+    'org.fogofwarlabs.sc4j.engine.client.host.WindowsHostTickClock'
+]
+def internalApiArguments = internalApiElements.collectMany { name -> ['--internal', name] }
+def apiToolMainClass = 'org.fogofwarlabs.sc4j.tools.api.ApiTool'
+def createApiToolConfiguration = { module ->
+    def configuration = module.configurations.create('apiTool') {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+    module.dependencies.add('apiTool', module.dependencies.project(path: ':tools:api-check'))
+    return configuration
+}
+
+configure(apiModules.collect { name -> project(':' + name) }) { module ->
+    def apiTool = createApiToolConfiguration(module)
+    def apiFile = module.file('api/' + module.name + '.api')
+    def report = module.layout.buildDirectory.file('reports/api-check.txt')
+    module.plugins.withId('java-library') {
+        def classes = module.sourceSets.main.output.classesDirs
+        def classArguments = { classes.files.sort().collectMany { directory -> ['--classes', directory.absolutePath] } }
+        def apiDump = module.tasks.register('apiDump', JavaExec) {
+            description = 'Writes the public API list of this module (api/' + module.name + '.api) from its compiled classes with javap.'
+            group = 'build'
+            classpath = apiTool
+            mainClass = apiToolMainClass
+            inputs.files(classes)
+            inputs.property('internalApiElements', internalApiElements)
+            outputs.file(apiFile)
+            argumentProviders.add({ ['dump', '--api-file', apiFile.absolutePath] + classArguments() + internalApiArguments } as CommandLineArgumentProvider)
+        }
+        def apiCheck = module.tasks.register('apiCheck', JavaExec) {
+            description = 'Checks that the public API of this module equals api/' + module.name + '.api (apiDump updates the file).'
+            group = 'verification'
+            classpath = apiTool
+            mainClass = apiToolMainClass
+            mustRunAfter apiDump
+            inputs.files(classes)
+            inputs.files(apiFile)
+            inputs.property('internalApiElements', internalApiElements)
+            outputs.file(report)
+            argumentProviders.add({
+                ['check', '--api-file', apiFile.absolutePath] + classArguments() + internalApiArguments +
+                        ['--update-task', module.path + ':apiDump', '--report', report.get().asFile.absolutePath]
+            } as CommandLineArgumentProvider)
+        }
+        module.tasks.named('check') {
+            dependsOn apiCheck
+        }
+    }
+}
+
+// Internal use check: the mods' own main sources (mods/demo, every mods/scr module, the demo 2 classes of mods/scr-demo; its
+// clone is the SC:R mod's sources) use no internal element; the check fails on every use. "check" (and so "build") runs it.
+def apiUseModules = subprojects.findAll { candidate ->
+    candidate.path in [':mods:demo', ':mods:scr-demo'] || candidate.path.startsWith(':mods:scr:')
+}
+def apiUseSourceFolders = [':mods:scr-demo': 'src/mod/java']
+
+configure(apiUseModules) { module ->
+    def apiTool = createApiToolConfiguration(module)
+    def sourceFolder = module.file(apiUseSourceFolders.getOrDefault(module.path, 'src/main/java'))
+    def report = module.layout.buildDirectory.file('reports/api-use.txt')
+    def checkApiUse = module.tasks.register('checkApiUse', JavaExec) {
+        description = 'Checks that the main sources of this mod module use no internal engine package or class.'
+        group = 'verification'
+        classpath = apiTool
+        mainClass = apiToolMainClass
+        inputs.files(module.fileTree(sourceFolder) { include '**/*.java' })
+        inputs.property('internalApiElements', internalApiElements)
+        outputs.file(report)
+        argumentProviders.add({
+            ['use', '--base', module.projectDir.absolutePath, '--sources', sourceFolder.absolutePath] +
+                    internalApiArguments + ['--report', report.get().asFile.absolutePath]
+        } as CommandLineArgumentProvider)
+    }
+    module.plugins.withId('java') {
+        module.tasks.named('check') {
+            dependsOn checkApiUse
+        }
+    }
+}
+
+// Native id boundary: the SC:R mod keeps its native ids as the int holders of scr.content (ScrUnitIds ...) and
+// the engine identities of ScrUnits ... mapped by ScrNativeIds; the package scr.data.type.constant declares no enum and no source names
+// a native id enum (UnitType, WeaponType, UpgradeType, TechType, OrderType, Race) in that package. "check" (and so "build")
+// runs it for every module of the SC:R mod and the recorder.
+def nativeIdEnumPattern = ~/org[.\/]fogofwarlabs[.\/]sc4j[.\/]scr[.\/]data[.\/]type[.\/]constant[.\/](UnitType|WeaponType|UpgradeType|TechType|OrderType|Race)\b/
+def constantPackage = 'org/fogofwarlabs/sc4j/scr/data/type/constant/'
+
+configure(subprojects.findAll { candidate -> candidate.path.startsWith(':mods:scr:') || candidate.path == ':tools:sc-recorder' }) { module ->
+    def sourceFiles = fileTree(module.file('src')) { include '**/*.java' }
+    def report = module.layout.buildDirectory.file('reports/native-id-boundary.txt')
+    def checkNativeIdBoundary = module.tasks.register('checkNativeIdBoundary') {
+        description = 'Checks that no native id enum of scr.data.type.constant is declared or named; the native ids are the scr.content holders.'
+        group = 'verification'
+        inputs.files(sourceFiles)
+        outputs.file(report)
+        doLast {
+            def problems = []
+            sourceFiles.each { file ->
+                def constant = file.path.replace('\\', '/').contains(constantPackage)
+                file.readLines('UTF-8').eachWithIndex { line, index ->
+                    if (line =~ nativeIdEnumPattern || constant && line =~ /^\s*(public\s+)?enum\s/) {
+                        problems << file.path + ':' + (index + 1) + ': ' + line.trim()
+                    }
+                }
+            }
+            if (!problems.isEmpty()) {
+                throw new GradleException(module.path + ' must not declare or name a native id enum of scr.data.type.constant:\n  ' +
+                        problems.join('\n  '))
+            }
+            report.get().asFile.text = 'No native id enum: ' + sourceFiles.files.size() + ' files checked.\n'
+        }
+    }
+    module.plugins.withId('java') {
+        module.tasks.named('check') {
+            dependsOn checkNativeIdBoundary
+        }
+    }
+}
+
+// Private path check: no source, build or documentation file of the repository names a private local path. It reads
+// the files of every leaf module (without build output), the top-level files of the parent modules and of the repository, gradle/ and the
+// documents in docs/, but not the ignore file, which lists the folder, nor the top-level files it keeps local (its "/<name>" lines). A
+// small own check like checkModBoundary; "check" (and so "build") runs it.
+def privatePathPattern = ~/(?<![\w.])\.local[\/\\]/
+def localTopLevelFiles = file('.gitignore').readLines('UTF-8').findAll { line -> line ==~ /\/[^\/*]+\/?/ }.collect { line ->
+    line.substring(1).replaceAll(/\/$/, '')
+}
+def privatePathFileTypes = ['**/*.java', '**/*.gradle', '**/*.kts', '**/*.properties', '**/*.json', '**/*.css', '**/*.txt', '**/*.tsv',
+                            '**/*.md', '**/*.xml', '**/*.fxml', '**/*.html', '**/*.py', '**/*.sh', '**/*.bat', '**/*.cmd', '**/*.yml',
+                            '**/*.toml', '**/LICENSE', '**/NOTICE', '**/gradlew']
+def privatePathFiles = files(
+        fileTree(rootDir) {
+            include privatePathFileTypes.collect { type -> type.substring(3) }
+            exclude '*/**', '.gitignore'
+            exclude localTopLevelFiles
+        },
+        fileTree(file('gradle')) { include privatePathFileTypes },
+        fileTree(file('docs')) { include privatePathFileTypes },
+        subprojects.collect { module ->
+            module.childProjects.isEmpty()
+                    ? fileTree(module.projectDir) {
+                        include privatePathFileTypes
+                        exclude 'build/**', '.gradle/**'
+                    }
+                    : fileTree(module.projectDir) {
+                        include privatePathFileTypes.collect { type -> type.substring(3) }
+                        exclude '*/**'
+                    }
+        })
+def privatePathReport = layout.buildDirectory.file('reports/private-paths.txt')
+def checkPrivatePaths = tasks.register('checkPrivatePaths') {
+    description = 'Checks that no source, build or documentation file names a private local path.'
+    group = 'verification'
+    inputs.files(privatePathFiles)
+    inputs.property('pattern', privatePathPattern.toString())
+    outputs.file(privatePathReport)
+    doLast {
+        def problems = []
+        privatePathFiles.each { file ->
+            file.readLines('UTF-8').eachWithIndex { line, index ->
+                if (line =~ privatePathPattern) {
+                    problems << file.path + ':' + (index + 1) + ': ' + line.trim()
+                }
+            }
+        }
+        if (!problems.isEmpty()) {
+            throw new GradleException('No repository file may name a private local path:\n  ' + problems.join('\n  '))
+        }
+        privatePathReport.get().asFile.text = 'No private path: ' + privatePathFiles.files.size() + ' files checked.\n'
+    }
+}
+subprojects { module ->
+    module.plugins.withId('java') {
+        module.tasks.named('check') {
+            dependsOn checkPrivatePaths
+        }
+    }
+}
+
+// The Java runtime of the user package: an image of the JDK that runs this build, made with that JDK's own jlink, with the modules that the
+// launcher, the runtime and the mods use: what jdeps finds in their jars and in the JavaFX modules (which stay in launcher/lib/javafx), and
+// the charsets and locale data they look up by name. The locale data covers the languages of the mods' texts (the SC:R text locales).
+def javaRuntimeModules = ['java.base', 'java.desktop', 'java.management', 'java.xml', 'jdk.unsupported', 'jdk.charsets', 'jdk.localedata']
+def javaRuntimeLocales = ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'zh']
+def javaRuntimeHome = providers.systemProperty('java.home').get()
+def javaRuntimeImage = layout.buildDirectory.dir('java-runtime')
+def createJavaRuntime = tasks.register('createJavaRuntime', Exec) {
+    description = 'Creates the Java runtime image of the user package in build/java-runtime with jlink.'
+    group = 'distribution'
+    inputs.property('modules', javaRuntimeModules)
+    inputs.property('locales', javaRuntimeLocales)
+    inputs.property('javaHome', javaRuntimeHome)
+    outputs.dir(javaRuntimeImage)
+    def imageDirectory = javaRuntimeImage.get().asFile
+    executable = new File(javaRuntimeHome, 'bin/' + (platformOperatingSystem == 'windows' ? 'jlink.exe' : 'jlink')).absolutePath
+    args '--add-modules', javaRuntimeModules.join(','), '--include-locales=' + javaRuntimeLocales.join(','), '--strip-debug',
+         '--no-header-files', '--no-man-pages', '--compress=zip-6', '--output', imageDirectory.absolutePath
+    // jlink writes only into a folder that does not exist.
+    doFirst {
+        imageDirectory.deleteDir()
+    }
+}
+
+// The user package build/distributions/SC4J-<version>.zip: one folder SC4J-<version> with the programs of an install (the SC:R mod's
+// installContents: launcher/ with the shipped seed list, runtime/, mods/scr.jar, LICENSE, NOTICE, licenses/), the jars of the clone
+// (mods/scr-demo.jar) and of the demo (mods/demo.jar), the Java runtime that the start scripts use (java/) and the start of the launcher
+// for users (SC4J.bat and SC4J from sc4j-launcher/src/package). It holds no userdata/ and no cache: a fresh install makes them at its first
+// start.
+// The package is staged in build/user-package first, where the licence check runs, and zipped without file times in a fixed order, so that
+// the same sources give the same zip. The mod projects are evaluated after this one, so the tasks name them only when Gradle configures them.
+def userPackageName = 'SC4J-' + version
+def userPackageModProjects = [':mods:demo', ':mods:scr-demo']
+def stageUserPackage = tasks.register('stageUserPackage', Sync) {
+    description = 'Stages the user package in build/user-package/' + userPackageName + ' and checks its licence files.'
+    group = 'distribution'
+    into layout.buildDirectory.dir('user-package/' + userPackageName)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    with project(':mods:scr').installContents
+    userPackageModProjects.each { path ->
+        from(project(path).tasks.named('modJar')) { into 'mods' }
+    }
+    from(createJavaRuntime) { into 'java' }
+    from(project(':sc4j-launcher').file('src/package'))
+    doLast {
+        rootProject.checkDistributionLicenses(destinationDir)
+    }
+}
+tasks.register('distribution', Zip) {
+    description = 'Builds the user package build/distributions/' + userPackageName + '.zip from the staged package.'
+    group = 'distribution'
+    archiveFileName = userPackageName + '.zip'
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    from(stageUserPackage) {
+        into userPackageName
+        filesMatching(['**/bin/*', 'SC4J']) { details ->
+            details.permissions {
+                unix('rwxr-xr-x')
+            }
+        }
+    }
+}
+
+// Maven Central publishing of the engine, with Gradle's own maven-publish and signing plugins. Published are the modules a mod compiles against
+// and runs its headless tests with: sc4j-engine and sc4j-runtime with every project they depend on (the runtime runs a mod's Beacon.Link
+// through sc4j-beaconlink, so the Beacon.Link client, peer and protocol are among them). Each is org.fogofwarlabs.sc4j:<module>:<version> with
+// its jar, sources jar, javadoc jar, POM and Gradle module metadata; a project dependency becomes a dependency on the published module. The test
+// fixtures are test helpers of this repository, not API, and are not published.
+//   publishToMavenLocal   the modules into the local Maven repository, signed only when a signing key is set
+//   centralBundle         the signed modules into the staging repository build/central/staging, checked and zipped as a Central Portal bundle
+//   uploadCentralBundle   that bundle to the Central Portal (its publisher API over java.net.http); the release follows in the portal by hand
+//                         unless centralPortalPublishingType is AUTOMATIC
+// The Gradle properties (-P<name>=<value>, the user's GRADLE_USER_HOME/gradle.properties or the environment variables ORG_GRADLE_PROJECT_<name>):
+//   signingInMemoryKey, signingInMemoryKeyPassword  the ASCII-armored private OpenPGP key and its password; signingInMemoryKeyId optionally
+//                                                   names a signing subkey (its last 8 hexadecimal digits)
+//   centralPortalUsername, centralPortalPassword    the user token of the Central Portal (its name and password parts)
+//   centralPortalPublishingType                     USER_MANAGED (default) or AUTOMATIC
+def publishedModules = [
+    'sc4j-base'               : 'Generic base of the SC4J engine and its mods: exceptions, logging, binary and JSON helpers and small utilities.',
+    'sc4j-mod-manifest'       : 'SC4J mod manifest (sc4j-mod.json), its settings schema and the settings value files.',
+    'sc4j-engine-core'        : 'SC4J engine core: fixed-point math, the map grid, terrain, players, the state hash, content identities and ' +
+                                'resource models.',
+    'sc4j-engine-sim'         : 'SC4J engine simulation: games, units, default systems, content, orders, commands, computer players, triggers, ' +
+                                'maps, lockstep, replays and saves.',
+    'sc4j-engine-net'         : 'SC4J engine network layer: datagram links, the lockstep transport, LAN room discovery and the network lobby.',
+    'sc4j-engine-client'      : 'SC4J engine client framework: runtime host, scenes, input, renderer, text, HUD, dialogs, world view and audio.',
+    'sc4j-engine'             : 'SC4J engine that mods compile against: the mod API and the client application over the engine modules.',
+    'sc4j-beaconlink-protocol': 'Beacon.Link wire protocol of SC4J: identities, the wire reader and writer, signed rooms and messages.',
+    'sc4j-beaconlink-peer'    : 'Beacon.Link peer library of SC4J: the node roles that the launcher, the runtime and the node program run.',
+    'sc4j-beaconlink'         : 'Beacon.Link client of SC4J: node sessions, rooms, participant channels and the overlay that a mod plays over.',
+    'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.'
+]
+// The values of every POM: the project, its licence and the organization as its developer.
+def publishedGroup = 'org.fogofwarlabs.sc4j'
+def publishedVersion = version.toString()
+def projectUrl = 'https://github.com/fogofwarlabs/sc4j'
+def projectLicense = [name: 'Apache-2.0', url: 'https://www.apache.org/licenses/LICENSE-2.0.txt']
+def projectDeveloper = [id: 'fogofwarlabs', name: 'Fog of War Labs', url: 'https://fogofwarlabs.org']
+def projectScm = [url: projectUrl, connection: 'scm:git:' + projectUrl + '.git', developerConnection: 'scm:git:ssh://git@github.com/fogofwarlabs/sc4j.git']
+
+def signingKey = providers.gradleProperty('signingInMemoryKey')
+def signingKeyPassword = providers.gradleProperty('signingInMemoryKeyPassword')
+def signingKeyId = providers.gradleProperty('signingInMemoryKeyId')
+def centralPortalUsername = providers.gradleProperty('centralPortalUsername')
+def centralPortalPassword = providers.gradleProperty('centralPortalPassword')
+def centralPortalPublishingType = providers.gradleProperty('centralPortalPublishingType').orElse('USER_MANAGED')
+def centralPortalPublishingTypes = ['USER_MANAGED', 'AUTOMATIC']
+def centralPortalUploadUrl = 'https://central.sonatype.com/api/v1/publisher/upload'
+// The Central Portal answers an accepted upload with 201 Created and the deployment id as the body.
+def centralPortalCreated = 201
+def snapshotSuffix = '-SNAPSHOT'
+def centralStaging = layout.buildDirectory.dir('central/staging')
+def centralStagingRepository = 'CentralStaging'
+def centralStagingPublishTask = 'publishMavenPublicationTo' + centralStagingRepository + 'Repository'
+// The variants of the test fixtures plugin, left out of the published component.
+def testFixtureVariants = ['testFixturesApiElements', 'testFixturesRuntimeElements', 'testFixturesSourcesElements', 'testFixturesJavadocElements']
+// The checksum and signature files beside every artifact of a repository; Central needs the signature, the MD5 and the SHA-1 of each.
+def checksumExtensions = ['.md5', '.sha1', '.sha256', '.sha512']
+def signatureExtension = '.asc'
+def requiredCompanions = [signatureExtension, '.md5', '.sha1']
+// The files of every published module, after <module>-<version>.
+def requiredModuleFiles = ['.jar', '-sources.jar', '-javadoc.jar', '.pom', '.module']
+// The POM fields Central needs, as paths below <project>.
+def requiredPomFields = ['name', 'description', 'url', 'licenses.license.name', 'licenses.license.url', 'developers.developer.id',
+                         'developers.developer.name', 'scm.url', 'scm.connection']
+
+def cleanCentralStaging = tasks.register('cleanCentralStaging', Delete) {
+    description = 'Deletes the staging repository of the Central Portal bundle (build/central/staging).'
+    group = 'publishing'
+    delete centralStaging
+}
+
+configure(publishedModules.keySet().collect { name -> project(':' + name) }) { module ->
+    module.apply plugin: 'maven-publish'
+    module.apply plugin: 'signing'
+    module.plugins.withId('java-library') {
+        module.java {
+            withSourcesJar()
+            withJavadocJar()
+        }
+        module.publishing {
+            publications {
+                maven(MavenPublication) {
+                    from module.components.java
+                    // The POM and the module metadata name the resolved versions, also of the dependencies a platform manages.
+                    versionMapping {
+                        allVariants {
+                            fromResolutionResult()
+                        }
+                    }
+                    pom {
+                        name = module.name
+                        description = publishedModules[module.name]
+                        url = projectUrl
+                        licenses {
+                            license {
+                                name = projectLicense.name
+                                url = projectLicense.url
+                            }
+                        }
+                        developers {
+                            developer {
+                                id = projectDeveloper.id
+                                name = projectDeveloper.name
+                                url = projectDeveloper.url
+                            }
+                        }
+                        scm {
+                            url = projectScm.url
+                            connection = projectScm.connection
+                            developerConnection = projectScm.developerConnection
+                        }
+                    }
+                }
+            }
+            repositories {
+                maven {
+                    name = centralStagingRepository
+                    url = centralStaging
+                }
+            }
+        }
+        // Signed only with a key: publishToMavenLocal works without one, centralBundle refuses to start without one.
+        if (signingKey.isPresent()) {
+            module.signing {
+                if (signingKeyId.isPresent()) {
+                    useInMemoryPgpKeys(signingKeyId.get(), signingKey.get(), signingKeyPassword.getOrElse(''))
+                } else {
+                    useInMemoryPgpKeys(signingKey.get(), signingKeyPassword.getOrElse(''))
+                }
+                sign module.publishing.publications.maven
+            }
+        }
+        module.tasks.named(centralStagingPublishTask) {
+            dependsOn cleanCentralStaging
+        }
+    }
+    module.plugins.withId('java-test-fixtures') {
+        module.afterEvaluate {
+            testFixtureVariants.findAll { name -> module.configurations.findByName(name) != null }.each { name ->
+                module.components.java.withVariantsFromConfiguration(module.configurations.getByName(name)) { variant ->
+                    variant.skip()
+                }
+            }
+        }
+    }
+}
+
+// The bundle refuses a snapshot version, which Central does not take, and a build without a signing key; the upload refuses missing
+// credentials and an unknown publishing type. All of them fail before any task runs.
+gradle.taskGraph.whenReady { graph ->
+    def taskNames = graph.allTasks.findAll { task -> task.project == rootProject }.collect { task -> task.name }
+
+    if (taskNames.contains('centralBundle')) {
+        if (publishedVersion.endsWith(snapshotSuffix)) {
+            throw new GradleException('Central does not take the snapshot version ' + publishedVersion + ': set a release version in ' +
+                                      'gradle.properties first.')
+        }
+
+        if (!signingKey.isPresent()) {
+            throw new GradleException('The Central bundle must be signed: set the Gradle properties signingInMemoryKey (the ASCII-armored ' +
+                                      'private key) and signingInMemoryKeyPassword, or ORG_GRADLE_PROJECT_signingInMemoryKey and ' +
+                                      'ORG_GRADLE_PROJECT_signingInMemoryKeyPassword.')
+        }
+    }
+
+    if (taskNames.contains('uploadCentralBundle')) {
+        if (!centralPortalUsername.isPresent() || !centralPortalPassword.isPresent()) {
+            throw new GradleException('The upload needs the Central Portal user token: set the Gradle properties centralPortalUsername and ' +
+                                      'centralPortalPassword, or ORG_GRADLE_PROJECT_centralPortalUsername and ' +
+                                      'ORG_GRADLE_PROJECT_centralPortalPassword.')
+        }
+
+        if (!centralPortalPublishingTypes.contains(centralPortalPublishingType.get())) {
+            throw new GradleException('centralPortalPublishingType must be one of ' + centralPortalPublishingTypes.join(', ') + ', not ' +
+                                      centralPortalPublishingType.get() + '.')
+        }
+    }
+}
+
+// Checks the staging repository before it is zipped: every module has its jar, sources jar, javadoc jar, POM and module metadata, every
+// artifact its signature and checksums, every POM the fields Central needs and only dependencies on published modules of this group.
+def checkCentralStaging = { File root ->
+    def problems = []
+    def groupFolder = new File(root, publishedGroup.replace('.', '/'))
+
+    publishedModules.keySet().each { name ->
+        def folder = new File(groupFolder, name + '/' + publishedVersion)
+        def baseName = name + '-' + publishedVersion
+        def present = folder.isDirectory() ? folder.listFiles().collect { file -> file.name }.toSet() : [] as Set
+
+        requiredModuleFiles.collect { suffix -> baseName + suffix }.findAll { file -> !present.contains(file) }.each { file ->
+            problems << name + ': no ' + file
+        }
+        present.findAll { file -> !(checksumExtensions + [signatureExtension]).any { extension -> file.endsWith(extension) } }.each { file ->
+            requiredCompanions.findAll { extension -> !present.contains(file + extension) }.each { extension ->
+                problems << name + ': no ' + file + extension
+            }
+        }
+
+        def pomFile = new File(folder, baseName + '.pom')
+
+        if (pomFile.isFile()) {
+            def pom = new groovy.xml.XmlSlurper().parse(pomFile)
+
+            requiredPomFields.findAll { path ->
+                path.split('\\.').inject(pom) { node, child -> node[child] }.text().isBlank()
+            }.each { path ->
+                problems << name + ': the POM has no ' + path
+            }
+            pom.dependencies.dependency.findAll { dependency ->
+                dependency.groupId.text() == publishedGroup && !publishedModules.containsKey(dependency.artifactId.text())
+            }.each { dependency ->
+                problems << name + ': the POM depends on the unpublished ' + dependency.artifactId.text()
+            }
+        }
+    }
+
+    if (!problems.isEmpty()) {
+        throw new GradleException('The Central staging repository ' + root + ' is not complete:\n  ' + problems.join('\n  '))
+    }
+}
+
+def centralBundle = tasks.register('centralBundle', Zip) {
+    description = 'Builds the Central Portal bundle build/central/sc4j-<version>-bundle.zip: the signed engine modules, published into ' +
+            'build/central/staging and checked.'
+    group = 'publishing'
+    dependsOn publishedModules.keySet().collect { name -> ':' + name + ':' + centralStagingPublishTask }
+    archiveFileName = 'sc4j-' + publishedVersion + '-bundle.zip'
+    destinationDirectory = layout.buildDirectory.dir('central')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    // The bundle holds the module files only; the repository's own metadata is not part of a deployment.
+    from(centralStaging) {
+        exclude '**/maven-metadata.xml*'
+    }
+    doFirst {
+        checkCentralStaging(centralStaging.get().asFile)
+    }
+}
+
+tasks.register('uploadCentralBundle') {
+    description = 'Uploads the Central Portal bundle of centralBundle to the Central Portal (centralPortalUsername, centralPortalPassword, ' +
+            'centralPortalPublishingType).'
+    group = 'publishing'
+    def bundle = centralBundle.flatMap { task -> task.archiveFile }
+    inputs.file(bundle)
+    doLast {
+        def file = bundle.get().asFile
+        def charset = java.nio.charset.StandardCharsets.UTF_8
+        def token = Base64.getEncoder().encodeToString((centralPortalUsername.get() + ':' + centralPortalPassword.get()).getBytes(charset))
+        def boundary = 'sc4j-' + UUID.randomUUID()
+        def partHead = '--' + boundary + '\r\nContent-Disposition: form-data; name="bundle"; filename="' + file.name + '"\r\n' +
+                'Content-Type: application/octet-stream\r\n\r\n'
+        def partTail = '\r\n--' + boundary + '--\r\n'
+        def publishers = java.net.http.HttpRequest.BodyPublishers
+        def body = publishers.concat(publishers.ofByteArray(partHead.getBytes(charset)), publishers.ofFile(file.toPath()),
+                                     publishers.ofByteArray(partTail.getBytes(charset)))
+        def deploymentName = 'sc4j-' + publishedVersion
+        def uri = URI.create(centralPortalUploadUrl + '?publishingType=' + centralPortalPublishingType.get() + '&name=' +
+                             URLEncoder.encode(deploymentName, charset))
+        def request = java.net.http.HttpRequest.newBuilder(uri)
+                .header('Authorization', 'Bearer ' + token)
+                .header('Content-Type', 'multipart/form-data; boundary=' + boundary)
+                .POST(body)
+                .build()
+        def response = java.net.http.HttpClient.newHttpClient().withCloseable { client ->
+            client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
+        }
+
+        if (response.statusCode() != centralPortalCreated) {
+            throw new GradleException('The Central Portal refused the bundle ' + file.name + ': HTTP ' + response.statusCode() + ' ' +
+                                      response.body())
+        }
+
+        logger.lifecycle('Uploaded ' + file.name + ' to the Central Portal as ' + centralPortalPublishingType.get() + ', deployment ' +
+                         response.body().trim() + '.')
+    }
+}

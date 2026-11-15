@@ -1,0 +1,43 @@
+/*
+ * Font fallback for systems without the Windows fonts named in sc4j-launcher.css (Segoe UI, Segoe UI Semibold,
+ * Cascadia Mono). Add this stylesheet after sc4j-launcher.css when Font.getFamilies() lacks any of them.
+ * JavaFX CSS takes a single family per declaration, so every rule that names a family is repeated here with the
+ * JavaFX logical fonts "System" and "Monospaced". Keep the selector lists in sync with sc4j-launcher.css.
+ */
+
+/* Rules that use "Segoe UI" (their weight stays as set in sc4j-launcher.css). */
+.root,
+.text-display,
+.app-title,
+.tooltip,
+.badge {
+    -fx-font-family: "System";
+}
+
+/* Rules that use "Segoe UI Semibold": the logical font has no semibold face, so bold keeps the hierarchy. */
+.text-title,
+.text-subtitle,
+.text-heading,
+.app-subtitle,
+.toggle-button.nav-button,
+.panel-header > .panel-title,
+.button,
+.toggle-button,
+.list-title,
+.tab-pane > .tab-header-area > .headers-region > .tab .tab-label,
+.dialog-pane > .header-panel .label,
+.field-label,
+.field-required {
+    -fx-font-family: "System";
+    -fx-font-weight: bold;
+}
+
+/* Rules that use "Cascadia Mono". */
+.text-mono,
+.list-title.text-mono,
+.text-area.log-area,
+.text-area.code-area,
+.log-excerpt .label {
+    -fx-font-family: "Monospaced";
+    -fx-font-weight: normal;
+}

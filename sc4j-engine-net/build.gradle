@@ -1,0 +1,12 @@
+plugins {
+    id 'java-library'
+}
+
+// The engine network layer: datagram links and the lockstep transport over them, LAN room discovery, the network lobby and the Beacon.Link
+// interface that the runtime gives a mod (engine.net.beaconlink). No client and no mod API.
+dependencies {
+    api project(':sc4j-engine-sim')
+
+    // The lockstep game of the lobby and transport tests (LockstepGameScenario).
+    testImplementation testFixtures(project(':sc4j-engine-sim'))
+}

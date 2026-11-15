@@ -1,0 +1,15 @@
+{
+  "image": "smokehouse.png",
+  "teamMask": "smokehouse_team.png",
+  "shadow": "smokehouse_shadow.png",
+  "frameWidth": 130,
+  "frameHeight": 91,
+  "columns": 5,
+  "rows": 1,
+  "anchor": {"x": 65, "y": 49},
+  "animations": {
+    "construct": [{"frame": 0}, {"wait": 40}, {"frame": 1}, {"wait": 40}, {"frame": 2}, {"label": "rising"}, {"wait": 40}, {"jump": "rising"}],
+    "idle": [{"frame": 3}, {"wait": 60}, {"jump": "idle"}],
+    "death": [{"frame": 4}, {"wait": 240}, {"end": true}]
+  }
+}

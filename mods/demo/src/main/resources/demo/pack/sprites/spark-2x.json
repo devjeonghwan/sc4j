@@ -1,0 +1,8 @@
+{
+  "image": "spark-2x.png",
+  "frameWidth": 48,
+  "frameHeight": 48,
+  "columns": 3,
+  "rows": 1,
+  "anchor": {"x": 24, "y": 34}
+}

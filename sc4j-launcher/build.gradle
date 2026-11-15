@@ -1,0 +1,75 @@
+plugins {
+    id 'java-library'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+// The launcher: lists the mod jars of the install, edits their pre-run settings and starts the runtime as a
+// separate process. It reads mod jars only through the manifest module (never loading a mod class) and depends on no
+// runtime or mod module; the Beacon.Link protocol module gives it the shared node list file and the node Ping, the Beacon.Link
+// peer library the node it runs while it is open, and the Beacon.Link client (the one the games use, with the engine's network
+// interface it implements) the session of the logged-in account; JavaFX (OpenJFX) is its only other dependency.
+dependencies {
+    implementation project(':sc4j-mod-manifest')
+    implementation project(':sc4j-beaconlink-protocol')
+    implementation project(':sc4j-beaconlink-peer')
+    implementation project(':sc4j-beaconlink')
+
+    // Test mod jars (org.fogofwarlabs.sc4j.manifest.test.TestJarUtils).
+    testImplementation testFixtures(project(':sc4j-mod-manifest'))
+    // Nodes, game clients and their mod identities on 127.0.0.1 (org.fogofwarlabs.sc4j.beaconlink.test.client.ClientScenario).
+    testImplementation testFixtures(project(':sc4j-beaconlink'))
+}
+
+javafx {
+    version = '25.0.2'
+    modules = ['javafx.controls']
+}
+
+application {
+    applicationName = 'sc4j-launcher'
+    mainClass = 'org.fogofwarlabs.sc4j.launcher.LauncherMain'
+}
+
+// The About box shows the launcher version from the jar manifest.
+tasks.named('jar') {
+    manifest {
+        attributes('Implementation-Version': project.version)
+    }
+}
+
+// JavaFX runs from the module path. The distribution keeps the JavaFX jars in lib/javafx, outside the class path of the start
+// scripts, and the start scripts name that folder; the OpenJFX native library cache stays below the install (.cache/openjfx)
+// instead of the user's home folder.
+def isJavaFxJar = { File file -> file.name.startsWith('javafx-') }
+
+distributions {
+    main {
+        contents {
+            eachFile { details ->
+                if (details.path.startsWith('lib/javafx-')) {
+                    details.path = 'lib/javafx/' + details.name
+                }
+            }
+        }
+    }
+}
+
+tasks.named('startScripts') {
+    classpath = classpath.filter { file -> !isJavaFxJar(file) }
+    defaultJvmOpts = defaultJvmOpts + ['--module-path', 'APP_HOME_PLACEHOLDER/lib/javafx',
+                                       '--add-modules', javafx.modules.join(','),
+                                       '--enable-native-access=javafx.graphics',
+                                       '-Djavafx.cachedir=APP_HOME_PLACEHOLDER/.cache/openjfx']
+}
+
+// gradlew :sc4j-launcher:run starts the launcher from the class folders; it uses the development install build/dev-install.
+tasks.named('run') {
+    jvmArgs '--enable-native-access=javafx.graphics', '-Djavafx.cachedir=' + layout.buildDirectory.dir('tmp/openjfx').get().asFile.absolutePath
+}
+
+// The layout tests lay views out in scenes that are never shown; the OpenJFX native library cache stays in the build folder.
+tasks.withType(Test).configureEach {
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+    systemProperty 'javafx.cachedir', layout.buildDirectory.dir('tmp/openjfx').get().asFile.absolutePath
+}

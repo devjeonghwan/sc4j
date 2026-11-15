@@ -1,7 +1,8 @@
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
 plugins {
-    id 'java-library'
+    id 'org.fogofwarlabs.sc4j.mod'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // Demo 2: a clone of the SC:R mod with its own mod identity, built the way the modder guide describes. The repository holds no
@@ -55,6 +56,11 @@ sourceSets {
         compileClasspath += mod.output + mod.compileClasspath
         runtimeClasspath += mod.output + mod.runtimeClasspath
     }
+}
+
+sc4jMod {
+    id = 'scr-demo'
+    sourceSets = [project.sourceSets.mod]
 }
 
 // The third-party libraries of the SC:R mod modules (LWJGL, FFmpeg/JavaCPP, ...), resolved from the modules themselves so that the clone
@@ -213,40 +219,20 @@ tasks.named('processModResources') {
     dependsOn cloneScrMod
 }
 
-// The mod jar: the clone's classes and resources (sc4j-mod.json of the overlay and meta/ of the scr-client folder), the added units'
-// converted graphics and the NOTICE and license files of every art set (third-party/<set>/); the baked frames themselves stay out.
-def modJar = tasks.register('modJar', Jar) {
-    description = 'Builds the demo 2 mod jar scr-demo.jar from the clone of the SC:R mod.'
-    group = 'build'
-    archiveFileName = 'scr-demo.jar'
-    destinationDirectory = layout.buildDirectory.dir('mods')
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    from(sourceSets.mod.output)
+// The mod jar scr-demo.jar: the clone's classes and resources (sc4j-mod.json of the overlay and meta/ of the scr-client folder), the added
+// units' converted graphics and the NOTICE and license files of every art set (third-party/<set>/); the baked frames themselves stay out.
+def modJar = tasks.named('modJar') {
     from(convertArt)
     from(artSets) {
         include '*/NOTICE.txt', '*/license/**'
         into 'third-party'
     }
-    doLast {
-        rootProject.checkJarLicenses(archiveFile.get().asFile)
-    }
 }
 
-tasks.named('assemble') {
-    dependsOn modJar
-}
-
-// The development install (gradlew :mods:scr-demo:devInstall): the SC:R mod's devInstall assembles build/dev-install, then scr-demo.jar is
-// copied into its mods/ folder next to scr.jar. Nothing under userdata/ is written here; the launcher saves the clone's own settings
-// (userdata/settings/scr-demo.json) when the player sets them.
-tasks.register('devInstall', Copy) {
-    description = 'Copies scr-demo.jar into the mods folder of the development install build/dev-install.'
-    group = 'distribution'
+// The development install (gradlew :mods:scr-demo:devInstall) gets scr-demo.jar next to scr.jar. Nothing under userdata/ is written here;
+// the launcher saves the clone's own settings (userdata/settings/scr-demo.json) when the player sets them.
+tasks.named('devInstall') {
     dependsOn ':mods:scr:devInstall'
-    from(modJar)
-    into layout.settingsDirectory.dir('build/dev-install/mods')
 }
 
 // The tests read scr-demo.jar and scr.jar as a user's mods/ folder has them.

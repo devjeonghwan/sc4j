@@ -4,6 +4,7 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.SourcesJar
 
 plugins {
+    id 'org.fogofwarlabs.sc4j.java'
     // The Maven Central publishing of the engine modules (the publishing part at the end of this file).
     id 'com.vanniktech.maven.publish' version '0.37.0' apply false
 }
@@ -39,211 +40,12 @@ ext {
     LWJGL_NATIVES = "natives-" + OS + (ARCH == "arm64" ? "-arm64" : "")
 }
 
-// The licence files of every distribution: LICENSE, NOTICE and the third-party licence texts of licenses/ that NOTICE names. A
-// distribution folder carries all three, a jar LICENSE and NOTICE in META-INF/. The distribution tasks check their output with the two
-// closures below and fail when a file is missing, when NOTICE does not name a text of licenses/ or names one that does not exist.
-def licenseNames = ['LICENSE', 'NOTICE']
-def licenseTextFolder = file('licenses')
-def licenseTextReference = ~/licenses\/[A-Za-z0-9_.-]*[A-Za-z0-9]/
-ext.licenseFiles = files(licenseNames)
-ext.licenseTexts = licenseTextFolder
-ext.checkDistributionLicenses = { File directory ->
-    def texts = licenseTextFolder.listFiles().findAll { file -> file.isFile() }.collect { file -> 'licenses/' + file.name }
-    def missing = (licenseNames + texts).findAll { path -> !new File(directory, path).isFile() }
-    if (!missing.isEmpty()) {
-        throw new GradleException('The distribution ' + directory + ' lacks ' + missing.join(', ') + '.')
-    }
-    def named = (new File(directory, 'NOTICE').getText('UTF-8') =~ licenseTextReference).collect { match -> match }.toSet()
-    def problems = []
-    def unnamed = texts.findAll { path -> !named.contains(path) }
-    if (!unnamed.isEmpty()) {
-        problems << 'does not name ' + unnamed.join(', ')
-    }
-    def unknown = named.findAll { path -> !texts.contains(path) }
-    if (!unknown.isEmpty()) {
-        problems << 'names the missing ' + unknown.join(', ')
-    }
-    if (!problems.isEmpty()) {
-        throw new GradleException('The NOTICE of ' + directory + ' ' + problems.join(' and ') + '.')
-    }
-}
-ext.checkJarLicenses = { File jar ->
-    def missing = new java.util.zip.ZipFile(jar).withCloseable { archive ->
-        licenseNames.collect { name -> 'META-INF/' + name }.findAll { name -> archive.getEntry(name) == null }
-    }
-    if (!missing.isEmpty()) {
-        throw new GradleException('The jar ' + jar + ' lacks ' + missing.join(', ') + '.')
-    }
-}
-
 allprojects {
     group = 'org.fogofwarlabs.sc4j'
     version = "$project.version"
 
     repositories {
         mavenCentral()
-    }
-
-    // These options must precede JVM startup: the JDK caches its default temporary directory during initialization.
-    [Test, JavaExec].each { taskType ->
-        tasks.withType(taskType).configureEach { processTask ->
-            def temporaryDirectory = layout.buildDirectory.dir("tmp/${processTask.name}-io")
-            ext.processTemporaryDirectory = temporaryDirectory
-            ext.processStorageArguments = ['-XX:-UsePerfData', '-Djava.io.tmpdir=' + temporaryDirectory.get().asFile.absolutePath]
-            jvmArgs processStorageArguments
-            doFirst {
-                def directory = processTask.processTemporaryDirectory.get().asFile
-                if (!directory.isDirectory() && !directory.mkdirs()) {
-                    throw new GradleException("Cannot create the JVM temporary directory: " + directory)
-                }
-            }
-        }
-    }
-
-    // Every jar carries LICENSE and NOTICE in META-INF/. The base jar type org.gradle.jvm.tasks.Jar covers the jars of plugins too (the
-    // javadoc jar of the publishing plugin), which do not extend the Jar type of the build script.
-    tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
-        metaInf {
-            from(rootProject.licenseFiles)
-        }
-    }
-}
-
-// Native libraries of a module: the configuration nativeLibraries holds the archives of the native libraries, stageNativeLibraries unpacks
-// them into build/native-libraries for the module's tests and run tasks, and an application distribution gets them in lib/natives.
-ext.configureNativeLibraries = { Project module ->
-    def nativeLibraries = module.configurations.create('nativeLibraries') {
-        canBeConsumed = true
-        canBeResolved = true
-    }
-    def nativeDirectory = module.layout.buildDirectory.dir('native-libraries')
-    def stageNativeLibraries = module.tasks.register('stageNativeLibraries', Sync) {
-        description = 'Stages the existing native dependencies outside the Java runtime classpath.'
-        from({ nativeLibraries.collect { archive -> module.zipTree(archive) } }) {
-            include '**/*.dll', '**/*.so', '**/*.so.*'
-            exclude 'META-INF/**', '**/*.sha1', '**/*.git'
-            eachFile { details -> details.path = details.name }
-            includeEmptyDirs = false
-        }
-        into nativeDirectory
-        duplicatesStrategy = DuplicatesStrategy.FAIL
-        doLast {
-            def directory = nativeDirectory.get().asFile
-            def libraries = directory.isDirectory() ? directory.listFiles().findAll { file ->
-                file.isFile() && file.name != 'libraries.list'
-            }.collect { file -> file.name }.sort() : []
-            if (libraries.isEmpty()) {
-                throw new GradleException('No native libraries were staged.')
-            }
-            new File(directory, 'libraries.list').setText(libraries.join('\n') + '\n', 'UTF-8')
-        }
-    }
-    [Test, JavaExec].each { taskType ->
-        module.tasks.withType(taskType).configureEach {
-            dependsOn stageNativeLibraries
-            systemProperty 'org.lwjgl.librarypath', nativeDirectory.get().asFile.absolutePath
-            systemProperty 'java.library.path', nativeDirectory.get().asFile.absolutePath
-            systemProperty 'org.lwjgl.system.SharedLibraryExtractPath', module.layout.buildDirectory.dir('tmp/native-extract').get().asFile.absolutePath
-            systemProperty 'org.bytedeco.javacpp.cachedir', module.layout.buildDirectory.dir('tmp/javacpp-cache').get().asFile.absolutePath
-            systemProperty 'org.bytedeco.javacpp.platform.linkpath', nativeDirectory.get().asFile.absolutePath
-            systemProperty 'org.bytedeco.javacpp.platform.preloadpath', nativeDirectory.get().asFile.absolutePath
-            systemProperty 'org.bytedeco.javacpp.pathsFirst', 'true'
-            systemProperty 'org.bytedeco.javacpp.cacheLibraries', 'false'
-            jvmArgs '--enable-native-access=ALL-UNNAMED'
-        }
-    }
-    module.plugins.withId('application') {
-        module.distributions.main.contents {
-            from(stageNativeLibraries) { into 'lib/natives' }
-        }
-    }
-}
-
-[':sc4j-engine-client', ':sc4j-runtime'].each { path ->
-    configureNativeLibraries(project(path))
-}
-
-subprojects {
-
-    // An application with native libraries loads them from lib/natives; the JavaCPP options serve FFmpeg, the engine's video default.
-    plugins.withId('application') {
-        tasks.named('startScripts') {
-            defaultJvmOpts = providers.provider {
-                application.applicationDefaultJvmArgs + ['-XX:-UsePerfData', '-Djava.io.tmpdir=APP_HOME_PLACEHOLDER/.cache/tmp'] +
-                        (project.configurations.findByName('nativeLibraries') != null ? [
-                                '--enable-native-access=ALL-UNNAMED',
-                                '-Dorg.lwjgl.librarypath=APP_HOME_PLACEHOLDER/lib/natives',
-                                '-Djava.library.path=APP_HOME_PLACEHOLDER/lib/natives',
-                                '-Dorg.lwjgl.system.SharedLibraryExtractPath=APP_HOME_PLACEHOLDER/.cache/natives',
-                                '-Dorg.bytedeco.javacpp.cachedir=APP_HOME_PLACEHOLDER/.cache/javacpp',
-                                '-Dorg.bytedeco.javacpp.platform.linkpath=APP_HOME_PLACEHOLDER/lib/natives',
-                                '-Dorg.bytedeco.javacpp.platform.preloadpath=APP_HOME_PLACEHOLDER/lib/natives',
-                                '-Dorg.bytedeco.javacpp.pathsFirst=true',
-                                '-Dorg.bytedeco.javacpp.cacheLibraries=false'
-                        ] : [])
-            }.get()
-            doLast {
-                def windowsText = windowsScript.text.replace('APP_HOME_PLACEHOLDER', '%APP_HOME%')
-                def windowsPreparation = 'if not exist "%APP_HOME%\\.cache\\tmp\\" mkdir "%APP_HOME%\\.cache\\tmp"\r\n' +
-                        'if not exist "%APP_HOME%\\.cache\\tmp\\" (\r\n' +
-                        '    echo ERROR: Cannot create the JVM temporary directory. 1>&2\r\n    exit /b 1\r\n)\r\n\r\n'
-                windowsText = windowsText.replace('@rem Add default JVM options here.', windowsPreparation + '@rem Add default JVM options here.')
-                windowsText = windowsText.replace('%JAVA_EXE% -version', '%JAVA_EXE% %DEFAULT_JVM_OPTS% -version')
-                // The Java runtime of the user package (<install>/java, beside launcher/ and runtime/) comes before JAVA_HOME and PATH.
-                def windowsJava = 'if exist "%APP_HOME%\\..\\java\\bin\\java.exe" set "JAVA_HOME=%APP_HOME%\\..\\java"\r\n\r\n'
-                windowsText = windowsText.replace('@rem Find java.exe', windowsJava + '@rem Find java.exe')
-                windowsScript.text = windowsText
-                def unixText = unixScript.text.replace('APP_HOME_PLACEHOLDER', '\'"$APP_HOME"\'')
-                def unixPreparation = 'mkdir -p "$APP_HOME/.cache/tmp" || die "Cannot create the JVM temporary directory"\n' +
-                        '[ -d "$APP_HOME/.cache/tmp" ] || die "The JVM temporary path is not a directory"\n\n'
-                unixText = unixText.replace('# Add default JVM options here.', unixPreparation + '# Add default JVM options here.')
-                def unixJava = 'if [ -x "$APP_HOME/../java/bin/java" ] ; then\n    JAVA_HOME=$APP_HOME/../java\nfi\n\n'
-                unixScript.text = unixText.replace('# Determine the Java command to use to start the JVM.',
-                                                   unixJava + '# Determine the Java command to use to start the JVM.')
-            }
-        }
-    }
-    // Every application distribution carries LICENSE, NOTICE and licenses/ at its root; the install task fails when its folder misses one of
-    // them.
-    plugins.withId('application') {
-        distributions.main.contents {
-            from(rootProject.licenseFiles)
-            from(rootProject.licenseTexts) { into 'licenses' }
-        }
-        tasks.named('installDist', Sync) { task ->
-            doLast {
-                rootProject.checkDistributionLicenses(task.destinationDir)
-            }
-        }
-    }
-    plugins.withType(JavaLibraryPlugin).configureEach {
-        dependencies {
-            testImplementation platform("org.junit:junit-bom:5.11.4")
-            testImplementation "org.junit.jupiter:junit-jupiter"
-            testRuntimeOnly "org.junit.platform:junit-platform-launcher"
-        }
-
-        // Warnings are printed in full so that they can be counted. javac reports every
-        // lint category; javadoc and javac lift their default limit of 100 printed warnings per task.
-        // Javadoc leaves out the doclint group "missing" by default: it reports the getters documented
-        // with @return only as "no main description". Missing comments and tags are checked by the style checker
-        // instead; -Psc4j.javadoc.doclint=all restores the full javadoc default for a raw count.
-        tasks.withType(JavaCompile).configureEach {
-            options.compilerArgs += ['-Xlint:all', '-Xmaxwarns', '100000']
-        }
-        tasks.withType(Javadoc).configureEach {
-            options.addBooleanOption('Xdoclint:' + providers.gradleProperty('sc4j.javadoc.doclint').getOrElse('all,-missing'), true)
-            options.addStringOption('Xmaxwarns', '100000')
-            options.addStringOption('Xmaxerrs', '100000')
-            options.tags('apiNote:a:API Note:', 'implSpec:a:Implementation Requirements:')
-        }
-
-        // Unit tier: the tests tagged integration or corpus need input from outside the repository and run in tasks of their own.
-        tasks.named("test") {
-            useJUnitPlatform {
-                excludeTags 'integration', 'corpus'
-            }
-        }
     }
 }
 
@@ -372,25 +174,11 @@ configure([project(':sc4j-engine-core'), project(':sc4j-engine-sim')]) { module 
 // (checked in); apiCheck, which "check" (and so "build") runs, fails when the compiled classes differ from that file, so every API change is
 // a visible diff of an .api file in the same commit. The base and the manifest are listed too: mods compile against them through the engine.
 def apiModules = ['sc4j-base', 'sc4j-mod-manifest', 'sc4j-engine-core', 'sc4j-engine-sim', 'sc4j-engine-net', 'sc4j-engine-client', 'sc4j-engine']
-// The internal elements: public for the engine's own modules and the runtime, but not API; the listing leaves them out and mods must not use
-// them (checkApiUse). A package covers its subpackages, a class its nested classes. Their package-info files say so too.
-def internalApiElements = [
-    // The mod loader of the runtime.
-    'org.fogofwarlabs.sc4j.engine.mod.loading',
-    // The OpenGL default of the renderer and the OpenAL default of the audio output.
-    'org.fogofwarlabs.sc4j.engine.client.render.gl',
-    'org.fogofwarlabs.sc4j.engine.client.audio.openal',
-    // The GLFW implementations of the runtime host (host, window, input, key codes, cursor) and the Windows implementations of the platform
-    // services (input method, pointer speed, tick clock); the host interfaces, value types and portable defaults are API.
-    'org.fogofwarlabs.sc4j.engine.client.host.GlfwClientHost',
-    'org.fogofwarlabs.sc4j.engine.client.host.GlfwHostWindow',
-    'org.fogofwarlabs.sc4j.engine.client.host.GlfwInput',
-    'org.fogofwarlabs.sc4j.engine.client.host.GlfwKeyCodes',
-    'org.fogofwarlabs.sc4j.engine.client.host.GlfwCursorSurface',
-    'org.fogofwarlabs.sc4j.engine.client.host.WindowsTextInputMethod',
-    'org.fogofwarlabs.sc4j.engine.client.host.WindowsSystemPointerSpeed',
-    'org.fogofwarlabs.sc4j.engine.client.host.WindowsHostTickClock'
-]
+// The internal elements (sc4j-engine/api/internal-elements.txt, also in the mod plugin): public for the engine's own modules and the runtime,
+// but not API; the listing leaves them out and mods must not use them (checkApiUse). Their package-info files say so too.
+def internalApiElements = file('sc4j-engine/api/internal-elements.txt').readLines('UTF-8').findAll { line ->
+    !line.isBlank() && !line.startsWith('#')
+}.collect { line -> line.trim() }
 def internalApiArguments = internalApiElements.collectMany { name -> ['--internal', name] }
 def apiToolMainClass = 'org.fogofwarlabs.sc4j.tools.api.ApiTool'
 def createApiToolConfiguration = { module ->
@@ -465,93 +253,6 @@ configure((apiModules + publishedTestFixtureModules).unique().collect { name -> 
     }
 }
 
-// Internal use check: a mod module's own main sources (sourcePath below the module) use no internal element; the check fails on every
-// use. "check" (and so "build") runs it. Each mod build names its modules; the demo's is checked here.
-ext.configureApiUse = { Project module, String sourcePath ->
-    def apiTool = createApiToolConfiguration(module)
-    def sourceFolder = module.file(sourcePath)
-    def report = module.layout.buildDirectory.file('reports/api-use.txt')
-    def checkApiUse = module.tasks.register('checkApiUse', JavaExec) {
-        description = 'Checks that the main sources of this mod module use no internal engine package or class.'
-        group = 'verification'
-        classpath = apiTool
-        mainClass = apiToolMainClass
-        inputs.files(module.fileTree(sourceFolder) { include '**/*.java' })
-        inputs.property('internalApiElements', internalApiElements)
-        outputs.file(report)
-        argumentProviders.add({
-            ['use', '--base', module.projectDir.absolutePath, '--sources', sourceFolder.absolutePath] +
-                    internalApiArguments + ['--report', report.get().asFile.absolutePath]
-        } as CommandLineArgumentProvider)
-    }
-    module.plugins.withId('java') {
-        module.tasks.named('check') {
-            dependsOn checkApiUse
-        }
-    }
-}
-configureApiUse(project(':mods:demo'), 'src/main/java')
-
-// Private path check: no source, build or documentation file of the repository names a private local path. It reads
-// the files of every leaf module (without build output), the top-level files of the parent modules and of the repository, gradle/ and the
-// documents in docs/, but not the ignore file, which lists the folder, nor the top-level files it keeps local (its "/<name>" lines). A
-// small own check like checkModBoundary; "check" (and so "build") runs it.
-def privatePathPattern = ~/(?<![\w.])\.local[\/\\]/
-def localTopLevelFiles = file('.gitignore').readLines('UTF-8').findAll { line -> line ==~ /\/[^\/*]+\/?/ }.collect { line ->
-    line.substring(1).replaceAll(/\/$/, '')
-}
-def privatePathFileTypes = ['**/*.java', '**/*.gradle', '**/*.kts', '**/*.properties', '**/*.json', '**/*.css', '**/*.txt', '**/*.tsv',
-                            '**/*.md', '**/*.xml', '**/*.fxml', '**/*.html', '**/*.py', '**/*.sh', '**/*.bat', '**/*.cmd', '**/*.yml',
-                            '**/*.toml', '**/LICENSE', '**/NOTICE', '**/gradlew']
-def privatePathFiles = files(
-        fileTree(rootDir) {
-            include privatePathFileTypes.collect { type -> type.substring(3) }
-            exclude '*/**', '.gitignore'
-            exclude localTopLevelFiles
-        },
-        fileTree(file('gradle')) { include privatePathFileTypes },
-        fileTree(file('docs')) { include privatePathFileTypes },
-        subprojects.collect { module ->
-            module.childProjects.isEmpty()
-                    ? fileTree(module.projectDir) {
-                        include privatePathFileTypes
-                        exclude 'build/**', '.gradle/**'
-                    }
-                    : fileTree(module.projectDir) {
-                        include privatePathFileTypes.collect { type -> type.substring(3) }
-                        exclude '*/**'
-                    }
-        })
-def privatePathReport = layout.buildDirectory.file('reports/private-paths.txt')
-def checkPrivatePaths = tasks.register('checkPrivatePaths') {
-    description = 'Checks that no source, build or documentation file names a private local path.'
-    group = 'verification'
-    inputs.files(privatePathFiles)
-    inputs.property('pattern', privatePathPattern.toString())
-    outputs.file(privatePathReport)
-    doLast {
-        def problems = []
-        privatePathFiles.each { file ->
-            file.readLines('UTF-8').eachWithIndex { line, index ->
-                if (line =~ privatePathPattern) {
-                    problems << file.path + ':' + (index + 1) + ': ' + line.trim()
-                }
-            }
-        }
-        if (!problems.isEmpty()) {
-            throw new GradleException('No repository file may name a private local path:\n  ' + problems.join('\n  '))
-        }
-        privatePathReport.get().asFile.text = 'No private path: ' + privatePathFiles.files.size() + ' files checked.\n'
-    }
-}
-subprojects { module ->
-    module.plugins.withId('java') {
-        module.tasks.named('check') {
-            dependsOn checkPrivatePaths
-        }
-    }
-}
-
 // The Java runtime of the user package: an image of the JDK that runs this build, made with that JDK's own jlink, with the modules that the
 // launcher, the runtime and the mods use: what jdeps finds in their jars and in the JavaFX modules (which stay in launcher/lib/javafx), and
 // the charsets and locale data they look up by name. The locale data covers the languages of the mods' texts.
@@ -604,7 +305,17 @@ def devInstall = tasks.register('devInstall', Sync) {
     with installContents
     from(installModJars) { into 'mods' }
     doLast {
-        rootProject.checkDistributionLicenses(developmentInstall.get().asFile)
+        checkDistributionLicenses(developmentInstall.get().asFile)
+    }
+}
+
+// The mods of this build (mod plugin) install into the development install.
+subprojects { module ->
+    module.plugins.withId('org.fogofwarlabs.sc4j.mod') {
+        module.sc4jMod.install = developmentInstall
+        module.tasks.named('devInstall') {
+            dependsOn devInstall
+        }
     }
 }
 
@@ -691,7 +402,7 @@ def stageUserPackage = tasks.register('stageUserPackage', Sync) {
     from(createJavaRuntime) { into 'java' }
     from(project(':sc4j-launcher').file('src/package'))
     doLast {
-        rootProject.checkDistributionLicenses(destinationDir)
+        checkDistributionLicenses(destinationDir)
     }
 }
 tasks.register('distribution', Zip) {
@@ -725,8 +436,32 @@ def publishedModules = [
     'sc4j-beaconlink-protocol': 'Beacon.Link wire protocol of SC4J: identities, the wire reader and writer, signed rooms and messages.',
     'sc4j-beaconlink-peer'    : 'Beacon.Link peer library of SC4J: the node roles that the launcher, the runtime and the node program run.',
     'sc4j-beaconlink'         : 'Beacon.Link client of SC4J: node sessions, rooms, participant channels and the overlay that a mod plays over.',
-    'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.'
+    'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.',
+    'sc4j-api-check'          : 'API tools of SC4J: the public API listing of the engine modules and the internal API use check of mods.'
 ]
+// The project of each module whose path is not :<module>.
+def publishedModulePaths = ['sc4j-api-check': ':tools:api-check']
+def publishedModulePath = { String artifactId -> publishedModulePaths.getOrDefault(artifactId, ':' + artifactId) }
+
+// Inside this build the coordinates of the published modules (as the mod plugin names them) resolve to their projects.
+allprojects {
+    configurations.configureEach {
+        resolutionStrategy.dependencySubstitution {
+            publishedModules.keySet().each { artifactId ->
+                substitute(module('org.fogofwarlabs.sc4j:' + artifactId)).using(project(publishedModulePath(artifactId)))
+            }
+        }
+    }
+}
+
+// The mod plugin (build-logic) is published with the modules.
+['publishToMavenLocal', 'publishToMavenCentral', 'publishAndReleaseToMavenCentral'].each { taskName ->
+    tasks.register(taskName) {
+        description = 'Runs ' + taskName + ' of the mod plugin.'
+        group = 'publishing'
+        dependsOn gradle.includedBuild('build-logic').task(':sc4j-mod-plugin:' + taskName)
+    }
+}
 // The values of every POM: the project, its licence and the organization as its developer.
 def projectUrl = 'https://github.com/fogofwarlabs/sc4j'
 def projectLicense = [name: 'Apache-2.0', url: 'https://www.apache.org/licenses/LICENSE-2.0.txt']
@@ -740,57 +475,60 @@ def signingKey = providers.gradleProperty('signingInMemoryKey').filter { key -> 
 // The variants of the test fixtures plugin, left out of the published component of the modules outside publishedTestFixtureModules.
 def testFixtureVariants = ['testFixturesApiElements', 'testFixturesRuntimeElements', 'testFixturesSourcesElements', 'testFixturesJavadocElements']
 
-configure(publishedModules.keySet().collect { name -> project(':' + name) }) { module ->
-    module.apply plugin: 'com.vanniktech.maven.publish'
-    module.plugins.withId('java-library') {
-        module.mavenPublishing {
-            configure(new JavaLibrary(new JavadocJar.Javadoc(), new SourcesJar.Sources()))
-            publishToMavenCentral(centralAutomaticRelease, centralDeploymentValidation)
-            // publishToMavenLocal works without a key.
-            if (signingKey.isPresent()) {
-                signAllPublications()
-            }
-            pom {
-                name = module.name
-                description = publishedModules[module.name]
-                url = projectUrl
-                licenses {
-                    license {
-                        name = projectLicense.name
-                        url = projectLicense.url
+publishedModules.each { artifactId, moduleDescription ->
+    project(publishedModulePath(artifactId)) { module ->
+        module.apply plugin: 'com.vanniktech.maven.publish'
+        module.plugins.withId('java-library') {
+            module.mavenPublishing {
+                configure(new JavaLibrary(new JavadocJar.Javadoc(), new SourcesJar.Sources()))
+                coordinates(module.group.toString(), artifactId, module.version.toString())
+                publishToMavenCentral(centralAutomaticRelease, centralDeploymentValidation)
+                // publishToMavenLocal works without a key.
+                if (signingKey.isPresent()) {
+                    signAllPublications()
+                }
+                pom {
+                    name = artifactId
+                    description = moduleDescription
+                    url = projectUrl
+                    licenses {
+                        license {
+                            name = projectLicense.name
+                            url = projectLicense.url
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = projectDeveloper.id
+                            name = projectDeveloper.name
+                            url = projectDeveloper.url
+                        }
+                    }
+                    scm {
+                        url = projectScm.url
+                        connection = projectScm.connection
+                        developerConnection = projectScm.developerConnection
                     }
                 }
-                developers {
-                    developer {
-                        id = projectDeveloper.id
-                        name = projectDeveloper.name
-                        url = projectDeveloper.url
+            }
+            // The POM and the module metadata name the resolved versions, also of the dependencies a platform manages.
+            module.publishing.publications.withType(MavenPublication).configureEach {
+                versionMapping {
+                    allVariants {
+                        fromResolutionResult()
                     }
                 }
-                scm {
-                    url = projectScm.url
-                    connection = projectScm.connection
-                    developerConnection = projectScm.developerConnection
-                }
             }
         }
-        // The POM and the module metadata name the resolved versions, also of the dependencies a platform manages.
-        module.publishing.publications.withType(MavenPublication).configureEach {
-            versionMapping {
-                allVariants {
-                    fromResolutionResult()
-                }
+        module.plugins.withId('java-test-fixtures') {
+            if (module.name in publishedTestFixtureModules) {
+                return
             }
-        }
-    }
-    module.plugins.withId('java-test-fixtures') {
-        if (module.name in publishedTestFixtureModules) {
-            return
-        }
-        module.afterEvaluate {
-            testFixtureVariants.findAll { name -> module.configurations.findByName(name) != null }.each { name ->
-                module.components.java.withVariantsFromConfiguration(module.configurations.getByName(name)) { variant ->
-                    variant.skip()
+            module.afterEvaluate {
+                testFixtureVariants.findAll { name -> module.configurations.findByName(name) != null }.each { name ->
+                    module.components.java.withVariantsFromConfiguration(module.configurations.getByName(name)) { variant ->
+                        variant.skip()
+                    }
                 }
             }
         }

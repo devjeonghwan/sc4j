@@ -1,5 +1,7 @@
 plugins {
     id 'java-library'
+    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.natives'
 }
 
 // The engine client framework: runtime host, scenes, input, the renderer with its OpenGL defaults, text, HUD, dialogs, cursors, skins, the

@@ -47,9 +47,9 @@ API 요소의 Javadoc은 계약의 일부입니다. 모든 API 요소에는 Java
 | `engine.client.host.GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface` | 런타임 호스트의 GLFW 구현. 모드는 `engine.client.host` 인터페이스(`ClientHost.initialize()`, 창 서비스를 가진 `HostWindow`, `WindowInput`)와 값 타입을 쓰며, 이들은 API입니다. |
 | `engine.client.host.WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock` | 플랫폼 서비스의 Windows 구현. 모드는 `HostWindow.getTextInputMethod()`, `SystemPointerSpeed.getDefault()`, `HostTickClock.getDefault()`를 쓰며, 이식 가능한 기본 구현(`NoTextInputMethod`, `FixedSystemPointerSpeed`, `MonotonicHostTickClock`)은 API입니다. |
 
-패키지는 하위 패키지를, 클래스는 중첩 클래스를 포함합니다. 빌드가 검사하는 목록은 루트 `build.gradle`의 목록(`internalApiElements`)입니다. 이 목록을 바꾸면 같은 커밋에서 이 표와 package-info도 바꿉니다.
+패키지는 하위 패키지를, 클래스는 중첩 클래스를 포함합니다. 빌드가 검사하고 모드 플러그인이 담는 목록은 `sc4j-engine/api/internal-elements.txt`입니다. 이 목록을 바꾸면 같은 커밋에서 이 표와 package-info도 바꿉니다.
 
-`checkApiUse`는 이 저장소 모드의 main 소스(루트 `build.gradle`에 나열)에서 코드 안의 이 요소들을 찾아(주석과 리터럴은 세지 않음), 사용할 때마다 실패합니다. 이 저장소 밖에서 빌드한 모드는 설치본의 엔진 jar를 대상으로 컴파일하는데, 그 jar에도 내부 요소가 들어 있습니다. 이를 검사하는 것은 없으므로 모드가 직접 목록의 API만 씁니다.
+모드 플러그인의 `checkApiUse`는 모드 소스에서 코드 안의 이 요소들을 찾아(주석과 리터럴은 세지 않음), 사용할 때마다 실패합니다. 이 저장소 밖의 모드도 플러그인 엔진 버전의 목록으로 검사합니다.
 
 ## 3. 버전
 

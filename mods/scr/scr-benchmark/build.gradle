@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // JMH benchmarks of the engine (src/jmh/java). They read the SC:R installation and replay files from outside the

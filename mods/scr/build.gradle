@@ -1,16 +1,11 @@
 plugins {
-    id 'base'
+    id 'org.fogofwarlabs.sc4j.mod'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // Packaging of the SC:R mod: mods/scr.jar from the classes and resources of every mods/scr module (the benchmark module,
-// JMH only, is not part of the mod), and its copy into the development install. The build rules of the SC:R side come first: native
-// libraries, test tiers, the internal use check and the native id boundary.
-
-// The renderer and the client stage native libraries (configureNativeLibraries of the root project). Their build files fill the
-// configuration, so it is created before they are evaluated.
-['scr-render', 'scr-client'].each { name ->
-    rootProject.configureNativeLibraries(project(':mods:scr:' + name))
-}
+// JMH only, is not part of the mod), and its copy into the development install. The build rules of the SC:R side come first: test tiers
+// and the native id boundary.
 
 // External test inputs, passed as Gradle properties (-P<name>=<path>, or <name>=<path> in the user's
 // GRADLE_USER_HOME/gradle.properties) and forwarded as system properties. The shared test fixture
@@ -94,13 +89,6 @@ configure(subprojects + [project(':mods:scr-demo')]) { module ->
     }
 }
 
-// The internal use check of the root project over the main sources of every mods/scr module but the recorder and the demo 2 classes of
-// mods/scr-demo (its clone is the SC:R mod's sources).
-(subprojects - project(':mods:scr:sc-recorder')).each { module ->
-    rootProject.configureApiUse(module, 'src/main/java')
-}
-rootProject.configureApiUse(project(':mods:scr-demo'), 'src/mod/java')
-
 // Native id boundary: the SC:R mod keeps its native ids as the int holders of scr.content (ScrUnitIds ...) and
 // the engine identities of ScrUnits ... mapped by ScrNativeIds; the package scr.data.type.constant declares no enum and no source names
 // a native id enum (UnitType, WeaponType, UpgradeType, TechType, OrderType, Race) in that package. "check" (and so "build")
@@ -158,44 +146,16 @@ modModules.each { module ->
     }
 }
 
-// The mod jar: sc4j-mod.json and meta/ come from the scr-client resources. The engine, the manifest module and the base are
-// not in it, and neither are the third-party libraries: the runtime provides them.
-def modJar = tasks.register('modJar', Jar) {
-    description = 'Builds the SC:R mod jar scr.jar from the mods/scr modules.'
-    group = 'build'
-    archiveFileName = 'scr.jar'
-    destinationDirectory = layout.buildDirectory.dir('mods')
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    modModules.each { module -> from(module.sourceSets.main.output) }
-    doLast {
-        rootProject.checkJarLicenses(archiveFile.get().asFile)
-    }
+// The mod jar scr.jar: the classes and resources of the mod modules; sc4j-mod.json and meta/ come from the scr-client resources.
+sc4jMod {
+    id = 'scr'
+    sourceSets = modModules.collect { module -> module.sourceSets.main }
 }
 
-tasks.named('assemble') {
-    dependsOn modJar
-}
-
-// scr.jar as the variant of this project with the usage sc4j-mod-jar.
-configurations.consumable('modJarElements') {
-    attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, 'sc4j-mod-jar'))
-    outgoing.artifact(modJar)
-}
-
-// The development install (gradlew :mods:scr:devInstall): the root project's devInstall assembles build/dev-install, then scr.jar is
-// copied into its mods/ folder. When the Gradle property sc4j.data names the SC:R installation and no shared settings file exists yet,
-// userdata/shared-settings.json is created with it as the value of the shared StarCraft: Remastered folder setting (shared name
-// starcraft-remastered) of the SC:R mod and its clones.
-def engineDevInstall = rootProject.tasks.named('devInstall')
-tasks.register('devInstall', Copy) {
-    description = 'Copies scr.jar into the mods folder of the development install build/dev-install.'
-    group = 'distribution'
-    dependsOn engineDevInstall
-    into engineDevInstall.map { task -> task.destinationDir }
-    from(modJar) { into 'mods' }
-
+// The development install (gradlew :mods:scr:devInstall) gets scr.jar in its mods/ folder. When the Gradle property sc4j.data names the
+// SC:R installation and no shared settings file exists yet, userdata/shared-settings.json is created with it as the value of the shared
+// StarCraft: Remastered folder setting (shared name starcraft-remastered) of the SC:R mod and its clones.
+tasks.named('devInstall') {
     def installation = providers.gradleProperty('sc4j.data').getOrElse('')
     doLast {
         def sharedSettingsFile = new File(destinationDir, 'userdata/shared-settings.json')

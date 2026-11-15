@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // The engine core: the leaves that every other engine module uses (JSON, fixed-point math, the map grid, terrain, players, the state hash,

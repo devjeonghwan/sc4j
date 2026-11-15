@@ -1,0 +1,96 @@
+import com.vanniktech.maven.publish.DeploymentValidation
+import com.vanniktech.maven.publish.GradlePlugin
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SourcesJar
+
+plugins {
+    id 'groovy-gradle-plugin'
+    id 'com.vanniktech.maven.publish' version '0.37.0'
+}
+
+// The mod plugin is released with the engine: same group and version (the engine build's gradle.properties).
+def engineProperties = new Properties()
+file('../../gradle.properties').withReader('UTF-8') { reader -> engineProperties.load(reader) }
+group = 'org.fogofwarlabs.sc4j'
+version = engineProperties.getProperty('version')
+
+dependencies {
+    compileOnly 'org.jetbrains:annotations:23.0.0'
+}
+
+// Gradle runs plugins on Java 17 and later.
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:all']
+}
+tasks.withType(GroovyCompile).configureEach {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+// The Javadoc documents the extension, not the generated plugin adapters.
+tasks.named('javadoc', Javadoc) {
+    source = fileTree('src/main/java')
+}
+
+// The plugin carries its engine version and the engine's internal API elements (checkApiUse).
+def engineResourceText = 'group=' + group + '\nversion=' + version + '\n'
+def internalElements = rootProject.file('../sc4j-engine/api/internal-elements.txt')
+def engineResources = layout.buildDirectory.dir('generated/engine-resources')
+def writeEngineResources = tasks.register('writeEngineResources') {
+    description = 'Writes the engine version and the internal API element list into the resources of the mod plugin.'
+    inputs.property('engineResourceText', engineResourceText)
+    inputs.file(internalElements)
+    outputs.dir(engineResources)
+    doLast {
+        def folder = engineResources.get().dir('org/fogofwarlabs/sc4j/gradle/mod').asFile
+        project.delete(engineResources)
+        folder.mkdirs()
+        new File(folder, 'engine.properties').setText(engineResourceText, 'UTF-8')
+        new File(folder, 'internal-elements.txt').bytes = internalElements.bytes
+    }
+}
+sourceSets.main.resources.srcDir(writeEngineResources)
+
+// Every jar carries the engine's LICENSE and NOTICE in META-INF/.
+tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
+    metaInf {
+        from(rootProject.files('../LICENSE', '../NOTICE'))
+    }
+}
+
+// The values of every POM: the project, its licence and the organization as its developer (as the engine modules).
+def projectUrl = 'https://github.com/fogofwarlabs/sc4j'
+def signingKey = providers.gradleProperty('signingInMemoryKey').filter { key -> !key.isBlank() }
+
+mavenPublishing {
+    configure(new GradlePlugin(new JavadocJar.Javadoc(), new SourcesJar.Sources()))
+    publishToMavenCentral(true, DeploymentValidation.VALIDATED)
+    // publishToMavenLocal works without a key.
+    if (signingKey.isPresent()) {
+        signAllPublications()
+    }
+    pom {
+        name = project.name
+        description = 'SC4J mod plugin: compiles a mod against the engine API, packs and checks its jar, runs it and installs it.'
+        url = projectUrl
+        licenses {
+            license {
+                name = 'Apache-2.0'
+                url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
+        developers {
+            developer {
+                id = 'fogofwarlabs'
+                name = 'Fog of War Labs'
+                url = 'https://fogofwarlabs.org'
+            }
+        }
+        scm {
+            url = projectUrl
+            connection = 'scm:git:' + projectUrl + '.git'
+            developerConnection = 'scm:git:ssh://git@github.com/fogofwarlabs/sc4j.git'
+        }
+    }
+}

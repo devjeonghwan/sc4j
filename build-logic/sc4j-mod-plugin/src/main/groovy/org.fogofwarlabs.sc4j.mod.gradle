@@ -1,0 +1,201 @@
+import groovy.json.JsonSlurper
+import org.fogofwarlabs.sc4j.gradle.mod.ModExtension
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+
+import java.util.zip.ZipFile
+
+// A mod of the SC4J engine, declared by the extension sc4jMod (ModExtension).
+plugins {
+    id 'java-library'
+}
+
+def engineProperties = new Properties()
+ModExtension.getResourceAsStream('engine.properties').withReader('UTF-8') { reader -> engineProperties.load(reader) }
+def engineGroup = engineProperties.getProperty('group')
+def engineVersion = engineProperties.getProperty('version')
+def internalApiArguments = ModExtension.getResourceAsStream('internal-elements.txt').getText('UTF-8').readLines().findAll { line ->
+    !line.isBlank() && !line.startsWith('#')
+}.collectMany { name -> ['--internal', name.trim()] }
+
+def mod = extensions.create('sc4jMod', ModExtension)
+mod.sourceSets.convention([sourceSets.main])
+mod.install.convention(layout.projectDirectory.dir(providers.gradleProperty('sc4j.install')))
+mod.licenses.convention(rootProject.files('LICENSE', 'NOTICE').filter { file -> file.isFile() })
+
+def javaRuntime = { AttributeContainer attributes ->
+    attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+    attributes.attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
+    attributes.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+    attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
+}
+def engineModule = { String name -> engineGroup + ':' + name + ':' + engineVersion }
+
+// The engine API: the runtime provides it, so the mod jar does not hold it.
+def engineApi = configurations.dependencyScope('sc4jEngineApi')
+dependencies.add('sc4jEngineApi', engineModule('sc4j-engine'))
+afterEvaluate {
+    mod.sourceSets.get().findAll { sourceSet -> sourceSets.contains(sourceSet) }.each { sourceSet ->
+        configurations.named(sourceSet.implementationConfigurationName) {
+            extendsFrom(engineApi.get())
+        }
+    }
+}
+
+// The mod jar: no file times and a fixed order, so the same sources give the same jar and the same mod identity.
+def checkModJar = { File jar, String id, List<String> licenseNames ->
+    new ZipFile(jar).withCloseable { archive ->
+        def problems = licenseNames.collect { name -> 'META-INF/' + name }.findAll { name -> archive.getEntry(name) == null }.collect { name ->
+            'lacks ' + name
+        }
+        def manifestEntry = archive.getEntry('sc4j-mod.json')
+        if (manifestEntry == null) {
+            problems << 'lacks the manifest sc4j-mod.json'
+        } else {
+            def manifest = archive.getInputStream(manifestEntry).withCloseable { input -> new JsonSlurper().parse(input, 'UTF-8') }
+            if (manifest.id != id) {
+                problems << 'has the mod id ' + manifest.id + ' instead of ' + id + ' in sc4j-mod.json'
+            }
+            if (!(manifest.entry instanceof String) || archive.getEntry(manifest.entry.replace('.', '/') + '.class') == null) {
+                problems << 'lacks the entry class ' + manifest.entry + ' of sc4j-mod.json'
+            }
+        }
+        if (!problems.isEmpty()) {
+            throw new GradleException('The mod jar ' + jar + ' ' + problems.join(', ') + '.')
+        }
+    }
+}
+def modJar = tasks.register('modJar', Jar) {
+    description = 'Builds the mod jar build/mods/<id>.jar.'
+    group = 'build'
+    archiveFileName = mod.id.map { id -> id + '.jar' }
+    destinationDirectory = layout.buildDirectory.dir('mods')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    from({ mod.sourceSets.get().collect { sourceSet -> sourceSet.output } })
+    metaInf {
+        from(mod.licenses)
+    }
+    def modId = mod.id
+    def licenses = mod.licenses
+    doLast {
+        checkModJar(archiveFile.get().asFile, modId.get(), licenses.files.collect { file -> file.name })
+    }
+}
+
+tasks.named('assemble') {
+    dependsOn modJar
+}
+
+// The mod jar as the variant of this project with the usage sc4j-mod-jar.
+configurations.consumable('modJarElements') {
+    attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, 'sc4j-mod-jar'))
+    outgoing.artifact(modJar)
+}
+
+// The internal use check: the Java sources of the mod use no internal element of the engine (the API tool of the engine version).
+def apiTool = configurations.dependencyScope('sc4jApiTool')
+dependencies.add('sc4jApiTool', engineModule('sc4j-api-check'))
+def apiToolClasspath = configurations.resolvable('sc4jApiToolClasspath') {
+    extendsFrom(apiTool.get())
+    attributes(javaRuntime)
+}
+def apiUseReport = layout.buildDirectory.file('reports/api-use.txt')
+def baseFolder = projectDir
+def checkApiUse = tasks.register('checkApiUse', JavaExec) {
+    description = 'Checks that the Java sources of the mod use no internal engine package or class.'
+    group = 'verification'
+    classpath = files(apiToolClasspath)
+    mainClass = 'org.fogofwarlabs.sc4j.tools.api.ApiTool'
+    def sourceFolders = files({ mod.sourceSets.get().collect { sourceSet -> sourceSet.java.srcDirs } })
+    // Generated sources exist once their source set is built.
+    dependsOn({ mod.sourceSets.get().collect { sourceSet -> sourceSet.output } })
+    inputs.files(sourceFolders.asFileTree.matching { include '**/*.java' })
+    inputs.property('internalApiElements', internalApiArguments)
+    outputs.file(apiUseReport)
+    argumentProviders.add({
+        ['use', '--base', baseFolder.absolutePath, '--sources'] + sourceFolders.files.collect { folder -> folder.absolutePath } +
+                internalApiArguments + ['--report', apiUseReport.get().asFile.absolutePath]
+    } as CommandLineArgumentProvider)
+}
+
+tasks.named('check') {
+    dependsOn checkApiUse
+}
+
+// The engine runtime of the plugin's version and the native libraries of its LWJGL and JavaCPP libraries for this platform.
+def runtime = configurations.dependencyScope('sc4jRuntime')
+dependencies.add('sc4jRuntime', engineModule('sc4j-runtime'))
+def runtimeClasspath = configurations.resolvable('sc4jRuntimeClasspath') {
+    extendsFrom(runtime.get())
+    attributes(javaRuntime)
+}
+def nativeClassifiers = {
+    def operatingSystem = System.getProperty('os.name').toLowerCase(Locale.ROOT)
+    def arm = System.getProperty('os.arch').toLowerCase(Locale.ROOT) in ['aarch64', 'arm64']
+    if (operatingSystem.contains('windows')) {
+        return ['org.lwjgl': arm ? 'natives-windows-arm64' : 'natives-windows', 'org.bytedeco': arm ? 'windows-arm64' : 'windows-x86_64']
+    }
+    if (operatingSystem.contains('linux')) {
+        return ['org.lwjgl': arm ? 'natives-linux-arm64' : 'natives-linux', 'org.bytedeco': arm ? 'linux-arm64' : 'linux-x86_64']
+    }
+    throw new GradleException('The engine runtime has no native libraries for ' + System.getProperty('os.name') + '.')
+}
+def runtimeNatives = files({
+    def classifiers = nativeClassifiers()
+    def natives = runtimeClasspath.get().incoming.artifacts.artifacts.collect { artifact -> artifact.id.componentIdentifier }.findAll { component ->
+        component instanceof ModuleComponentIdentifier && classifiers.containsKey(component.group)
+    }.collect { component ->
+        dependencies.create(component.group + ':' + component.module + ':' + component.version + ':' + classifiers[component.group])
+    }
+    def configuration = configurations.detachedConfiguration(natives as Dependency[])
+    configuration.transitive = false
+    configuration.attributes(javaRuntime)
+    return configuration
+})
+def runFolder = layout.buildDirectory.dir('sc4j-run')
+def nativeFolder = runFolder.get().dir('natives').asFile.absolutePath
+def stageRunNatives = tasks.register('stageRunNatives', Sync) {
+    description = 'Stages the native libraries of the engine runtime for runMod.'
+    from({ runtimeNatives.collect { archive -> zipTree(archive) } }) {
+        include '**/*.dll', '**/*.so', '**/*.so.*'
+        exclude 'META-INF/**'
+        eachFile { details -> details.path = details.name }
+        includeEmptyDirs = false
+    }
+    into nativeFolder
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+}
+
+// Runs the mod jar in the runtime with the user data of the install, or of build/sc4j-run when no install is set.
+tasks.register('runMod', JavaExec) {
+    description = 'Runs the mod jar in the engine runtime (--args passes runtime options, --debug-jvm waits for a debugger).'
+    group = 'application'
+    dependsOn modJar, stageRunNatives
+    classpath = files(runtimeClasspath)
+    mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
+    def jar = modJar.flatMap { task -> task.archiveFile }
+    def install = mod.install.orElse(runFolder)
+    def cacheFolder = runFolder.get().dir('.cache').asFile.absolutePath
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+    systemProperty 'org.lwjgl.librarypath', nativeFolder
+    systemProperty 'java.library.path', nativeFolder
+    systemProperty 'org.lwjgl.system.SharedLibraryExtractPath', cacheFolder + '/natives'
+    systemProperty 'org.bytedeco.javacpp.cachedir', cacheFolder + '/javacpp'
+    systemProperty 'org.bytedeco.javacpp.platform.linkpath', nativeFolder
+    systemProperty 'org.bytedeco.javacpp.platform.preloadpath', nativeFolder
+    systemProperty 'org.bytedeco.javacpp.pathsFirst', 'true'
+    systemProperty 'org.bytedeco.javacpp.cacheLibraries', 'false'
+    // The options of --args follow the mod and the install, so that mod arguments after "--" stay last.
+    doFirst {
+        args = ['--mod', jar.get().asFile.absolutePath, '--install', install.get().asFile.absolutePath] + args
+    }
+}
+
+// Copies the mod jar into mods/ of the install.
+tasks.register('devInstall', Copy) {
+    description = 'Copies the mod jar into the mods folder of the install (sc4jMod.install).'
+    group = 'distribution'
+    into mod.install
+    from(modJar) { into 'mods' }
+}

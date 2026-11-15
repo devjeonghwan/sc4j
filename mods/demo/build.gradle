@@ -1,5 +1,10 @@
 plugins {
-    id 'java-library'
+    id 'org.fogofwarlabs.sc4j.mod'
+    id 'org.fogofwarlabs.sc4j.java'
+}
+
+sc4jMod {
+    id = 'demo'
 }
 
 // Demo 1: a small real-time strategy game made only of the engine, its standard data pack and its default systems. It depends on
@@ -31,8 +36,6 @@ configurations {
 }
 
 dependencies {
-    implementation project(':sc4j-engine')
-
     testImplementation project(':sc4j-runtime')
     // The demo's network games over Beacon.Link run with real nodes and clients on 127.0.0.1 behind emulated NATs.
     testImplementation testFixtures(project(':sc4j-beaconlink'))
@@ -92,34 +95,10 @@ tasks.named('processResources') {
     from(generatedAssets.map { directory -> directory.dir('sound') })
 }
 
-// The mod jar: the demo's classes and resources (sc4j-mod.json, the launcher images under meta, the pack under demo/pack, the maps under
-// demo/maps) and the notice of its third-party material (THIRD-PARTY.md). The engine, the manifest module and the base are not in it (the
-// runtime provides them).
-def modJar = tasks.register('modJar', Jar) {
-    description = 'Builds the demo mod jar demo.jar.'
-    group = 'build'
-    archiveFileName = 'demo.jar'
-    destinationDirectory = layout.buildDirectory.dir('mods')
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    from(sourceSets.main.output)
+// The mod jar demo.jar (sc4j-mod.json, the launcher images under meta, the pack under demo/pack, the maps under demo/maps) also carries the
+// notice of its third-party material (THIRD-PARTY.md).
+def modJar = tasks.named('modJar') {
     from('THIRD-PARTY.md')
-    doLast {
-        rootProject.checkJarLicenses(archiveFile.get().asFile)
-    }
-}
-
-tasks.named('assemble') {
-    dependsOn modJar
-}
-
-// The development install (gradlew :mods:demo:devInstall): the root project's devInstall assembles build/dev-install with demo.jar in its
-// mods/ folder. Nothing under userdata/ is written here.
-tasks.register('devInstall') {
-    description = 'Assembles the development install build/dev-install with demo.jar.'
-    group = 'distribution'
-    dependsOn rootProject.tasks.named('devInstall')
 }
 
 // The runtime tests of the demo start the built jar (org.fogofwarlabs.sc4j.demo.DemoModTest).

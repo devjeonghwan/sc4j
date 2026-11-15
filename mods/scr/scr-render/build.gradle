@@ -1,5 +1,7 @@
 plugins {
     id 'java-library'
+    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.natives'
 }
 
 tasks.withType(Test).configureEach {

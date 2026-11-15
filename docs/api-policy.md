@@ -47,9 +47,9 @@ These elements are public for the engine's own modules and the runtime but are n
 | `engine.client.host.GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface` | the GLFW implementations of the runtime host; mods use the `engine.client.host` interfaces (`ClientHost.initialize()`, `HostWindow` with its window services, `WindowInput`) and value types, which are API |
 | `engine.client.host.WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock` | the Windows implementations of the platform services; mods use `HostWindow.getTextInputMethod()`, `SystemPointerSpeed.getDefault()` and `HostTickClock.getDefault()`, whose portable defaults (`NoTextInputMethod`, `FixedSystemPointerSpeed`, `MonotonicHostTickClock`) are API |
 
-A package covers its subpackages and a class its nested classes. The list in the root `build.gradle` (`internalApiElements`) is the one the build checks; a change of it changes this table and the package-info in the same commit.
+A package covers its subpackages and a class its nested classes. The list `sc4j-engine/api/internal-elements.txt` is the one the build checks and the mod plugin carries; a change of it changes this table and the package-info in the same commit.
 
-`checkApiUse` scans the main sources of the mods of this repository (the root `build.gradle` lists them) for these elements in code (comments and literals do not count) and fails on every use. A mod built outside this repository compiles against the engine jars of an install, which hold the internal elements too: nothing checks it, so it keeps to the listings.
+`checkApiUse` of the mod plugin scans the sources of a mod for these elements in code (comments and literals do not count) and fails on every use. It checks with the list of the plugin's engine version, also for a mod outside this repository.
 
 ## 3. Versions
 

@@ -1,6 +1,8 @@
 plugins {
     id 'java-library'
     id 'application'
+    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.natives'
 }
 
 // The engine executable: it reads a mod jar's manifest and settings, loads the mod in its own class loader and runs it.

@@ -1,0 +1,11 @@
+// The mod plugin of the engine (published) and the conventions of the engine's own builds.
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'build-logic'
+
+include 'sc4j-mod-plugin'
+include 'conventions'

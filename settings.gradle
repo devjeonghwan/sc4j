@@ -1,3 +1,8 @@
+pluginManagement {
+    // The mod plugin and the conventions of this build (org.fogofwarlabs.sc4j.*).
+    includeBuild('build-logic')
+}
+
 rootProject.name = "sc4j"
 
 // Engine-side modules: the repository root holds only these.

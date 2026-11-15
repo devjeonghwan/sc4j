@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // The Beacon.Link peer library: the node roles (registration with address validation, observed addresses, the

@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // The engine network layer: datagram links and the lockstep transport over them, LAN room discovery, the network lobby and the Beacon.Link

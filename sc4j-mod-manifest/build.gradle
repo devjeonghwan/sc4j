@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     // Test jars for the tests of the manifest, engine and runtime modules (org.fogofwarlabs.sc4j.manifest.test).
     id 'java-test-fixtures'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // The mod manifest (sc4j-mod.json), its settings schema and the settings value files. The launcher and the runtime share

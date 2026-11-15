@@ -3,6 +3,7 @@ plugins {
     // The loopback NAT emulator (org.fogofwarlabs.sc4j.beaconlink.test.nat) and the scenario of nodes and clients on 127.0.0.1
     // (org.fogofwarlabs.sc4j.beaconlink.test.client) of the client tests and of the tests of protocols over Beacon.Link (the demo's).
     id 'java-test-fixtures'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // The Beacon.Link client: node sessions with registration, observed addresses, room publishing and listing by mod identity,

@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     // The manual protocol clock of the protocol, node and client tests (org.fogofwarlabs.sc4j.beaconlink.protocol.test).
     id 'java-test-fixtures'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // The Beacon.Link wire protocol: Ed25519 identities and their key file, the bounded wire reader and writer, the signed room

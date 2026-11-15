@@ -3,6 +3,7 @@ plugins {
     // The Beacon.Link session and community part played by hand (engine.client.community: RecordingBeaconLink,
     // RecordingCommunitySession) that the tests of the community screens of this module and of the mods share.
     id 'java-test-fixtures'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 // The engine that mods compile against and the runtime runs: the mod API (engine.mod), the mod loader (engine.mod.loading), the client

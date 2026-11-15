@@ -3,6 +3,7 @@ plugins {
     // The run values and digests (org.fogofwarlabs.sc4j.scr.core.test.golden), the external inputs, the tier annotations, the test
     // resource lookup and the result tables (org.fogofwarlabs.sc4j.scr.core.test) are shared with the test source sets of the other modules.
     id 'java-test-fixtures'
+    id 'org.fogofwarlabs.sc4j.java'
 }
 
 dependencies {

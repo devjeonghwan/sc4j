@@ -16,28 +16,22 @@ import java.util.Map;
 /**
  * Runs the API tools for the build. Commands:
  * <ul>
- *     <li>{@code dump --api-file <file> --classes <folder>... --internal <name>...}: writes the API listing ({@link ApiListing}) of the
- *     compiled classes to the file.</li>
- *     <li>{@code check --api-file <file> --classes <folder>... --internal <name>... --update-task <task> --report <file>}: compares the API
- *     listing of the compiled classes with the file (a missing file is an empty listing) and fails with the difference; the update task is
- *     named in the failure.</li>
- *     <li>{@code use --base <folder> --sources <folder>... --internal <name>... --report <file>}: scans the sources for internal elements
- *     ({@link InternalUseScanner}) and fails on every use.</li>
+ *     <li>{@code dump --api-file <file> --classes <folder>...}: writes the API listing ({@link ApiListing}) of the compiled classes to the
+ *     file.</li>
+ *     <li>{@code check --api-file <file> --classes <folder>... --update-task <task> --report <file>}: compares the API listing of the compiled
+ *     classes with the file (a missing file is an empty listing) and fails with the difference; the update task is named in the failure.</li>
  * </ul>
- * The {@code check} and {@code use} commands write a one-line report when they pass.
+ * Both leave out the internal elements of the classes ({@link InternalElements}). The {@code check} command writes a one-line report when it
+ * passes.
  */
 public final class ApiTool {
     private static final @NotNull String DUMP_COMMAND = "dump";
     private static final @NotNull String CHECK_COMMAND = "check";
-    private static final @NotNull String USE_COMMAND = "use";
     private static final @NotNull String OPTION_PREFIX = "--";
     private static final @NotNull String API_FILE_OPTION = "api-file";
     private static final @NotNull String CLASSES_OPTION = "classes";
-    private static final @NotNull String INTERNAL_OPTION = "internal";
     private static final @NotNull String UPDATE_TASK_OPTION = "update-task";
     private static final @NotNull String REPORT_OPTION = "report";
-    private static final @NotNull String BASE_OPTION = "base";
-    private static final @NotNull String SOURCES_OPTION = "sources";
     private static final @NotNull String LINE_INDENT = "  ";
     private static final @NotNull String POLICY_FILE = "docs/api-policy.md";
     private static final int SUCCESS_EXIT = 0;
@@ -53,8 +47,7 @@ public final class ApiTool {
 
         private Arguments(@NotNull String @NotNull [] arguments) {
             if (arguments.length == 0 || arguments[0].startsWith(OPTION_PREFIX)) {
-                throw Exceptions.newIllegalArgumentException("The first argument must be the command ({0}, {1} or {2}).", DUMP_COMMAND,
-                                                             CHECK_COMMAND, USE_COMMAND);
+                throw Exceptions.newIllegalArgumentException("The first argument must be the command ({0} or {1}).", DUMP_COMMAND, CHECK_COMMAND);
             }
 
             this.command = arguments[0];
@@ -119,12 +112,10 @@ public final class ApiTool {
     public static int run(@NotNull String @NotNull [] arguments, @NotNull PrintStream output, @NotNull PrintStream errors) {
         try {
             Arguments parsed = new Arguments(arguments);
-            InternalElements internal = new InternalElements(parsed.getValues(INTERNAL_OPTION));
 
             return switch (parsed.command) {
-                case DUMP_COMMAND -> dump(parsed, internal, output);
-                case CHECK_COMMAND -> check(parsed, internal, output, errors);
-                case USE_COMMAND -> checkUse(parsed, internal, output, errors);
+                case DUMP_COMMAND -> dump(parsed, output);
+                case CHECK_COMMAND -> check(parsed, output, errors);
                 default -> throw Exceptions.newIllegalArgumentException("Unknown command: {0}", parsed.command);
             };
         } catch (IllegalArgumentException exception) {
@@ -138,9 +129,15 @@ public final class ApiTool {
         }
     }
 
-    private static int dump(@NotNull Arguments arguments, @NotNull InternalElements internal, @NotNull PrintStream output) throws IOException {
+    private static @NotNull ApiListing createListing(@NotNull Arguments arguments) throws IOException {
+        List<Path> classDirectories = arguments.getPaths(CLASSES_OPTION);
+
+        return ApiListing.create(classDirectories, InternalElements.read(classDirectories));
+    }
+
+    private static int dump(@NotNull Arguments arguments, @NotNull PrintStream output) throws IOException {
         Path apiFile = arguments.getPath(API_FILE_OPTION);
-        ApiListing listing = ApiListing.create(arguments.getPaths(CLASSES_OPTION), internal);
+        ApiListing listing = createListing(arguments);
         Path directory = apiFile.toAbsolutePath().getParent();
 
         if (directory != null) {
@@ -154,12 +151,11 @@ public final class ApiTool {
         return SUCCESS_EXIT;
     }
 
-    private static int check(@NotNull Arguments arguments, @NotNull InternalElements internal,
-                             @NotNull PrintStream output, @NotNull PrintStream errors) throws IOException {
+    private static int check(@NotNull Arguments arguments, @NotNull PrintStream output, @NotNull PrintStream errors) throws IOException {
         Path apiFile = arguments.getPath(API_FILE_OPTION);
         ApiListing expected = Files.isRegularFile(apiFile) ? ApiListing.parse(Files.readString(apiFile, StandardCharsets.UTF_8))
                                                            : ApiListing.parse("");
-        ApiListing actual = ApiListing.create(arguments.getPaths(CLASSES_OPTION), internal);
+        ApiListing actual = createListing(arguments);
         List<String> difference = expected.describeDifference(actual);
 
         if (!difference.isEmpty()) {
@@ -173,23 +169,6 @@ public final class ApiTool {
 
         writeReport(arguments.getPath(REPORT_OPTION), "The public API equals " + apiFile + ": " + actual.getClassNames().size() + " classes.");
         output.println("The public API equals " + apiFile + ".");
-
-        return SUCCESS_EXIT;
-    }
-
-    private static int checkUse(@NotNull Arguments arguments, @NotNull InternalElements internal,
-                                @NotNull PrintStream output, @NotNull PrintStream errors) throws IOException {
-        List<String> uses = new InternalUseScanner(internal).scan(arguments.getPath(BASE_OPTION), arguments.getPaths(SOURCES_OPTION));
-
-        if (!uses.isEmpty()) {
-            errors.println("Mods must not use the engine's internal packages and classes (" + POLICY_FILE + "); use the API instead:");
-            uses.forEach(use -> errors.println(LINE_INDENT + use));
-
-            return FAILURE_EXIT;
-        }
-
-        writeReport(arguments.getPath(REPORT_OPTION), "Internal uses: 0.");
-        output.println("No use of an internal engine element.");
 
         return SUCCESS_EXIT;
     }

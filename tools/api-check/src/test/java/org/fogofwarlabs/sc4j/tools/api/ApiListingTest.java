@@ -15,7 +15,6 @@ import java.util.Set;
  * Checks the API listing of compiled classes: what it lists, its text form and the difference of two listings.
  */
 final class ApiListingTest {
-    private static final @NotNull InternalElements INTERNAL = new InternalElements(List.of("org.example.loading", "org.example.Hidden"));
     private static final @NotNull String GETTER = """
                                                       public int getHealth() {
                                                           return this.health;
@@ -70,12 +69,21 @@ final class ApiListingTest {
                                   """,
             "org.example.Hidden", """
                                   package org.example;
-                                  
+
+                                  import org.jetbrains.annotations.ApiStatus;
+
+                                  @ApiStatus.Internal
                                   public final class Hidden {
                                       public void hide() {
                                       }
                                   }
                                   """,
+            "org.example.loading.package-info", """
+                                                @ApiStatus.Internal
+                                                package org.example.loading;
+
+                                                import org.jetbrains.annotations.ApiStatus;
+                                                """,
             "org.example.loading.Loader", """
                                           package org.example.loading;
                                           
@@ -106,7 +114,7 @@ final class ApiListingTest {
         CompilationScenario.compile(directory.resolve("sources"), classes, OTHER_SOURCES);
         CompilationScenario.compile(directory.resolve("unit-sources"), classes, Map.of("org.example.Unit", unitSource));
 
-        return ApiListing.create(List.of(classes), INTERNAL);
+        return ApiListing.create(List.of(classes), InternalElements.read(List.of(classes)));
     }
 
     @Test

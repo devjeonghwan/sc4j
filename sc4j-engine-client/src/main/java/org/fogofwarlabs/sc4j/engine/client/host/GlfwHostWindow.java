@@ -6,6 +6,7 @@ import org.fogofwarlabs.sc4j.engine.client.cursor.CursorSurface;
 import org.fogofwarlabs.sc4j.engine.client.input.DoublePressDetector;
 import org.fogofwarlabs.sc4j.engine.client.input.InputListener;
 import org.fogofwarlabs.sc4j.engine.client.input.Key;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.*;
@@ -32,6 +33,7 @@ import java.util.function.LongSupplier;
  * The display mode keeps the windowed bounds while the window is fullscreen or borderless, so returning to windowed mode
  * restores them. The swap interval is only passed on when it changes.
  */
+@ApiStatus.Internal
 public final class GlfwHostWindow implements HostWindow {
     /**
      * The extensions that allow adaptive vertical sync (late swaps tear instead of waiting).

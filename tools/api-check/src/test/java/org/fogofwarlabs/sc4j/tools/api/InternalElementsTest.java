@@ -3,55 +3,83 @@ package org.fogofwarlabs.sc4j.tools.api;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
- * Checks which compiled classes and which references in code the internal packages and classes cover.
+ * Checks which compiled classes the annotated internal packages and classes cover.
  */
 final class InternalElementsTest {
-    private static final @NotNull InternalElements INTERNAL = new InternalElements(List.of("org.example.loading", "org.example.host.GlfwInput"));
+    private static final @NotNull Map<@NotNull String, @NotNull String> SOURCES = Map.of(
+            "org.example.loading.package-info", """
+                                                @ApiStatus.Internal
+                                                package org.example.loading;
+
+                                                import org.jetbrains.annotations.ApiStatus;
+                                                """,
+            "org.example.loading.ModLoader", """
+                                             package org.example.loading;
+
+                                             public final class ModLoader {
+                                                 public static final class Entry {
+                                                 }
+                                             }
+                                             """,
+            "org.example.loading.detail.Part", """
+                                               package org.example.loading.detail;
+
+                                               public final class Part {
+                                               }
+                                               """,
+            "org.example.host.GlfwInput", """
+                                          package org.example.host;
+
+                                          import org.jetbrains.annotations.ApiStatus;
+
+                                          @ApiStatus.Internal
+                                          public final class GlfwInput {
+                                              public interface Listener {
+                                              }
+                                          }
+                                          """,
+            "org.example.host.GlfwInputs", """
+                                           package org.example.host;
+
+                                           public final class GlfwInputs {
+                                           }
+                                           """,
+            "org.example.host.WindowSettings", """
+                                               package org.example.host;
+
+                                               import org.jetbrains.annotations.ApiStatus;
+
+                                               public final class WindowSettings {
+                                                   @ApiStatus.Internal
+                                                   public static final class Defaults {
+                                                   }
+                                               }
+                                               """
+    );
 
     @Test
-    void is_internal_should_cover_packages_subpackages_classes_and_nested_classes() {
-        Assertions.assertTrue(INTERNAL.isInternal("org.example.loading.ModLoader"));
-        Assertions.assertTrue(INTERNAL.isInternal("org.example.loading.detail.Entry$Part"));
-        Assertions.assertTrue(INTERNAL.isInternal("org.example.host.GlfwInput"));
-        Assertions.assertTrue(INTERNAL.isInternal("org.example.host.GlfwInput$Listener"));
-        Assertions.assertFalse(INTERNAL.isInternal("org.example.host.GlfwInputs"));
-        Assertions.assertFalse(INTERNAL.isInternal("org.example.host.WindowSettings"));
-        Assertions.assertFalse(INTERNAL.isInternal("org.example.loadingtools.Tool"));
-    }
+    void read_should_find_annotated_packages_classes_and_their_nested_classes(@TempDir @NotNull Path directory) throws IOException {
+        Path classes = directory.resolve("classes");
 
-    @Test
-    void find_references_should_report_qualified_names_and_on_demand_imports() {
-        String code = """
-                      import org.example.loading.ModLoader;
-                      import org.example.loading.detail.*;
-                      import org.example.host.*;
-                      import org.example.host.WindowSettings;
-                      import org.example.loadingtools.Tool;
-                      class Use { GlfwInput input; org.example.host.GlfwInputs other; }
-                      """;
+        CompilationScenario.compile(directory.resolve("sources"), classes, SOURCES);
 
-        Assertions.assertEquals(Set.of("org.example.loading.ModLoader", "org.example.loading.detail.*", "org.example.host.GlfwInput"),
-                                INTERNAL.findReferences(code));
-    }
+        InternalElements internal = InternalElements.read(List.of(classes, directory.resolve("missing")));
 
-    @Test
-    void find_references_should_ignore_simple_names_without_an_on_demand_import() {
-        String code = """
-                      import org.example.host.WindowSettings;
-                      class Use { GlfwInput input; }
-                      """;
-
-        Assertions.assertEquals(Set.of(), INTERNAL.findReferences(code));
-    }
-
-    @Test
-    void constructor_should_reject_names_that_are_not_qualified() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> new InternalElements(List.of("loading")));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> new InternalElements(List.of("org.example.")));
+        Assertions.assertTrue(internal.isInternal("org.example.loading.ModLoader"));
+        Assertions.assertTrue(internal.isInternal("org.example.loading.ModLoader$Entry"));
+        Assertions.assertTrue(internal.isInternal("org.example.host.GlfwInput"));
+        Assertions.assertTrue(internal.isInternal("org.example.host.GlfwInput$Listener"));
+        Assertions.assertTrue(internal.isInternal("org.example.host.WindowSettings$Defaults"));
+        Assertions.assertFalse(internal.isInternal("org.example.loading.detail.Part"));
+        Assertions.assertFalse(internal.isInternal("org.example.host.GlfwInputs"));
+        Assertions.assertFalse(internal.isInternal("org.example.host.WindowSettings"));
     }
 }

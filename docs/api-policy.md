@@ -37,7 +37,7 @@ The Javadoc of an API element is part of its contract. Every API element has Jav
 
 ## 2. Internal elements
 
-These elements are public for the engine's own modules and the runtime but are not API. The listings leave them out, their package-info says so, and mods must not use them:
+These elements are public for the engine's own modules and the runtime but are not API: they may change or disappear in any version without notice, and no compatibility promise covers them. Each carries the JetBrains annotation `@ApiStatus.Internal`, so IDEs show their use; the listings leave them out and their package-info says so:
 
 | Element | Why |
 |---|---|
@@ -47,9 +47,9 @@ These elements are public for the engine's own modules and the runtime but are n
 | `engine.client.host.GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface` | the GLFW implementations of the runtime host; mods use the `engine.client.host` interfaces (`ClientHost.initialize()`, `HostWindow` with its window services, `WindowInput`) and value types, which are API |
 | `engine.client.host.WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock` | the Windows implementations of the platform services; mods use `HostWindow.getTextInputMethod()`, `SystemPointerSpeed.getDefault()` and `HostTickClock.getDefault()`, whose portable defaults (`NoTextInputMethod`, `FixedSystemPointerSpeed`, `MonotonicHostTickClock`) are API |
 
-A package covers its subpackages and a class its nested classes. The list `sc4j-engine/api/internal-elements.txt` is the one the build checks and the mod plugin carries; a change of it changes this table and the package-info in the same commit.
+The annotation on a package's package-info covers the classes of that package (not its subpackages), and on a class it covers its nested classes. The annotation is the only source: `apiDump` and `apiCheck` read it from the compiled classes, so adding or removing it changes the listing, this table and the package-info in the same commit.
 
-`checkApiUse` of the mod plugin scans the sources of a mod for these elements in code (comments and literals do not count) and fails on every use. It checks with the list of the plugin's engine version, also for a mod outside this repository.
+A mod that uses an internal element does so by its author's choice; nothing in the build stops it, and the mod may break with any engine version.
 
 ## 3. Versions
 

@@ -60,7 +60,7 @@ ext.checkDistributionLicenses = checkDistributionLicenses
 // Every jar carries LICENSE and NOTICE in META-INF/. The base jar type org.gradle.jvm.tasks.Jar covers the jars of plugins too (the
 // javadoc jar of the publishing plugin), which do not extend the Jar type of the build script. A mod jar gets them from the mod plugin.
 tasks.withType(org.gradle.jvm.tasks.Jar).configureEach { task ->
-    if (!(task.name == 'modJar' && pluginManager.hasPlugin('org.fogofwarlabs.sc4j.mod'))) {
+    if (!(task.name == 'jar' && pluginManager.hasPlugin('org.fogofwarlabs.sc4j.mod'))) {
         metaInf {
             from(licenseFiles)
         }

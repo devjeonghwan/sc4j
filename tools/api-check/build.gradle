@@ -3,9 +3,9 @@ plugins {
     id 'org.fogofwarlabs.sc4j.java'
 }
 
-// The API tools of the engine (docs/api-policy.md): the public API listing of an engine module over the JDK's javap (apiDump,
-// apiCheck) and the scan of mod sources for the engine's internal packages and classes (checkApiUse). The root build and the mod plugin run
-// them as JavaExec tasks (published as sc4j-api-check); no dependency beyond the JDK and the engine base.
+// The API tools of the engine (docs/api-policy.md): the public API listing of an engine module over the JDK's javap (apiDump, apiCheck),
+// without the elements annotated ApiStatus.Internal. The root build runs them as JavaExec tasks; no dependency beyond the JDK and the engine
+// base.
 dependencies {
     implementation project(':sc4j-base')
 }

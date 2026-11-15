@@ -33,21 +33,18 @@ tasks.named('javadoc', Javadoc) {
     source = fileTree('src/main/java')
 }
 
-// The plugin carries its engine version and the engine's internal API elements (checkApiUse).
+// The plugin carries its engine version.
 def engineResourceText = 'group=' + group + '\nversion=' + version + '\n'
-def internalElements = rootProject.file('../sc4j-engine/api/internal-elements.txt')
 def engineResources = layout.buildDirectory.dir('generated/engine-resources')
 def writeEngineResources = tasks.register('writeEngineResources') {
-    description = 'Writes the engine version and the internal API element list into the resources of the mod plugin.'
+    description = 'Writes the engine version into the resources of the mod plugin.'
     inputs.property('engineResourceText', engineResourceText)
-    inputs.file(internalElements)
     outputs.dir(engineResources)
     doLast {
         def folder = engineResources.get().dir('org/fogofwarlabs/sc4j/gradle/mod').asFile
         project.delete(engineResources)
         folder.mkdirs()
         new File(folder, 'engine.properties').setText(engineResourceText, 'UTF-8')
-        new File(folder, 'internal-elements.txt').bytes = internalElements.bytes
     }
 }
 sourceSets.main.resources.srcDir(writeEngineResources)

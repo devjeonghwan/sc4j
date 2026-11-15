@@ -2,6 +2,7 @@ package org.fogofwarlabs.sc4j.engine.client.host;
 
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.fogofwarlabs.sc4j.base.exception.IgnoreException;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -22,6 +23,7 @@ import java.util.List;
  * {@link HostApplication#beginFrame}, event polling, {@link HostApplication#runFrame}, then for a presented frame the wait
  * under {@link HostApplication#getFrameRateLimit}.
  */
+@ApiStatus.Internal
 public final class GlfwClientHost implements ClientHost {
     /**
      * Creates a {@link GlfwClientHost} instance: installs an error callback that prints the library's errors to the standard

@@ -42,7 +42,7 @@ SC4J의 데모 2입니다. 자기 정체성을 가진 [SC:R 모드](../scr/READM
 | `overlayDiff` | 오버레이 파일 아래에서 SC:R 모드가 바꾼 내용을 보여 줌 |
 | `acceptOverlay` | 현재 SC:R 모드 파일을 `overlay.lock`과 `overlay-base/`에 기록 |
 | `convertArt` | 모든 그림 세트의 베이크된 프레임을 유닛의 그래픽 파일로 변환 |
-| `modJar` | `build/mods/scr-demo.jar` 빌드 |
+| `jar` | `build/libs/scr-demo.jar` 빌드 |
 
 오버레이가 대신하는 파일을 SC:R 모드가 바꾸면 빌드가 멈추고 그 파일을 알려 줍니다. `overlayDiff`를 실행하고, 바뀐 내용을 오버레이 파일에 손으로 병합한 뒤 `acceptOverlay`를 실행합니다.
 
@@ -54,10 +54,10 @@ JDK 25가 필요합니다. 플레이하려면 스타크래프트: 리마스터 1
 
 | 명령 | 하는 일 |
 |---|---|
-| `.\gradlew.bat :mods:scr-demo:modJar` | `mods/scr-demo/build/mods/scr-demo.jar` 빌드 |
-| `.\gradlew.bat :mods:scr-demo:test` | 저장소 밖의 것이 필요 없는 테스트 |
-| `.\gradlew.bat :mods:scr-demo:integrationTest` | 설치본이 필요한 테스트(Gradle 속성 `sc4j.data`) |
-| `.\gradlew.bat :mods:scr-demo:devInstall` | 개발용 설치본 `build/dev-install/`에 `mods/scr.jar`와 `mods/scr-demo.jar` 추가 |
+| `.\gradlew.bat -p mods\scr-demo jar` | `mods/scr-demo/build/libs/scr-demo.jar` 빌드 |
+| `.\gradlew.bat -p mods\scr-demo test` | 저장소 밖의 것이 필요 없는 테스트 |
+| `.\gradlew.bat -p mods\scr-demo integrationTest` | 설치본이 필요한 테스트(Gradle 속성 `sc4j.data`) |
+| `.\gradlew.bat -p mods\scr-demo devInstall` | 개발용 설치본 `build/dev-install/`에 `mods/scr.jar`와 `mods/scr-demo.jar` 추가 |
 | `.\gradlew.bat runDevLauncher` | 개발용 설치본의 런처 열기 |
 
 다른 설치본에는 `scr-demo.jar`를 그 `mods/` 폴더에 복사합니다.

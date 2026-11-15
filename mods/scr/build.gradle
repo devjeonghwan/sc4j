@@ -73,21 +73,27 @@ sc4jMod {
     sourceSets = modModules.collect { module -> module.sourceSets.main }
 }
 
-// devInstall copies scr.jar into mods/ of the install: with the engine build included, its development install build/dev-install, which
-// it assembles first. When the Gradle property sc4j.data names the SC:R installation and no shared settings file exists yet,
-// userdata/shared-settings.json is created with it as the value of the shared StarCraft: Remastered folder setting (shared name
+// devInstall copies scr.jar into mods/ of the install (installMod): with the engine build included, its development install
+// build/dev-install, which it assembles first. When the Gradle property sc4j.data names the SC:R installation and no shared settings file
+// exists yet, userdata/shared-settings.json is created with it as the value of the shared StarCraft: Remastered folder setting (shared name
 // starcraft-remastered) of the SC:R mod and its clones.
 def engineBuild = gradle.includedBuilds.find { build -> build.name == 'sc4j' }
 if (engineBuild != null) {
     sc4jMod.install = new File(engineBuild.projectDir, 'build/dev-install')
 }
-tasks.named('devInstall') {
+def installMod = tasks.named('installMod') {
     if (engineBuild != null) {
         dependsOn engineBuild.task(':devInstall')
     }
+}
+tasks.register('devInstall') {
+    description = 'Installs scr.jar into the install (sc4jMod.install) and sets the shared game folder from sc4j.data.'
+    group = 'distribution'
+    dependsOn installMod
+    def install = sc4jMod.install
     def installation = providers.gradleProperty('sc4j.data').getOrElse('')
     doLast {
-        def sharedSettingsFile = new File(destinationDir, 'userdata/shared-settings.json')
+        def sharedSettingsFile = install.file('userdata/shared-settings.json').get().asFile
         if (!installation.isBlank() && !sharedSettingsFile.exists()) {
             sharedSettingsFile.parentFile.mkdirs()
             def value = new File(installation).absolutePath.replace('\\', '\\\\').replace('"', '\\"')

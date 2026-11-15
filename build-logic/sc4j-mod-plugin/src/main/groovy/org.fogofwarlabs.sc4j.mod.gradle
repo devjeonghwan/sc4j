@@ -20,12 +20,10 @@ def engineProperties = new Properties()
 ModExtension.getResourceAsStream('engine.properties').withReader('UTF-8') { reader -> engineProperties.load(reader) }
 def engineGroup = engineProperties.getProperty('group')
 def engineVersion = engineProperties.getProperty('version')
-def internalApiArguments = ModExtension.getResourceAsStream('internal-elements.txt').getText('UTF-8').readLines().findAll { line ->
-    !line.isBlank() && !line.startsWith('#')
-}.collectMany { name -> ['--internal', name.trim()] }
 
 def mod = extensions.create('sc4jMod', ModExtension)
-mod.sourceSets.convention([sourceSets.main])
+def mainSourceSet = sourceSets.main
+mod.sourceSets.convention([mainSourceSet])
 mod.install.convention(layout.projectDirectory.dir(providers.gradleProperty('sc4j.install')))
 mod.licenses.convention(rootProject.files('LICENSE', 'NOTICE').filter { file -> file.isFile() })
 
@@ -71,15 +69,15 @@ def checkModJar = { File jar, String id, List<String> licenseNames ->
         }
     }
 }
-def modJar = tasks.register('modJar', Jar) {
-    description = 'Builds the mod jar build/mods/<id>.jar.'
-    group = 'build'
+def jar = tasks.named('jar', Jar) {
+    description = 'Builds the mod jar build/libs/<id>.jar.'
+    group = 'sc4j'
     archiveFileName = mod.id.map { id -> id + '.jar' }
-    destinationDirectory = layout.buildDirectory.dir('mods')
     preserveFileTimestamps = false
     reproducibleFileOrder = true
     duplicatesStrategy = DuplicatesStrategy.FAIL
-    from({ mod.sourceSets.get().collect { sourceSet -> sourceSet.output } })
+    // The java plugin puts the main source set in; the other source sets of the mod join it.
+    from({ mod.sourceSets.get().findAll { sourceSet -> !sourceSet.is(mainSourceSet) }.collect { sourceSet -> sourceSet.output } })
     metaInf {
         from(mod.licenses)
     }
@@ -90,44 +88,10 @@ def modJar = tasks.register('modJar', Jar) {
     }
 }
 
-tasks.named('assemble') {
-    dependsOn modJar
-}
-
 // The mod jar as the variant of this project with the usage sc4j-mod-jar.
 configurations.consumable('modJarElements') {
     attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, 'sc4j-mod-jar'))
-    outgoing.artifact(modJar)
-}
-
-// The internal use check: the Java sources of the mod use no internal element of the engine (the API tool of the engine version).
-def apiTool = configurations.dependencyScope('sc4jApiTool')
-dependencies.add('sc4jApiTool', engineModule('sc4j-api-check'))
-def apiToolClasspath = configurations.resolvable('sc4jApiToolClasspath') {
-    extendsFrom(apiTool.get())
-    attributes(javaRuntime)
-}
-def apiUseReport = layout.buildDirectory.file('reports/api-use.txt')
-def baseFolder = projectDir
-def checkApiUse = tasks.register('checkApiUse', JavaExec) {
-    description = 'Checks that the Java sources of the mod use no internal engine package or class.'
-    group = 'verification'
-    classpath = files(apiToolClasspath)
-    mainClass = 'org.fogofwarlabs.sc4j.tools.api.ApiTool'
-    def sourceFolders = files({ mod.sourceSets.get().collect { sourceSet -> sourceSet.java.srcDirs } })
-    // Generated sources exist once their source set is built.
-    dependsOn({ mod.sourceSets.get().collect { sourceSet -> sourceSet.output } })
-    inputs.files(sourceFolders.asFileTree.matching { include '**/*.java' })
-    inputs.property('internalApiElements', internalApiArguments)
-    outputs.file(apiUseReport)
-    argumentProviders.add({
-        ['use', '--base', baseFolder.absolutePath, '--sources'] + sourceFolders.files.collect { folder -> folder.absolutePath } +
-                internalApiArguments + ['--report', apiUseReport.get().asFile.absolutePath]
-    } as CommandLineArgumentProvider)
-}
-
-tasks.named('check') {
-    dependsOn checkApiUse
+    outgoing.artifact(jar)
 }
 
 // The engine runtime of the plugin's version and the native libraries of its LWJGL and JavaCPP libraries for this platform.
@@ -162,8 +126,8 @@ def runtimeNatives = files({
 })
 def runFolder = layout.buildDirectory.dir('sc4j-run')
 def nativeFolder = runFolder.get().dir('natives').asFile.absolutePath
-def stageRunNatives = tasks.register('stageRunNatives', Sync) {
-    description = 'Stages the native libraries of the engine runtime for runMod.'
+def prepareRun = tasks.register('prepareRun', Sync) {
+    description = 'Stages the native libraries of the engine runtime for run.'
     from({ runtimeNatives.collect { archive -> zipTree(archive) } }) {
         include '**/*.dll', '**/*.so', '**/*.so.*'
         exclude 'META-INF/**'
@@ -175,13 +139,13 @@ def stageRunNatives = tasks.register('stageRunNatives', Sync) {
 }
 
 // Runs the mod jar in the runtime with the user data of the install, or of build/sc4j-run when no install is set.
-tasks.register('runMod', JavaExec) {
+tasks.register('run', JavaExec) {
     description = 'Runs the mod jar in the engine runtime (--args passes runtime options, --debug-jvm waits for a debugger).'
-    group = 'application'
-    dependsOn modJar, stageRunNatives
+    group = 'sc4j'
+    dependsOn jar, prepareRun
     classpath = files(runtimeClasspath)
     mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
-    def jar = modJar.flatMap { task -> task.archiveFile }
+    def jarFile = jar.flatMap { task -> task.archiveFile }
     def install = mod.install.orElse(runFolder)
     def cacheFolder = runFolder.get().dir('.cache').asFile.absolutePath
     jvmArgs '--enable-native-access=ALL-UNNAMED'
@@ -195,14 +159,14 @@ tasks.register('runMod', JavaExec) {
     systemProperty 'org.bytedeco.javacpp.cacheLibraries', 'false'
     // The options of --args follow the mod and the install, so that mod arguments after "--" stay last.
     doFirst {
-        args = ['--mod', jar.get().asFile.absolutePath, '--install', install.get().asFile.absolutePath] + args
+        args = ['--mod', jarFile.get().asFile.absolutePath, '--install', install.get().asFile.absolutePath] + args
     }
 }
 
 // Copies the mod jar into mods/ of the install.
-tasks.register('devInstall', Copy) {
+tasks.register('installMod', Copy) {
     description = 'Copies the mod jar into the mods folder of the install (sc4jMod.install).'
-    group = 'distribution'
+    group = 'sc4j'
     into mod.install
-    from(modJar) { into 'mods' }
+    from(jar) { into 'mods' }
 }

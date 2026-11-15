@@ -4,6 +4,7 @@ import org.fogofwarlabs.sc4j.engine.client.input.DoublePressDetector;
 import org.fogofwarlabs.sc4j.engine.client.input.InputEvent;
 import org.fogofwarlabs.sc4j.engine.client.input.InputListener;
 import org.fogofwarlabs.sc4j.engine.client.input.PointerButton;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
@@ -18,6 +19,7 @@ import java.util.function.LongSupplier;
  * {@link #refreshSurfaceSize}). A press of the left, right or middle button runs the {@link DoublePressDetector} at the floored window
  * coordinates of the cursor with the clock's time. The callbacks stay installed until the window closes, which frees them.
  */
+@ApiStatus.Internal
 public final class GlfwInput implements WindowInput {
     private static final long NANOSECONDS_PER_MILLISECOND = 1_000_000L;
     private static final @NotNull GlfwKeyCodes KEY_CODES = GlfwKeyCodes.getInstance();

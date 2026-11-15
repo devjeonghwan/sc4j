@@ -1,5 +1,6 @@
 package org.fogofwarlabs.sc4j.engine.client.host;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFWNativeWin32;
@@ -16,6 +17,7 @@ import java.util.Locale;
  * procedure installed in front of GLFW's own takes the composition messages while text input is enabled: it hides the system composition
  * window and reports the result and the composition to the {@link TextCompositionListener}.
  */
+@ApiStatus.Internal
 public final class WindowsTextInputMethod implements TextInputMethod {
     private static final int WM_IME_STARTCOMPOSITION = 0x010D;
     private static final int WM_IME_ENDCOMPOSITION = 0x010E;

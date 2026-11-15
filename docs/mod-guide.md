@@ -39,7 +39,7 @@ What you need: the JDK the repository builds with (JDK 25), this repository (for
 A mod is installed into the `mods/` folder of an SC4J install. The repository's development install is `build/dev-install/` (launcher, runtime and the repository's mods):
 
 ```powershell
-.\gradlew.bat :mods:demo:devInstall
+.\gradlew.bat devInstall
 ```
 
 Any other SC4J install works the same way: its folder holds `launcher/`, `runtime/`, `mods/` and, once used, `userdata/`.
@@ -157,10 +157,10 @@ final class FirstScene implements ClientScene {
 The repository's Gradle wrapper builds the mod's folder:
 
 ```powershell
-.\gradlew.bat -p ..\my-mod devInstall
+.\gradlew.bat -p ..\my-mod installMod
 ```
 
-builds `..\my-mod\build\mods\my-mod.jar` and copies it into `<install>/mods/`. `modJar` instead of `devInstall` only builds the jar.
+builds `..\my-mod\build\libs\my-mod.jar` and copies it into `<install>/mods/`. `jar` instead of `installMod` only builds the jar.
 
 ### 2.4 Run headless
 
@@ -332,17 +332,17 @@ sc4jMod {
 ```
 
 - The plugin compiles the mod against the engine API of its own version (`org.fogofwarlabs.sc4j:sc4j-engine` with `sc4j-base`, `sc4j-mod-manifest` and the engine modules). The runtime provides it, so it is not in the jar.
-- `modJar` packs the classes and resources of the main source set into `build/mods/<id>.jar` reproducibly (no timestamps, fixed order, duplicates fail), with `LICENSE` and `NOTICE` of the project folder in `META-INF/`. It fails when `sc4j-mod.json` names another id or an entry class that the jar lacks. The same sources give the same jar, so the same identity.
-- `checkApiUse` (part of `check`) fails when the mod's sources use an internal element of the engine (chapter 16).
-- `runMod` runs the jar in the engine runtime of the plugin's version, with the user data of the install or of `build/sc4j-run`: `runMod --args=--headless` runs it headless, `--debug-jvm` waits for a debugger.
-- `devInstall` copies the jar into `<install>/mods/`; the install is the Gradle property `sc4j.install`.
-- `sc4jMod` also takes `sourceSets` (the source sets of the jar, default `main`), `install` and `licenses` (the files of `META-INF/`). `tasks.named('modJar') { from(...) }` adds more files to the jar.
+- `jar` packs the classes and resources of the main source set into `build/libs/<id>.jar` reproducibly (no timestamps, fixed order, duplicates fail), with `LICENSE` and `NOTICE` of the project folder in `META-INF/`. It fails when `sc4j-mod.json` names another id or an entry class that the jar lacks. The same sources give the same jar, so the same identity.
+- `run` runs the jar in the engine runtime of the plugin's version, with the user data of the install or of `build/sc4j-run`: `run --args=--headless` runs it headless, `--debug-jvm` waits for a debugger.
+- `installMod` copies the jar into `<install>/mods/`; the install is the Gradle property `sc4j.install`.
+- `jar`, `run` and `installMod` make up the task group `sc4j`.
+- `sc4jMod` also takes `sourceSets` (more source sets for the jar besides `main`), `install` and `licenses` (the files of `META-INF/`). `tasks.named('jar') { from(...) }` adds more files to the jar.
 
 A library your mod needs at run time must go into the jar (or come with the install: the runtime's `lib/` carries the engine's libraries such as LWJGL and FFmpeg). Check its licence first (chapter 17).
 
 ### 7.2 A mod inside this repository
 
-Demo 1 is a project of the repository build ([`mods/demo/build.gradle`](../mods/demo/build.gradle)) with the same plugin: inside the repository build the plugin's engine dependency is the engine projects, and `devInstall` copies `demo.jar` into `build/dev-install/mods/`. Its own checks: `checkModBoundary` and `checkDemoNames` (the demo names no other game), and `determinismCheck` (chapter 12). Its tests run the jar through the runtime (`DemoModTest`) and the client offscreen (`DemoClientScenario`).
+Demo 1 is a project of the repository build ([`mods/demo/build.gradle`](../mods/demo/build.gradle)) with the same plugin: inside the repository build the plugin's engine dependency is the engine projects, its install is `build/dev-install/`, and the repository's `devInstall` assembles that install with `demo.jar` in `mods/`. Its own checks: `checkModBoundary` and `checkDemoNames` (the demo names no other game), and `determinismCheck` (chapter 12). Its tests run the jar through the runtime (`DemoModTest`) and the client offscreen (`DemoClientScenario`).
 
 ## 8. Maps and first-run content
 
@@ -371,7 +371,7 @@ for (String file : List.of("maps/first-field.json")) {
 }
 ```
 
-A new install starts with the mod's maps, a player's own maps sit next to them, and a map the player changed is never overwritten (a deleted one comes back at the next start). Then the mod reads every `*.json` of `maps/` in file name order and leaves out, with a warning, a file that is no valid map. To ship another map, put it under `src/main/resources/<id>/seed/maps/` with a `name` no other map has, add its path relative to `<id>/seed/` (`"maps/second-field.json"`) to the list, rebuild and reinstall (`devInstall`); the next start copies it into the storage. Seed any other first-run file (options, a tutorial replay) the same way. A seed map you change or remove in the jar does not change the copy an earlier run left in the storage: while you work on a map, delete that copy (or run with another `--storage`).
+A new install starts with the mod's maps, a player's own maps sit next to them, and a map the player changed is never overwritten (a deleted one comes back at the next start). Then the mod reads every `*.json` of `maps/` in file name order and leaves out, with a warning, a file that is no valid map. To ship another map, put it under `src/main/resources/<id>/seed/maps/` with a `name` no other map has, add its path relative to `<id>/seed/` (`"maps/second-field.json"`) to the list, rebuild and reinstall (`installMod`); the next start copies it into the storage. Seed any other first-run file (options, a tutorial replay) the same way. A seed map you change or remove in the jar does not change the copy an earlier run left in the storage: while you work on a map, delete that copy (or run with another `--storage`).
 
 Demo 1 reads its built-in maps straight from the jar ([`DemoMaps`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/map/DemoMaps.java)) and keeps the maps a network host sent it next to them; both ways are fine.
 
@@ -452,7 +452,7 @@ Demo 1: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/
 ## 15. Building, installing and running
 
 - **Jar**: `sc4j-mod.json` at the root, your classes and resources; no engine jar; reproducible. Every change is a new identity: players need exactly the same jar to play together and to play each other's replays.
-- **Install**: put the jar into `<install>/mods/` (`devInstall`, or by hand). The launcher lists every jar there: `READY`, `WARNING` (settings to fix) or `ERROR` (broken jar or manifest, an engine version this runtime cannot run, a missing image, an id another jar has).
+- **Install**: put the jar into `<install>/mods/` (`installMod`, or by hand). The launcher lists every jar there: `READY`, `WARNING` (settings to fix) or `ERROR` (broken jar or manifest, an engine version this runtime cannot run, a missing image, an id another jar has).
 - **Runtime**: `sc4j-runtime --mod <jar> [--install <dir>] [--settings <json>] [--storage <dir>] [--log <dir>] [--account <dir>] [--seeds <file>] [--seed <host:port>]... [--peers <file>] [--headless] [--replay <file>] [--join <address>] [-- <mod arguments>]` (`--help` prints it). Exit codes: 0 normal, 1 run failure, 2 command line or settings error, 3 mod load or validation failure. The log is `<install>/userdata/logs/<id>/sc4j.log`.
 - **Launcher**: lists the mods, asks for their settings, starts the runtime with the mod's settings, storage and log folders.
 
@@ -461,7 +461,7 @@ Demo 1: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/
 The policy itself is the [engine API policy](api-policy.md). In short:
 
 - The API is the public and protected classes and members of `sc4j-base`, `sc4j-mod-manifest`, `sc4j-engine-core`, `-sim`, `-net`, `-client` and `sc4j-engine`, listed in their `api/*.api` files. Their Javadoc is the contract.
-- **Internal** and not for mods: `engine.mod.loading`, `engine.client.render.gl`, `engine.client.audio.openal`, the GLFW host implementations (`GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface`) and the Windows platform services (`WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock`). The mod plugin checks for them: `checkApiUse` fails on every use (section 7.1). Draw through `engine.client.render` (a renderer of your own creates its GPU canvas and shader programs with `GraphicsDevice.getCurrent()`), play sound through `engine.client.audio` (`AudioDevice.openDefault()`), and run a window of your own through the `engine.client.host` interfaces (`ClientHost.initialize()`): the `HostWindow` serves keys and pointer (`createInput`, `isKeyDown`, `setPointerMode`, `createCursorSurface`), focus, clipboard, dropped files, the fullscreen gamma ramp and the input method (`getTextInputMethod`); `SystemPointerSpeed` and `HostTickClock` are the platform services.
+- **Internal**, not API: `engine.mod.loading`, `engine.client.render.gl`, `engine.client.audio.openal`, the GLFW host implementations (`GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface`) and the Windows platform services (`WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock`). They may change or disappear in any version without notice and have no compatibility promise; they carry `@ApiStatus.Internal`, so your IDE marks where you use them. Draw through `engine.client.render` (a renderer of your own creates its GPU canvas and shader programs with `GraphicsDevice.getCurrent()`), play sound through `engine.client.audio` (`AudioDevice.openDefault()`), and run a window of your own through the `engine.client.host` interfaces (`ClientHost.initialize()`): the `HostWindow` serves keys and pointer (`createInput`, `isKeyDown`, `setPointerMode`, `createCursorSurface`), focus, clipboard, dropped files, the fullscreen gamma ramp and the input method (`getTextInputMethod`); `SystemPointerSpeed` and `HostTickClock` are the platform services.
 - The engine API version is `MAJOR.MINOR` (`EngineVersion.CURRENT`, now 0.1); put it into the manifest's `engine` field. A new major version may break your mod; a new minor version adds only. While the API is at 0.x nothing is stable: incompatible changes can happen and are visible as `.api` diffs.
 - A change of simulation results raises at least the minor version. Replays and saves are not compatible across engine versions.
 

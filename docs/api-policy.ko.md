@@ -37,7 +37,7 @@ API 요소의 Javadoc은 계약의 일부입니다. 모든 API 요소에는 Java
 
 ## 2. 내부 요소
 
-아래 요소는 엔진 자체 모듈과 런타임을 위해 public이지만 API가 아닙니다. 목록에서 빠지고, package-info에 그렇게 적혀 있으며, 모드는 쓰면 안 됩니다.
+아래 요소는 엔진 자체 모듈과 런타임을 위해 public이지만 API가 아닙니다. 어느 버전에서든 예고 없이 바뀌거나 없어질 수 있고, 호환성 약속이 없습니다. 모두 JetBrains 어노테이션 `@ApiStatus.Internal`이 붙어 있어 IDE가 사용 위치를 표시합니다. 목록에서 빠지고 package-info에 그렇게 적혀 있습니다.
 
 | 요소 | 이유 |
 |---|---|
@@ -47,9 +47,9 @@ API 요소의 Javadoc은 계약의 일부입니다. 모든 API 요소에는 Java
 | `engine.client.host.GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface` | 런타임 호스트의 GLFW 구현. 모드는 `engine.client.host` 인터페이스(`ClientHost.initialize()`, 창 서비스를 가진 `HostWindow`, `WindowInput`)와 값 타입을 쓰며, 이들은 API입니다. |
 | `engine.client.host.WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock` | 플랫폼 서비스의 Windows 구현. 모드는 `HostWindow.getTextInputMethod()`, `SystemPointerSpeed.getDefault()`, `HostTickClock.getDefault()`를 쓰며, 이식 가능한 기본 구현(`NoTextInputMethod`, `FixedSystemPointerSpeed`, `MonotonicHostTickClock`)은 API입니다. |
 
-패키지는 하위 패키지를, 클래스는 중첩 클래스를 포함합니다. 빌드가 검사하고 모드 플러그인이 담는 목록은 `sc4j-engine/api/internal-elements.txt`입니다. 이 목록을 바꾸면 같은 커밋에서 이 표와 package-info도 바꿉니다.
+패키지의 package-info에 붙은 어노테이션은 그 패키지의 클래스를(하위 패키지는 제외), 클래스에 붙은 어노테이션은 중첩 클래스를 포함합니다. 어노테이션이 유일한 기준입니다. `apiDump`와 `apiCheck`가 컴파일된 클래스에서 읽으므로, 어노테이션을 붙이거나 떼면 같은 커밋에서 목록, 이 표, package-info가 함께 바뀝니다.
 
-모드 플러그인의 `checkApiUse`는 모드 소스에서 코드 안의 이 요소들을 찾아(주석과 리터럴은 세지 않음), 사용할 때마다 실패합니다. 이 저장소 밖의 모드도 플러그인 엔진 버전의 목록으로 검사합니다.
+내부 요소를 쓰는 모드는 제작자의 선택으로 그렇게 합니다. 빌드는 이를 막지 않으며, 그 모드는 어느 엔진 버전에서든 동작하지 않게 될 수 있습니다.
 
 ## 3. 버전
 

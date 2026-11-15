@@ -1,6 +1,7 @@
 package org.fogofwarlabs.sc4j.engine.client.host;
 
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,6 +12,7 @@ import java.util.Locale;
 /**
  * Reads the Windows uptime clock {@code GetTickCount}: the engine default {@link HostTickClock} on Windows.
  */
+@ApiStatus.Internal
 public final class WindowsHostTickClock implements HostTickClock {
     private static final @NotNull String OPERATING_SYSTEM_PROPERTY = "os.name";
     private static final @NotNull String WINDOWS_PREFIX = "windows";

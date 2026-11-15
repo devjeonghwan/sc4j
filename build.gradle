@@ -158,23 +158,18 @@ configure([project(':sc4j-engine-core'), project(':sc4j-engine-sim')]) { module 
 }
 
 // Public API list (docs/api-policy.md): the API of an engine module is every public or protected class, constructor,
-// method and field of its main classes outside the internal elements below. apiDump writes it with the JDK's javap to api/<module>.api
+// method and field of its main classes outside the internal elements: the packages and classes annotated ApiStatus.Internal, which stay
+// public for the engine's own modules and the runtime. apiDump writes it with the JDK's javap to api/<module>.api
 // (checked in); apiCheck, which "check" (and so "build") runs, fails when the compiled classes differ from that file, so every API change is
 // a visible diff of an .api file in the same commit. The base and the manifest are listed too: mods compile against them through the engine.
 def apiModules = ['sc4j-base', 'sc4j-mod-manifest', 'sc4j-engine-core', 'sc4j-engine-sim', 'sc4j-engine-net', 'sc4j-engine-client', 'sc4j-engine']
-// The internal elements (sc4j-engine/api/internal-elements.txt, also in the mod plugin): public for the engine's own modules and the runtime,
-// but not API; the listing leaves them out and mods must not use them (checkApiUse). Their package-info files say so too.
-def internalApiElements = file('sc4j-engine/api/internal-elements.txt').readLines('UTF-8').findAll { line ->
-    !line.isBlank() && !line.startsWith('#')
-}.collect { line -> line.trim() }
-def internalApiArguments = internalApiElements.collectMany { name -> ['--internal', name] }
 def apiToolMainClass = 'org.fogofwarlabs.sc4j.tools.api.ApiTool'
 def createApiToolConfiguration = { module ->
     def configuration = module.configurations.create('apiTool') {
         canBeConsumed = false
         canBeResolved = true
     }
-    module.dependencies.add('apiTool', module.dependencies.project(path: ':sc4j-api-check'))
+    module.dependencies.add('apiTool', module.dependencies.project(path: ':tools:api-check'))
     return configuration
 }
 
@@ -199,9 +194,8 @@ def registerApiTasks = { module, apiTool, String sourceSetName ->
         classpath = apiTool
         mainClass = apiToolMainClass
         inputs.files(classes)
-        inputs.property('internalApiElements', internalApiElements)
         outputs.file(apiFile)
-        argumentProviders.add({ ['dump', '--api-file', apiFile.absolutePath] + classArguments() + internalApiArguments } as CommandLineArgumentProvider)
+        argumentProviders.add({ ['dump', '--api-file', apiFile.absolutePath] + classArguments() } as CommandLineArgumentProvider)
     }
     def apiCheck = module.tasks.register(listing.check, JavaExec) {
         description = 'Checks that the public API of the ' + sourceSetName + ' classes of this module equals ' + apiFileName + ' (' + listing.dump +
@@ -212,10 +206,9 @@ def registerApiTasks = { module, apiTool, String sourceSetName ->
         mustRunAfter apiDump
         inputs.files(classes)
         inputs.files(apiFile)
-        inputs.property('internalApiElements', internalApiElements)
         outputs.file(report)
         argumentProviders.add({
-            ['check', '--api-file', apiFile.absolutePath] + classArguments() + internalApiArguments +
+            ['check', '--api-file', apiFile.absolutePath] + classArguments() +
                     ['--update-task', module.path + ':' + listing.dump, '--report', report.get().asFile.absolutePath]
         } as CommandLineArgumentProvider)
     }
@@ -275,10 +268,10 @@ def installContents = copySpec {
     from(licenseTexts) { into 'licenses' }
 }
 def installModProjects = [':mods:demo']
-def installModJars = { installModProjects.collect { path -> project(path).tasks.named('modJar') } }
+def installModJars = { installModProjects.collect { path -> project(path).tasks.named('jar') } }
 
 // The development install build/dev-install of the repository: the programs of an install and the mods above. userdata/, the caches and
-// the other jars of mods/ (those a mod's own devInstall copies in) are kept between builds.
+// the other jars of mods/ (those a mod's installMod copies in) are kept between builds.
 def developmentInstall = layout.buildDirectory.dir('dev-install')
 def devInstall = tasks.register('devInstall', Sync) {
     description = 'Assembles the development install build/dev-install with the launcher, the runtime and mods/demo.jar.'
@@ -301,7 +294,7 @@ def devInstall = tasks.register('devInstall', Sync) {
 subprojects { module ->
     module.plugins.withId('org.fogofwarlabs.sc4j.mod') {
         module.sc4jMod.install = developmentInstall
-        module.tasks.named('devInstall') {
+        module.tasks.named('installMod') {
             dependsOn devInstall
         }
     }
@@ -424,8 +417,7 @@ def publishedModules = [
     'sc4j-beaconlink-protocol': 'Beacon.Link wire protocol of SC4J: identities, the wire reader and writer, signed rooms and messages.',
     'sc4j-beaconlink-peer'    : 'Beacon.Link peer library of SC4J: the node roles that the launcher, the runtime and the node program run.',
     'sc4j-beaconlink'         : 'Beacon.Link client of SC4J: node sessions, rooms, participant channels and the overlay that a mod plays over.',
-    'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.',
-    'sc4j-api-check'          : 'API tools of SC4J: the public API listing of the engine modules and the internal API use check of mods.'
+    'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.'
 ]
 // Inside this build the coordinates of the published modules (as the mod plugin names them) resolve to their projects.
 allprojects {

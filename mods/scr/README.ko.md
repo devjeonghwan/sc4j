@@ -51,7 +51,7 @@ JDK 25가 필요합니다. 플레이하려면 스타크래프트: 리마스터 1
 
 | 명령 | 하는 일 |
 |---|---|
-| `.\gradlew.bat :mods:scr:devInstall` | 개발용 설치본 `build/dev-install/`을 `mods/scr.jar`와 함께 구성 |
+| `.\gradlew.bat -p mods\scr devInstall` | 개발용 설치본 `build/dev-install/`을 `mods/scr.jar`와 함께 구성 |
 | `.\gradlew.bat runDevLauncher` | 개발용 설치본의 런처 열기 |
 | `.\gradlew.bat runDevInstall -Psc4j.mod=scr` | 개발용 설치본의 런타임을 `mods/scr.jar`로 실행 |
 
@@ -59,9 +59,9 @@ JDK 25가 필요합니다. 플레이하려면 스타크래프트: 리마스터 1
 
 | 명령 | 실행 내용 | 필요한 것 |
 |---|---|---|
-| `.\gradlew.bat build` | 컴파일, 단위 테스트(`test`), 검사 | 저장소 밖의 것 없음 |
-| `.\gradlew.bat integrationTest` | `integration` 태그 테스트(`@RequiresInstallation`), GPU 렌더 스모크 테스트 포함 | `sc4j.data`, 스모크 테스트에는 GPU |
-| `.\gradlew.bat corpusTest` | `corpus` 태그 테스트(`@CorpusTest`): 오래 걸리는 실행과 외부 리플레이, 맵 폴더 테스트 | `sc4j.data`, 폴더 속성이 없는 테스트는 건너뜀 |
+| `.\gradlew.bat -p mods\scr build` | 컴파일, 단위 테스트(`test`), 검사 | 저장소 밖의 것 없음 |
+| `.\gradlew.bat -p mods\scr integrationTest` | `integration` 태그 테스트(`@RequiresInstallation`), GPU 렌더 스모크 테스트 포함 | `sc4j.data`, 스모크 테스트에는 GPU |
+| `.\gradlew.bat -p mods\scr corpusTest` | `corpus` 태그 테스트(`@CorpusTest`): 오래 걸리는 실행과 외부 리플레이, 맵 폴더 테스트 | `sc4j.data`, 폴더 속성이 없는 테스트는 건너뜀 |
 
 `integrationTest`는 `sc4j.data`가 없거나 폴더가 아니면 시작하기 전에 실패합니다. GPU 렌더 스모크 테스트는 Gradle 속성 `sc4j.render.smoke`가 `true`일 때 실행되며(`gradle.properties`의 기본값), `-Psc4j.render.smoke=false`로 끕니다.
 

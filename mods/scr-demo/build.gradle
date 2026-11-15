@@ -9,11 +9,11 @@ plugins {
 // copy of the SC:R mod's sources: cloneScrMod copies the main sources and resources of every SC:R mod module into build/clone (one folder per
 // module, as a modder's copy has them) and copies the overlay (overlay/, the same folder layout) over them, after checking against
 // overlay.lock that no SC:R mod file under an overlay file changed; the source set "mod" compiles that clone with the demo's own classes
-// and resources (src/mod), and modJar packages it as scr-demo.jar. Like scr.jar, the jar holds no StarCraft: Remastered asset or data file: the mod reads them from
+// and resources (src/mod), and jar packages it as scr-demo.jar. Like scr.jar, the jar holds no StarCraft: Remastered asset or data file: the mod reads them from
 // the user's installation. The main source set stays empty; the tests (src/test) use the built jars only and the real SC:R mod modules.
 // The added units' graphics come from the baked frames of the art sets in third-party/<set> (each with its own licence, see its NOTICE.txt):
 // Unity-chan (Unity-chan License 3.0) and the giant monster Myriarch (CC BY 4.0). convertArt turns every set's frames, portrait clips,
-// wireframe strips and command icon into the unit's frame files and interface art at build time, and modJar packs those with each set's
+// wireframe strips and command icon into the unit's frame files and interface art at build time, and jar packs those with each set's
 // NOTICE and license files.
 
 // The SC:R build's folder (settings.gradle includes it), and its module folders and their compiler arguments (mod.properties there).
@@ -225,7 +225,7 @@ tasks.named('processModResources') {
 
 // The mod jar scr-demo.jar: the clone's classes and resources (sc4j-mod.json of the overlay and meta/ of the scr-client folder), the added
 // units' converted graphics and the NOTICE and license files of every art set (third-party/<set>/); the baked frames themselves stay out.
-def modJar = tasks.named('modJar') {
+def modJar = tasks.named('jar') {
     from(convertArt)
     from(artSets) {
         include '*/NOTICE.txt', '*/license/**'
@@ -233,14 +233,22 @@ def modJar = tasks.named('modJar') {
     }
 }
 
-// devInstall copies scr-demo.jar next to scr.jar: with the engine build included, into its development install build/dev-install. Nothing
-// under userdata/ is written here; the launcher saves the clone's own settings (userdata/settings/scr-demo.json) when the player sets them.
+// devInstall installs scr.jar (the SC:R build's devInstall) and copies scr-demo.jar next to it (installMod): with the engine build included,
+// into its development install build/dev-install. Nothing under userdata/ is written here; the launcher saves the clone's own settings
+// (userdata/settings/scr-demo.json) when the player sets them.
 def engineBuild = gradle.includedBuilds.find { build -> build.name == 'sc4j' }
 if (engineBuild != null) {
     sc4jMod.install = new File(engineBuild.projectDir, 'build/dev-install')
 }
-tasks.named('devInstall') {
-    dependsOn gradle.includedBuild('scr').task(':devInstall')
+def installMod = tasks.named('installMod') {
+    if (engineBuild != null) {
+        dependsOn engineBuild.task(':devInstall')
+    }
+}
+tasks.register('devInstall') {
+    description = 'Installs scr.jar and scr-demo.jar into the install (sc4jMod.install).'
+    group = 'distribution'
+    dependsOn gradle.includedBuild('scr').task(':devInstall'), installMod
 }
 
 // The tests read scr-demo.jar and scr.jar as a user's mods/ folder has them.

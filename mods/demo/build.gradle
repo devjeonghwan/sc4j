@@ -97,7 +97,7 @@ tasks.named('processResources') {
 
 // The mod jar demo.jar (sc4j-mod.json, the launcher images under meta, the pack under demo/pack, the maps under demo/maps) also carries the
 // notice of its third-party material (THIRD-PARTY.md).
-def modJar = tasks.named('modJar') {
+def modJar = tasks.named('jar') {
     from('THIRD-PARTY.md')
 }
 

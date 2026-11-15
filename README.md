@@ -65,10 +65,10 @@ You need JDK 25. The Gradle wrapper downloads Gradle itself. Commands run in Pow
 
 | Command | What it does |
 |---|---|
-| `.\gradlew.bat build` | compiles everything, runs the unit tests and the checks |
-| `.\gradlew.bat :mods:demo:devInstall` | assembles the development install `build/dev-install/` (launcher, runtime, `mods/demo.jar`) |
-| `.\gradlew.bat :mods:scr:devInstall` | adds `mods/scr.jar` to the development install |
-| `.\gradlew.bat :mods:scr-demo:devInstall` | adds `mods/scr.jar` and `mods/scr-demo.jar` to the development install |
+| `.\gradlew.bat build` | compiles the engine and demo 1, runs their unit tests and checks (`-p mods\scr build`, `-p mods\scr-demo build` for the SC:R mod and demo 2) |
+| `.\gradlew.bat devInstall` | assembles the development install `build/dev-install/` (launcher, runtime, `mods/demo.jar`) |
+| `.\gradlew.bat -p mods\scr devInstall` | the same with `mods/scr.jar` added |
+| `.\gradlew.bat -p mods\scr-demo devInstall` | the same with `mods/scr.jar` and `mods/scr-demo.jar` added |
 | `.\gradlew.bat runDevLauncher` | opens the launcher of the development install |
 | `.\gradlew.bat runDevInstall -Psc4j.mod=scr` | runs the runtime of the development install with `mods/scr.jar` (default `demo`) |
 | `.\gradlew.bat distribution` | builds the user package `build/distributions/SC4J-<version>.zip` |
@@ -77,7 +77,7 @@ You need JDK 25. The Gradle wrapper downloads Gradle itself. Commands run in Pow
 A first run:
 
 ```powershell
-.\gradlew.bat :mods:demo:devInstall
+.\gradlew.bat devInstall
 .\gradlew.bat runDevLauncher
 ```
 

@@ -4,6 +4,7 @@ import org.fogofwarlabs.sc4j.engine.client.input.InputEvent;
 import org.fogofwarlabs.sc4j.engine.client.input.Key;
 import org.fogofwarlabs.sc4j.engine.client.input.KeyModifier;
 import org.fogofwarlabs.sc4j.engine.client.input.PointerButton;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -17,6 +18,7 @@ import java.util.Arrays;
  * <p>
  * The int codes are the GLFW library's own: they cross only between the GLFW callbacks and the engine input types.
  */
+@ApiStatus.Internal
 public final class GlfwKeyCodes {
     /**
      * The GLFW key of each engine key, by {@link Key#ordinal()}.

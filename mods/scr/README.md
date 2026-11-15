@@ -51,7 +51,7 @@ You need JDK 25; playing needs a StarCraft: Remastered 1.23.10 installation, the
 
 | Command | What it does |
 |---|---|
-| `.\gradlew.bat :mods:scr:devInstall` | assembles the development install `build/dev-install/` with `mods/scr.jar` |
+| `.\gradlew.bat -p mods\scr devInstall` | assembles the development install `build/dev-install/` with `mods/scr.jar` |
 | `.\gradlew.bat runDevLauncher` | opens the launcher of the development install |
 | `.\gradlew.bat runDevInstall -Psc4j.mod=scr` | runs the runtime of the development install with `mods/scr.jar` |
 
@@ -59,9 +59,9 @@ You need JDK 25; playing needs a StarCraft: Remastered 1.23.10 installation, the
 
 | Command | What runs | What it needs |
 |---|---|---|
-| `.\gradlew.bat build` | compile, unit tests (`test`) and the checks | nothing outside the repository |
-| `.\gradlew.bat integrationTest` | tests tagged `integration` (`@RequiresInstallation`), including the GPU render smoke tests | `sc4j.data`; a GPU for the smoke tests |
-| `.\gradlew.bat corpusTest` | tests tagged `corpus` (`@CorpusTest`): long runs and tests over external replay and map folders | `sc4j.data`; a test whose folder property is not set is skipped |
+| `.\gradlew.bat -p mods\scr build` | compile, unit tests (`test`) and the checks | nothing outside the repository |
+| `.\gradlew.bat -p mods\scr integrationTest` | tests tagged `integration` (`@RequiresInstallation`), including the GPU render smoke tests | `sc4j.data`; a GPU for the smoke tests |
+| `.\gradlew.bat -p mods\scr corpusTest` | tests tagged `corpus` (`@CorpusTest`): long runs and tests over external replay and map folders | `sc4j.data`; a test whose folder property is not set is skipped |
 
 `integrationTest` fails before it starts when `sc4j.data` is not set or names no folder. The GPU render smoke tests run when the Gradle property `sc4j.render.smoke` is `true` (the default in `gradle.properties`); `-Psc4j.render.smoke=false` turns them off.
 

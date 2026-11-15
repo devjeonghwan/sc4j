@@ -1,119 +1,116 @@
 package org.fogofwarlabs.sc4j.tools.api;
 
-import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.lang.classfile.Attributes;
+import java.lang.classfile.ClassFile;
+import java.lang.classfile.ClassModel;
+import java.lang.constant.ClassDesc;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
- * Holds the internal elements of the engine: packages (with their subpackages) and top-level classes that are public for the engine's own
- * modules but are not API, so the API listing leaves them out and mods must not use them.
+ * Holds the internal elements of compiled classes: the packages whose {@code package-info} and the classes that carry the JetBrains annotation
+ * {@code ApiStatus.Internal}. They are public for the engine's own modules but are not API, so the API listing leaves them out.
  * <p>
- * An element is a package when the last segment of its name starts with a lower case letter (as {@code org.example.loading}) and a class
- * when it starts with an upper case letter (as {@code org.example.host.GlfwInput}).
+ * An internal package covers its own classes, not its subpackages; an internal class covers its nested classes.
  */
 public final class InternalElements {
-    private static final @NotNull Pattern ELEMENT_PATTERN = Pattern.compile("[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*)?");
-    private static final @NotNull String PACKAGE_REFERENCE_SUFFIX = "\\.((?:[a-z][a-z0-9_]*\\.)*(?:[A-Z][A-Za-z0-9_]*|\\*))";
-    private static final @NotNull String IMPORT_ON_DEMAND_FORMAT = "\\bimport\\s+%s\\s*\\.\\s*\\*\\s*;";
-    private static final @NotNull String WORD_BOUNDARY = "\\b";
+    private static final @NotNull ClassDesc INTERNAL_ANNOTATION = ClassDesc.of("org.jetbrains.annotations.ApiStatus$Internal");
+    private static final @NotNull String CLASS_FILE_SUFFIX = ".class";
+    private static final @NotNull String PACKAGE_INFO_SUFFIX = ".package-info";
     private static final char PACKAGE_SEPARATOR = '.';
     private static final char NESTED_CLASS_SEPARATOR = '$';
+    private static final char INTERNAL_NAME_SEPARATOR = '/';
 
-    private static boolean isClassName(@NotNull String name) {
-        if (!ELEMENT_PATTERN.matcher(name).matches() || name.indexOf(PACKAGE_SEPARATOR) < 0) {
-            throw Exceptions.newIllegalArgumentException("Not a qualified package or class name: {0}", name);
+    /**
+     * Reads the internal elements of compiled classes from the annotations in their class files.
+     *
+     * @param classDirectories the folders of the compiled classes; a missing folder holds no class
+     * @return the internal elements of the classes
+     * @throws IOException if a class folder or a class file cannot be read
+     */
+    public static @NotNull InternalElements read(@NotNull List<@NotNull Path> classDirectories) throws IOException {
+        ClassFile classFile = ClassFile.of();
+        Set<String> packageNames = new TreeSet<>();
+        Set<String> classNames = new TreeSet<>();
+
+        for (Path directory : classDirectories) {
+            if (!Files.isDirectory(directory)) {
+                continue;
+            }
+
+            try (Stream<Path> files = Files.walk(directory)) {
+                for (Path file : files.filter(Files::isRegularFile).toList()) {
+                    if (!file.getFileName().toString().endsWith(CLASS_FILE_SUFFIX)) {
+                        continue;
+                    }
+
+                    ClassModel model = classFile.parse(file);
+
+                    if (!isAnnotatedInternal(model)) {
+                        continue;
+                    }
+
+                    String name = model.thisClass().asInternalName().replace(INTERNAL_NAME_SEPARATOR, PACKAGE_SEPARATOR);
+
+                    if (name.endsWith(PACKAGE_INFO_SUFFIX)) {
+                        packageNames.add(name.substring(0, name.length() - PACKAGE_INFO_SUFFIX.length()));
+                    } else {
+                        classNames.add(name);
+                    }
+                }
+            }
         }
 
-        return Character.isUpperCase(name.charAt(name.lastIndexOf(PACKAGE_SEPARATOR) + 1));
+        return new InternalElements(packageNames, classNames);
     }
 
-    private static @NotNull String getPackageName(@NotNull String name) {
-        return isClassName(name) ? name.substring(0, name.lastIndexOf(PACKAGE_SEPARATOR)) : name;
+    private static boolean isAnnotatedInternal(@NotNull ClassModel model) {
+        return model.findAttribute(Attributes.runtimeInvisibleAnnotations()).stream()
+                    .flatMap(attribute -> attribute.annotations().stream())
+                    .anyMatch(annotation -> annotation.classSymbol().equals(INTERNAL_ANNOTATION));
     }
 
-    private static @NotNull String getSimpleName(@NotNull String name) {
-        return name.substring(name.lastIndexOf(PACKAGE_SEPARATOR) + 1);
-    }
 
+    private final @NotNull Set<@NotNull String> packageNames;
+    private final @NotNull Set<@NotNull String> classNames;
 
-    private final @NotNull List<@NotNull String> names;
-    private final @NotNull List<@NotNull Pattern> referencePatterns;
-    private final @NotNull List<@NotNull Pattern> importOnDemandPatterns;
-    private final @NotNull List<@NotNull Pattern> simpleNamePatterns;
-
-    /**
-     * Creates an {@link InternalElements} instance.
-     *
-     * @param names the qualified names of the internal packages and classes
-     * @throws IllegalArgumentException if a name is not a qualified package or class name
-     */
-    public InternalElements(@NotNull List<@NotNull String> names) {
-        this.names                  = List.copyOf(new TreeSet<>(names));
-        this.referencePatterns      = this.names.stream()
-                                                .map(name -> Pattern.compile(WORD_BOUNDARY + Pattern.quote(name) +
-                                                                             (isClassName(name) ? WORD_BOUNDARY : PACKAGE_REFERENCE_SUFFIX)))
-                                                .toList();
-        this.importOnDemandPatterns = this.names.stream()
-                                                .map(name -> Pattern.compile(String.format(IMPORT_ON_DEMAND_FORMAT, Pattern.quote(getPackageName(name)))))
-                                                .toList();
-        this.simpleNamePatterns     = this.names.stream()
-                                                .map(name -> Pattern.compile(WORD_BOUNDARY + Pattern.quote(getSimpleName(name)) + WORD_BOUNDARY))
-                                                .toList();
+    private InternalElements(@NotNull Set<@NotNull String> packageNames, @NotNull Set<@NotNull String> classNames) {
+        this.packageNames = Set.copyOf(packageNames);
+        this.classNames   = Set.copyOf(classNames);
     }
 
     /**
-     * Checks whether a compiled class is internal: its top-level class is an internal class, or its package is an internal package or lies
-     * inside one.
+     * Checks whether a compiled class is internal: its package is internal, or it or one of its enclosing classes is an internal class.
      *
      * @param className the binary class name with dots between the package segments, as {@code org.example.Outer$Nested}
      * @return {@code true} if the class is internal, {@code false} otherwise
      */
     public boolean isInternal(@NotNull String className) {
-        int nestedIndex = className.indexOf(NESTED_CLASS_SEPARATOR);
-        String topLevelName = nestedIndex < 0 ? className : className.substring(0, nestedIndex);
-        int packageEnd = topLevelName.lastIndexOf(PACKAGE_SEPARATOR);
-        String packageName = packageEnd < 0 ? "" : topLevelName.substring(0, packageEnd);
+        int packageEnd = className.lastIndexOf(PACKAGE_SEPARATOR);
 
-        for (String name : this.names) {
-            if (topLevelName.equals(name) || packageName.equals(name) || packageName.startsWith(name + PACKAGE_SEPARATOR)) {
-                return true;
-            }
+        if (this.packageNames.contains(packageEnd < 0 ? "" : className.substring(0, packageEnd))) {
+            return true;
         }
 
-        return false;
-    }
+        String name = className;
 
-    /**
-     * Finds the internal elements that Java code names: a qualified name of an internal class, a class or on-demand import of an internal
-     * package, and the simple name of an internal class whose package the code imports on demand. The code must have its comments and
-     * literals removed.
-     *
-     * @param code the Java code without comments and literals
-     * @return the named elements, sorted: an internal class by its name, a class of an internal package by its qualified name and an on-demand
-     * import of an internal package by the package name with {@code .*}
-     */
-    public @NotNull Set<@NotNull String> findReferences(@NotNull String code) {
-        Set<String> references = new TreeSet<>();
+        while (!this.classNames.contains(name)) {
+            int nestedIndex = name.lastIndexOf(NESTED_CLASS_SEPARATOR);
 
-        for (int index = 0; index < this.names.size(); index++) {
-            String name = this.names.get(index);
-            boolean className = isClassName(name);
-            Matcher matcher = this.referencePatterns.get(index).matcher(code);
-
-            while (matcher.find()) {
-                references.add(className ? name : name + PACKAGE_SEPARATOR + matcher.group(1));
+            if (nestedIndex <= packageEnd) {
+                return false;
             }
 
-            if (className && this.importOnDemandPatterns.get(index).matcher(code).find() && this.simpleNamePatterns.get(index).matcher(code).find()) {
-                references.add(name);
-            }
+            name = name.substring(0, nestedIndex);
         }
 
-        return references;
+        return true;
     }
 }

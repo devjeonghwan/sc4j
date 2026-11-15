@@ -34,7 +34,7 @@ The clone is not checked in. The build makes it: the task `cloneScrMod` runs the
 3. copies the overlay `overlay/` over it: every file there replaces the cloned file of the same path, or adds a new one.
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:cloneScrMod
+.\gradlew.bat -p mods\scr-demo cloneScrMod
 ```
 
 Result: `mods/scr-demo/build/clone/` holds the folders `scr-client`, `scr-data`, `scr-game`, `scr-net`, `scr-render`, and the cloned manifest is the demo's:
@@ -67,20 +67,20 @@ The clone keeps the SC:R mod's package names (`org.fogofwarlabs.sc4j.scr...`). O
 | compiler arguments of `mod` | the SC:R mod's own (`-parameters`), `compilerArgs` in `mods/scr/mod.properties`, so that the classes of unchanged SC:R sources match `scr.jar` byte for byte |
 | source set `convert` | the art converter (`ArtConverter`, section 2); it compiles against the clone, runs at build time only and is not in the jar |
 | task `convertArt` | converts the baked frames of every art set in `third-party/<set>` (section 2, "Art sets") into the units' graphics files under `build/converted-art`; reruns when a file under `third-party` changes |
-| task `modJar` | packages the `mod` source set, the output of `convertArt` and each art set's `NOTICE.txt` and `license/` into `build/mods/scr-demo.jar`: reproducible order, no timestamps, a duplicate entry fails the build |
-| task `devInstall` | copies the jar into the development install, section 4 |
+| task `jar` | packages the `mod` source set, the output of `convertArt` and each art set's `NOTICE.txt` and `license/` into `build/libs/scr-demo.jar`: reproducible order, no timestamps, a duplicate entry fails the build |
+| task `devInstall` | installs `scr.jar` and the jar (`installMod`) into the development install, section 4 |
 | tests | `src/test`: they read the built jars, never the clone's classes directly |
 
 ### Your own mod
 
-To start your own clone, make a project folder next to the demo's and register it:
+To start your own clone, make a build folder next to the demo's; a clone is a Gradle build of its own that includes the SC:R build and the engine build:
 
-1. Create `mods/my-mod/` and copy `mods/scr-demo/build.gradle` into it, and `mods/scr/scr-client/src/main/resources/sc4j-mod.json` into `mods/my-mod/overlay/scr-client/src/main/resources/`.
-2. Add `include ':mods:my-mod'` to `settings.gradle`.
-3. In `mods/my-mod/build.gradle`: point the `clone` source set at the demo's tool (`srcDir '../scr-demo/src/clone/java'`), so the tool exists once; change `archiveFileName` of `modJar` to your jar name (`my-mod.jar`) and the descriptions; drop the art and test blocks or write your own.
-4. Edit your `sc4j-mod.json` to your own id, name and description (every clone needs its own mod id), then run `.\gradlew.bat :mods:my-mod:acceptOverlay` once to write `mods/my-mod/overlay.lock`.
+1. Create `mods/my-mod/` and copy `mods/scr-demo/settings.gradle`, `gradle.properties` and `build.gradle` into it, and `mods/scr/scr-client/src/main/resources/sc4j-mod.json` into `mods/my-mod/overlay/scr-client/src/main/resources/`.
+2. In `mods/my-mod/settings.gradle`, set `rootProject.name` to `my-mod`.
+3. In `mods/my-mod/build.gradle`: point the `clone` source set at the demo's tool (`srcDir '../scr-demo/src/clone/java'`), so the tool exists once; set `id` of `sc4jMod` to your mod id (the jar becomes `my-mod.jar`) and change the descriptions; drop the art and test blocks or write your own.
+4. Edit your `sc4j-mod.json` to your own id, name and description (every clone needs its own mod id), then run `.\gradlew.bat -p mods\my-mod acceptOverlay` once to write `mods/my-mod/overlay.lock`.
 
-Your commands are the same as below with `:mods:my-mod:` in place of `:mods:scr-demo:`.
+Your commands are the same as below with `-p mods\my-mod` in place of `-p mods\scr-demo`.
 
 ## 2. Change
 
@@ -109,14 +109,14 @@ When the SC:R mod changes one of these files, the build stops with one line:
 
 ```text
 > The SC:R mod changed scr-net/src/main/resources/org/fogofwarlabs/sc4j/scr/net/lan/lan-lobby.properties after the overlay file was made
-  from it: see :mods:scr-demo:overlayDiff, merge the change into the overlay file by hand, then run :mods:scr-demo:acceptOverlay.
+  from it: see :overlayDiff, merge the change into the overlay file by hand, then run :acceptOverlay.
 ```
 
 Then:
 
-1. `.\gradlew.bat :mods:scr-demo:overlayDiff` prints, for each changed file, the SC:R mod's change (base then against base now) and your change (base then against your overlay file) as unified differences.
+1. `.\gradlew.bat -p mods\scr-demo overlayDiff` prints, for each changed file, the SC:R mod's change (base then against base now) and your change (base then against your overlay file) as unified differences.
 2. Merge the SC:R mod's change into your overlay file by hand (or decide it does not matter to you).
-3. `.\gradlew.bat :mods:scr-demo:acceptOverlay` records the current SC:R mod files; the next build goes on.
+3. `.\gradlew.bat -p mods\scr-demo acceptOverlay` records the current SC:R mod files; the next build goes on.
 
 The build also stops when an overlay file is not in the lock (a new overlay file: run `acceptOverlay`) or the lock names a file the overlay no longer has.
 
@@ -185,7 +185,7 @@ and one sentence at the end of each `description` line ("Unity-chan: © Unity Te
 
 #### Art sets (`src/mod/java/org/fogofwarlabs/sc4j/scrdemo/ScrDemoArtSet.java`)
 
-Each added unit's art is one art set: a folder `third-party/<set>/` with its baked frames, interface art, `NOTICE.txt` and `license/`, and one constant of `ScrDemoArtSet` that gives its name (the folder), its SD canvas, its ground offset, its shadow offset, its selection circle offset and the quality its frames are baked at. An overlay image of a unit (the Myriarch's fire breath) is a set of its own without a shadow and interface art, in a folder inside its unit's (`third-party/myriarch/fire/`). `ArtConverter` converts every set, `modJar` packs every set's converted files, `NOTICE.txt` and `license/` under `third-party/<set>/` of the jar, and `ScrDemoArtFiles` makes every set's SD frames. The set's methods give the jar paths of its files (`getMainAnimation(quality)`, `getMainFrames()`, `getCommandIcon(quality)`, ...), which the unit's registration passes to the extension API.
+Each added unit's art is one art set: a folder `third-party/<set>/` with its baked frames, interface art, `NOTICE.txt` and `license/`, and one constant of `ScrDemoArtSet` that gives its name (the folder), its SD canvas, its ground offset, its shadow offset, its selection circle offset and the quality its frames are baked at. An overlay image of a unit (the Myriarch's fire breath) is a set of its own without a shadow and interface art, in a folder inside its unit's (`third-party/myriarch/fire/`). `ArtConverter` converts every set, `jar` packs every set's converted files, `NOTICE.txt` and `license/` under `third-party/<set>/` of the jar, and `ScrDemoArtFiles` makes every set's SD frames. The set's methods give the jar paths of its files (`getMainAnimation(quality)`, `getMainFrames()`, `getCommandIcon(quality)`, ...), which the unit's registration passes to the extension API.
 
 | Set | Unit | SD canvas | Ground offset | Shadow offset | Baked at | Frame files |
 |---|---|---|---|---|---|---|
@@ -233,7 +233,7 @@ What the licenses ask of you and of the players you give the jar to:
 - The character art is (c) Unity Technologies Japan/UCL under the Unity-chan License 3.0 (UCL). Anyone who receives the frames, or a mod jar made from them, receives them under the same license: the players of your jar and anyone they pass it on to are bound by the UCL terms for the art. Keep `NOTICE.txt` and `license/` in the jar (the build packs them under `third-party/unity-chan/`), keep the notation in the manifest, and do not present the work as official or endorsed by Unity Technologies Japan. Read the terms in `license/` before you publish a jar with these frames; the rules of the notation are in the indication PDF.
 - The rifle the character holds is the model AssaultRifle2_1 of the Ultimate Guns Pack by Quaternius under CC0 1.0 (public domain dedication): no condition, the credit in `NOTICE.txt` and the manifest is a courtesy.
 - Only rendered images are in the repository and the jar, no model, texture or animation file of Unity-chan, and no StarCraft: Remastered file (the voice and the weapon sounds come from the player's installation by reference).
-- Using other art: check that its license allows mods and derived images to be given away, put it into its own `third-party/<name>/` folder with its license files and a `NOTICE.txt`, pack those into the jar as `modJar` does for Unity-chan, and show the notation the license asks for in the manifest.
+- Using other art: check that its license allows mods and derived images to be given away, put it into its own `third-party/<name>/` folder with its license files and a `NOTICE.txt`, pack those into the jar as `jar` does for Unity-chan, and show the notation the license asks for in the manifest.
 
 #### Baking the frames (not in the repository)
 
@@ -248,10 +248,10 @@ The 3D models and the bake tools are not in the repository, and the build does n
 
 #### Converting the art (`convertArt`)
 
-The build converts the baked frames of every art set into the files the mod reads, with the art converter `ArtConverter` (`src/convert/java`); `modJar` runs it and packs its output under `third-party/<set>/graphics/`, `interface/` and `portrait/`. For Unity-chan:
+The build converts the baked frames of every art set into the files the mod reads, with the art converter `ArtConverter` (`src/convert/java`); `jar` runs it and packs its output under `third-party/<set>/graphics/`, `interface/` and `portrait/`. For Unity-chan:
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:convertArt
+.\gradlew.bat -p mods\scr-demo convertArt
 ```
 
 writes `mods/scr-demo/build/converted-art/third-party/unity-chan/graphics/`:
@@ -279,7 +279,7 @@ shadow-hd2.anim
 The baked PNGs and `metadata.json` stay out of the jar. The converter's test checks the output against the metadata and the jar's contents (license files in, baked frames out):
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
+.\gradlew.bat -p mods\scr-demo test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
 ```
 
 #### SD frames are made when the mod loads
@@ -291,7 +291,7 @@ SD frames (GRP files) hold palette indices of the installation's tileset palette
 The tests that play the unit need the installation (Gradle property `sc4j.data`, section 3):
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:integrationTest --tests org.fogofwarlabs.sc4j.scrdemo.ScrDemoUnitUtilsTest
+.\gradlew.bat -p mods\scr-demo integrationTest --tests org.fogofwarlabs.sc4j.scrdemo.ScrDemoUnitUtilsTest
 ```
 
 They run the clone's own classes from `scr-demo.jar`: the registration (values, references, train button, images, sprite, flingy entry, script, the SD frames made from the installed palettes, the HD and HD2 frames), a replay in which a Barracks trains the unit, written, read and played in two separate clone runs with equal per-frame hashes, and the unit walking in both mirrored directions, fighting and dying through its own animations, a group with Marines following a long sequence of commands while it walks and fights, and the interface art in the jar. To see it, start the clone from the launcher (section 5), build a Barracks and press U.
@@ -301,26 +301,26 @@ They run the clone's own classes from `scr-demo.jar`: the registration (values, 
 ## 3. Build
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:modJar
+.\gradlew.bat -p mods\scr-demo jar
 ```
 
-builds `mods/scr-demo/build/mods/scr-demo.jar` (it runs `cloneScrMod` and `convertArt` first). The tests of the demo check the jar against `scr.jar` (only the overlay's files differ, and the extra entries are the demo's own classes, its service file and the art under `third-party/`; the manifest has its own id), the overlay and its lock, the art conversion, the LAN and online refusals on 127.0.0.1, and the launcher listing of both mods:
+builds `mods/scr-demo/build/libs/scr-demo.jar` (it runs `cloneScrMod` and `convertArt` first). The tests of the demo check the jar against `scr.jar` (only the overlay's files differ, and the extra entries are the demo's own classes, its service file and the art under `third-party/`; the manifest has its own id), the overlay and its lock, the art conversion, the LAN and online refusals on 127.0.0.1, and the launcher listing of both mods:
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:test
+.\gradlew.bat -p mods\scr-demo test
 ```
 
-The tests that need a StarCraft: Remastered installation run with `:mods:scr-demo:integrationTest` and the Gradle property `sc4j.data` naming the installation.
+The tests that need a StarCraft: Remastered installation run with `-p mods\scr-demo integrationTest` and the Gradle property `sc4j.data` naming the installation.
 
 ## 4. Put into `mods/`
 
 A mod is installed by putting its jar into the `mods/` folder of an SC4J install (`<install>/mods/`), next to `scr.jar`. The repository's development install is `build/dev-install/`:
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:devInstall
+.\gradlew.bat -p mods\scr-demo devInstall
 ```
 
-assembles the development install (launcher, runtime, `mods/scr.jar`; the SC:R mod's `devInstall`) and copies `scr-demo.jar` into `build/dev-install/mods/`. It writes nothing under `userdata/`; the settings of the clone are saved by the launcher (section 5). For any other install, copy `mods/scr-demo/build/mods/scr-demo.jar` into its `mods/` folder by hand.
+assembles the development install (launcher, runtime, `mods/scr.jar`; the SC:R mod's `devInstall`) and copies `scr-demo.jar` into `build/dev-install/mods/` (`installMod`). It writes nothing under `userdata/`; the settings of the clone are saved by the launcher (section 5). For any other install, copy `mods/scr-demo/build/libs/scr-demo.jar` into its `mods/` folder by hand.
 
 ## 5. Run from the launcher
 

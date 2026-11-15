@@ -42,7 +42,7 @@ The clone is another mod: its own settings, storage and log folders. Online it n
 | `overlayDiff` | shows the SC:R mod's changes under your overlay files |
 | `acceptOverlay` | records the current SC:R mod files in `overlay.lock` and `overlay-base/` |
 | `convertArt` | converts the baked frames of every art set into the units' graphics files |
-| `modJar` | builds `build/mods/scr-demo.jar` |
+| `jar` | builds `build/libs/scr-demo.jar` |
 
 When the SC:R mod changes a file the overlay replaces, the build stops and names the file. Run `overlayDiff`, merge the change into the overlay file by hand, then run `acceptOverlay`.
 
@@ -54,10 +54,10 @@ You need JDK 25; playing needs a StarCraft: Remastered 1.23.10 installation, the
 
 | Command | What it does |
 |---|---|
-| `.\gradlew.bat :mods:scr-demo:modJar` | builds `mods/scr-demo/build/mods/scr-demo.jar` |
-| `.\gradlew.bat :mods:scr-demo:test` | the tests that need nothing outside the repository |
-| `.\gradlew.bat :mods:scr-demo:integrationTest` | the tests that need the installation (Gradle property `sc4j.data`) |
-| `.\gradlew.bat :mods:scr-demo:devInstall` | adds `mods/scr.jar` and `mods/scr-demo.jar` to the development install `build/dev-install/` |
+| `.\gradlew.bat -p mods\scr-demo jar` | builds `mods/scr-demo/build/libs/scr-demo.jar` |
+| `.\gradlew.bat -p mods\scr-demo test` | the tests that need nothing outside the repository |
+| `.\gradlew.bat -p mods\scr-demo integrationTest` | the tests that need the installation (Gradle property `sc4j.data`) |
+| `.\gradlew.bat -p mods\scr-demo devInstall` | adds `mods/scr.jar` and `mods/scr-demo.jar` to the development install `build/dev-install/` |
 | `.\gradlew.bat runDevLauncher` | opens the launcher of the development install |
 
 For any other install, copy `scr-demo.jar` into its `mods/` folder.

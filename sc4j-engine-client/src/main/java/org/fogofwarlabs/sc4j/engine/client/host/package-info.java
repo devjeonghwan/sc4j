@@ -11,13 +11,14 @@
  * ({@link org.fogofwarlabs.sc4j.engine.client.host.HostTickClock}), and the frame phase timing diagnostic
  * ({@link org.fogofwarlabs.sc4j.engine.client.host.FrameTiming}).
  * <p>
- * Internal: the GLFW implementations {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwClientHost},
- * {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwHostWindow}, {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwInput},
- * {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwKeyCodes} and {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwCursorSurface} and the
- * Windows platform services {@link org.fogofwarlabs.sc4j.engine.client.host.WindowsTextInputMethod},
- * {@link org.fogofwarlabs.sc4j.engine.client.host.WindowsSystemPointerSpeed} and
- * {@link org.fogofwarlabs.sc4j.engine.client.host.WindowsHostTickClock} are not part of the engine API ({@code docs/api-policy.md});
- * clients reach them through the interfaces ({@link org.fogofwarlabs.sc4j.engine.client.host.ClientHost#initialize},
+ * Internal ({@code @ApiStatus.Internal} on each class): the GLFW implementations
+ * {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwClientHost}, {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwHostWindow},
+ * {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwInput}, {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwKeyCodes} and
+ * {@link org.fogofwarlabs.sc4j.engine.client.host.GlfwCursorSurface} and the Windows platform services
+ * {@link org.fogofwarlabs.sc4j.engine.client.host.WindowsTextInputMethod}, {@link org.fogofwarlabs.sc4j.engine.client.host.WindowsSystemPointerSpeed}
+ * and {@link org.fogofwarlabs.sc4j.engine.client.host.WindowsHostTickClock} are not part of the engine API ({@code docs/api-policy.md}) and may
+ * change or disappear in any version without notice; clients reach them through the interfaces
+ * ({@link org.fogofwarlabs.sc4j.engine.client.host.ClientHost#initialize},
  * {@link org.fogofwarlabs.sc4j.engine.client.host.HostWindow}, {@link org.fogofwarlabs.sc4j.engine.client.host.SystemPointerSpeed#getDefault},
  * {@link org.fogofwarlabs.sc4j.engine.client.host.HostTickClock#getDefault}).
  * The other classes are API.

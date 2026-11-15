@@ -19,9 +19,9 @@
 | Gradle | 9.1.0, 래퍼(`gradlew`, `gradlew.bat`)로 실행하므로 따로 설치할 필요 없음 |
 | IDE | 자유. IntelliJ IDEA는 Gradle 가져오기로 동작 |
 
-IntelliJ IDEA: 저장소 루트 폴더를 열고 Gradle 프로젝트로 가져옵니다. 프로젝트 SDK와 Gradle JVM(Settings, Build Tools, Gradle)을 JDK 25로 설정합니다.
+IntelliJ IDEA: 저장소 루트 폴더를 엽니다. 연결된 Gradle 빌드는 `mods/scr-demo`이고, 이 빌드가 SC:R 모드와 엔진 빌드를 포함하므로 모두 함께 가져옵니다. 프로젝트 SDK와 Gradle JVM(Settings, Build Tools, Gradle)을 JDK 25로 설정합니다.
 
-아래 명령은 저장소 루트의 PowerShell에서 실행합니다. Linux에서는 `./gradlew`를 씁니다.
+아래 명령은 저장소 루트의 PowerShell에서 실행합니다. Linux에서는 `./gradlew`를 씁니다. 엔진과 데모 1은 루트 빌드이고, SC:R 모드와 데모 2는 각자의 빌드이므로 `-p mods\scr`, `-p mods\scr-demo`로 실행합니다.
 
 ## 빌드와 테스트
 
@@ -30,8 +30,8 @@ IntelliJ IDEA: 저장소 루트 폴더를 열고 Gradle 프로젝트로 가져�
 | 명령 | 실행 내용 | 필요한 것 |
 |---|---|---|
 | `.\gradlew.bat build` | 컴파일, 단위 테스트(`test`), `check`의 검사: API 목록, 모듈 경계, 결정성 | 저장소 밖의 것 없음 |
-| `.\gradlew.bat integrationTest` | `integration` 태그 테스트(`@RequiresInstallation`), GPU 렌더 스모크 테스트 포함 | `sc4j.data`, 스모크 테스트에는 GPU |
-| `.\gradlew.bat corpusTest` | `corpus` 태그 테스트(`@CorpusTest`): 오래 걸리는 실행과 외부 리플레이, 맵 폴더 테스트 | `sc4j.data`, 폴더 속성이 없는 테스트는 건너뜀 |
+| `.\gradlew.bat -p mods\scr integrationTest` | `integration` 태그 테스트(`@RequiresInstallation`), GPU 렌더 스모크 테스트 포함 | `sc4j.data`, 스모크 테스트에는 GPU |
+| `.\gradlew.bat -p mods\scr corpusTest` | `corpus` 태그 테스트(`@CorpusTest`): 오래 걸리는 실행과 외부 리플레이, 맵 폴더 테스트 | `sc4j.data`, 폴더 속성이 없는 테스트는 건너뜀 |
 | `.\gradlew.bat :sc4j-runtime:distributionTest` | 사용자 패키지를 만들어 풀고 런타임을 헤드리스로 시작 | 저장소 밖의 것 없음 |
 
 `integrationTest`는 `sc4j.data`가 없거나 폴더가 아니면 시작하기 전에 실패합니다. GPU 렌더 스모크 테스트는 Gradle 속성 `sc4j.render.smoke`가 `true`일 때 실행되며(`gradle.properties`의 기본값), `-Psc4j.render.smoke=false`로 끕니다.
@@ -40,7 +40,7 @@ IntelliJ IDEA: 저장소 루트 폴더를 열고 Gradle 프로젝트로 가져�
 
 ```powershell
 .\gradlew.bat :sc4j-engine-sim:test
-.\gradlew.bat :mods:scr-demo:test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
+.\gradlew.bat -p mods\scr-demo test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
 ```
 
 ## 코드 스타일

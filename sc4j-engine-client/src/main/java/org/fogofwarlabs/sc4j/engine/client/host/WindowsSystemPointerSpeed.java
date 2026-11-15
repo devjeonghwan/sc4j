@@ -1,6 +1,7 @@
 package org.fogofwarlabs.sc4j.engine.client.host;
 
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,6 +13,7 @@ import java.util.Locale;
  * Reads and sets the Windows system pointer speed for the current session through {@code SystemParametersInfoW}: the engine default
  * {@link SystemPointerSpeed} on Windows. Changes are not saved to the user profile.
  */
+@ApiStatus.Internal
 public final class WindowsSystemPointerSpeed implements SystemPointerSpeed {
     private static final @NotNull String OPERATING_SYSTEM_PROPERTY = "os.name";
     private static final @NotNull String WINDOWS_PREFIX = "windows";

@@ -65,10 +65,10 @@ JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래
 
 | 명령 | 하는 일 |
 |---|---|
-| `.\gradlew.bat build` | 전체를 컴파일하고 단위 테스트와 검사를 실행 |
-| `.\gradlew.bat :mods:demo:devInstall` | 개발용 설치본 `build/dev-install/` 구성(런처, 런타임, `mods/demo.jar`) |
-| `.\gradlew.bat :mods:scr:devInstall` | 개발용 설치본에 `mods/scr.jar` 추가 |
-| `.\gradlew.bat :mods:scr-demo:devInstall` | 개발용 설치본에 `mods/scr.jar`와 `mods/scr-demo.jar` 추가 |
+| `.\gradlew.bat build` | 엔진과 데모 1을 컴파일하고 단위 테스트와 검사를 실행(SC:R 모드와 데모 2는 `-p mods\scr build`, `-p mods\scr-demo build`) |
+| `.\gradlew.bat devInstall` | 개발용 설치본 `build/dev-install/` 구성(런처, 런타임, `mods/demo.jar`) |
+| `.\gradlew.bat -p mods\scr devInstall` | 같은 구성에 `mods/scr.jar` 추가 |
+| `.\gradlew.bat -p mods\scr-demo devInstall` | 같은 구성에 `mods/scr.jar`와 `mods/scr-demo.jar` 추가 |
 | `.\gradlew.bat runDevLauncher` | 개발용 설치본의 런처 열기 |
 | `.\gradlew.bat runDevInstall -Psc4j.mod=scr` | 개발용 설치본의 런타임을 `mods/scr.jar`로 실행(기본값 `demo`) |
 | `.\gradlew.bat distribution` | 사용자 패키지 `build/distributions/SC4J-<version>.zip` 생성 |
@@ -77,7 +77,7 @@ JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래
 처음 실행할 때:
 
 ```powershell
-.\gradlew.bat :mods:demo:devInstall
+.\gradlew.bat devInstall
 .\gradlew.bat runDevLauncher
 ```
 

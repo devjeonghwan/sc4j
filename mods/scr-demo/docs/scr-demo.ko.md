@@ -34,7 +34,7 @@
 3. 그 위에 오버레이 `overlay/`를 복사합니다. 거기 있는 모든 파일은 같은 경로의 복제 파일을 대신하거나 새 파일로 추가됩니다.
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:cloneScrMod
+.\gradlew.bat -p mods\scr-demo cloneScrMod
 ```
 
 결과: `mods/scr-demo/build/clone/`에 `scr-client`, `scr-data`, `scr-game`, `scr-net`, `scr-render` 폴더가 생기고, 복제된 매니페스트는 데모의 것입니다.
@@ -67,20 +67,20 @@ mods\scr-demo\build\clone\scr-client\src\main\resources\sc4j-mod.json:3:  "id": 
 | `mod`의 컴파일러 인자 | SC:R 모드 자신의 것(`-parameters`, `mods/scr/mod.properties`의 `compilerArgs`). 그래서 바꾸지 않은 SC:R 소스의 클래스는 `scr.jar`와 바이트 단위로 같습니다. |
 | 소스 세트 `convert` | 그림 변환기(`ArtConverter`, 2절). 복제본을 대상으로 컴파일하고, 빌드할 때만 실행되며 jar에는 없습니다. |
 | 태스크 `convertArt` | `third-party/<set>`의 모든 그림 세트(2절 "그림 세트")의 베이크된 프레임을 `build/converted-art` 아래 유닛 그래픽 파일로 변환합니다. `third-party` 아래 파일이 바뀌면 다시 실행됩니다. |
-| 태스크 `modJar` | `mod` 소스 세트, `convertArt`의 출력, 각 그림 세트의 `NOTICE.txt`와 `license/`를 `build/mods/scr-demo.jar`로 묶습니다. 재현 가능한 순서, 시간 기록 없음, 중복 항목이면 빌드 실패 |
-| 태스크 `devInstall` | jar를 개발용 설치본에 복사합니다(4절). |
+| 태스크 `jar` | `mod` 소스 세트, `convertArt`의 출력, 각 그림 세트의 `NOTICE.txt`와 `license/`를 `build/libs/scr-demo.jar`로 묶습니다. 재현 가능한 순서, 시간 기록 없음, 중복 항목이면 빌드 실패 |
+| 태스크 `devInstall` | `scr.jar`와 이 jar(`installMod`)를 개발용 설치본에 설치합니다(4절). |
 | 테스트 | `src/test`: 빌드된 jar를 읽으며, 복제본의 클래스를 직접 읽지 않습니다. |
 
 ### 자신의 모드
 
-자신의 복제 모드를 시작하려면 데모 옆에 프로젝트 폴더를 만들고 등록합니다.
+자신의 복제 모드를 시작하려면 데모 옆에 빌드 폴더를 만듭니다. 복제 모드는 SC:R 빌드와 엔진 빌드를 포함하는 독립된 Gradle 빌드입니다.
 
-1. `mods/my-mod/`를 만들고 `mods/scr-demo/build.gradle`을 거기에 복사하고, `mods/scr/scr-client/src/main/resources/sc4j-mod.json`을 `mods/my-mod/overlay/scr-client/src/main/resources/`에 복사합니다.
-2. `settings.gradle`에 `include ':mods:my-mod'`를 추가합니다.
-3. `mods/my-mod/build.gradle`에서: `clone` 소스 세트가 데모의 도구를 가리키게 하고(`srcDir '../scr-demo/src/clone/java'`), 그래서 도구는 한 곳에만 있습니다. `modJar`의 `archiveFileName`을 자기 jar 이름(`my-mod.jar`)으로, 설명도 바꿉니다. 그림과 테스트 블록은 빼거나 직접 작성합니다.
-4. 자기 `sc4j-mod.json`의 id, 이름, 설명을 자신의 것으로 고친 뒤(모든 복제 모드에는 자기 모드 id가 필요합니다) `.\gradlew.bat :mods:my-mod:acceptOverlay`를 한 번 실행해 `mods/my-mod/overlay.lock`을 씁니다.
+1. `mods/my-mod/`를 만들고 `mods/scr-demo/settings.gradle`, `gradle.properties`, `build.gradle`을 거기에 복사하고, `mods/scr/scr-client/src/main/resources/sc4j-mod.json`을 `mods/my-mod/overlay/scr-client/src/main/resources/`에 복사합니다.
+2. `mods/my-mod/settings.gradle`에서 `rootProject.name`을 `my-mod`로 바꿉니다.
+3. `mods/my-mod/build.gradle`에서: `clone` 소스 세트가 데모의 도구를 가리키게 하고(`srcDir '../scr-demo/src/clone/java'`), 그래서 도구는 한 곳에만 있습니다. `sc4jMod`의 `id`를 자기 모드 id로 바꾸고(jar는 `my-mod.jar`가 됩니다), 설명도 바꿉니다. 그림과 테스트 블록은 빼거나 직접 작성합니다.
+4. 자기 `sc4j-mod.json`의 id, 이름, 설명을 자신의 것으로 고친 뒤(모든 복제 모드에는 자기 모드 id가 필요합니다) `.\gradlew.bat -p mods\my-mod acceptOverlay`를 한 번 실행해 `mods/my-mod/overlay.lock`을 씁니다.
 
-명령은 아래와 같고, `:mods:scr-demo:` 대신 `:mods:my-mod:`를 씁니다.
+명령은 아래와 같고, `-p mods\scr-demo` 대신 `-p mods\my-mod`를 씁니다.
 
 ## 2. 변경
 
@@ -109,14 +109,14 @@ SC:R 모드가 이 파일 중 하나를 바꾸면 빌드는 한 줄과 함께 �
 
 ```text
 > The SC:R mod changed scr-net/src/main/resources/org/fogofwarlabs/sc4j/scr/net/lan/lan-lobby.properties after the overlay file was made
-  from it: see :mods:scr-demo:overlayDiff, merge the change into the overlay file by hand, then run :mods:scr-demo:acceptOverlay.
+  from it: see :overlayDiff, merge the change into the overlay file by hand, then run :acceptOverlay.
 ```
 
 그러면:
 
-1. `.\gradlew.bat :mods:scr-demo:overlayDiff`는 바뀐 파일마다 SC:R 모드의 변경(당시 기준과 현재 기준의 비교)과 자신의 변경(당시 기준과 오버레이 파일의 비교)을 unified diff로 출력합니다.
+1. `.\gradlew.bat -p mods\scr-demo overlayDiff`는 바뀐 파일마다 SC:R 모드의 변경(당시 기준과 현재 기준의 비교)과 자신의 변경(당시 기준과 오버레이 파일의 비교)을 unified diff로 출력합니다.
 2. SC:R 모드의 변경을 오버레이 파일에 손으로 병합합니다(또는 상관없다고 판단합니다).
-3. `.\gradlew.bat :mods:scr-demo:acceptOverlay`가 현재 SC:R 모드 파일을 기록하고, 다음 빌드가 진행됩니다.
+3. `.\gradlew.bat -p mods\scr-demo acceptOverlay`가 현재 SC:R 모드 파일을 기록하고, 다음 빌드가 진행됩니다.
 
 오버레이 파일이 잠금에 없거나(새 오버레이 파일: `acceptOverlay` 실행) 잠금이 오버레이에 더는 없는 파일을 가리켜도 빌드가 멈춥니다.
 
@@ -185,7 +185,7 @@ Terran Marine은 미네랄 45에 300프레임 동안 훈련하고, Gauss Rifle�
 
 #### 그림 세트 (`src/mod/java/org/fogofwarlabs/sc4j/scrdemo/ScrDemoArtSet.java`)
 
-추가 유닛마다 그림은 그림 세트 하나입니다. 베이크된 프레임, 인터페이스 그림, `NOTICE.txt`, `license/`가 있는 폴더 `third-party/<set>/`와, 그 이름(폴더), SD 캔버스, 지면 오프셋, 그림자 오프셋, 선택 원 오프셋, 프레임을 베이크한 품질을 주는 `ScrDemoArtSet` 상수 하나입니다. 유닛의 오버레이 이미지(Myriarch의 불 뿜기)는 그림자와 인터페이스 그림이 없는 별도 세트이며, 그 유닛의 폴더 안 폴더(`third-party/myriarch/fire/`)에 있습니다. `ArtConverter`가 모든 세트를 변환하고, `modJar`가 모든 세트의 변환된 파일, `NOTICE.txt`, `license/`를 jar의 `third-party/<set>/` 아래에 묶고, `ScrDemoArtFiles`가 모든 세트의 SD 프레임을 만듭니다. 세트의 메서드는 그 파일의 jar 경로를 주며(`getMainAnimation(quality)`, `getMainFrames()`, `getCommandIcon(quality)` 등), 유닛 등록이 이를 확장 API에 넘깁니다.
+추가 유닛마다 그림은 그림 세트 하나입니다. 베이크된 프레임, 인터페이스 그림, `NOTICE.txt`, `license/`가 있는 폴더 `third-party/<set>/`와, 그 이름(폴더), SD 캔버스, 지면 오프셋, 그림자 오프셋, 선택 원 오프셋, 프레임을 베이크한 품질을 주는 `ScrDemoArtSet` 상수 하나입니다. 유닛의 오버레이 이미지(Myriarch의 불 뿜기)는 그림자와 인터페이스 그림이 없는 별도 세트이며, 그 유닛의 폴더 안 폴더(`third-party/myriarch/fire/`)에 있습니다. `ArtConverter`가 모든 세트를 변환하고, `jar`가 모든 세트의 변환된 파일, `NOTICE.txt`, `license/`를 jar의 `third-party/<set>/` 아래에 묶고, `ScrDemoArtFiles`가 모든 세트의 SD 프레임을 만듭니다. 세트의 메서드는 그 파일의 jar 경로를 주며(`getMainAnimation(quality)`, `getMainFrames()`, `getCommandIcon(quality)` 등), 유닛 등록이 이를 확장 API에 넘깁니다.
 
 | 세트 | 유닛 | SD 캔버스 | 지면 오프셋 | 그림자 오프셋 | 베이크 품질 | 프레임 파일 |
 |---|---|---|---|---|---|---|
@@ -233,7 +233,7 @@ CC BY 4.0은 출처 표시, 라이선스 링크, 변경 사항 표시를 요구�
 - 캐릭터 그림은 Unity-chan License 3.0(UCL)에 따른 (c) Unity Technologies Japan/UCL입니다. 프레임이나 이로 만든 모드 jar를 받는 사람은 같은 라이선스로 받습니다. jar의 플레이어와 그들이 다시 전달하는 사람도 그림에 대해 UCL 조항을 따라야 합니다. `NOTICE.txt`와 `license/`를 jar에 유지하고(빌드가 `third-party/unity-chan/` 아래에 묶음), 매니페스트의 표기를 유지하며, 작품을 공식이거나 Unity Technologies Japan이 승인한 것처럼 보이게 하지 않습니다. 이 프레임이 든 jar를 공개하기 전에 `license/`의 조항을 읽습니다. 표기 규칙은 표기 PDF에 있습니다.
 - 캐릭터가 든 소총은 Quaternius의 Ultimate Guns Pack에 있는 모델 AssaultRifle2_1이며 CC0 1.0(퍼블릭 도메인 기증)입니다. 조건은 없고, `NOTICE.txt`와 매니페스트의 출처 표시는 예의로 둔 것입니다.
 - 저장소와 jar에는 렌더한 이미지만 있습니다. Unity-chan의 모델, 텍스처, 애니메이션 파일은 없고, 스타크래프트: 리마스터 파일도 없습니다 (목소리와 무기 소리는 플레이어의 설치본에서 참조로 가져옴).
-- 다른 그림을 쓸 때: 라이선스가 모드와 파생 이미지의 배포를 허용하는지 확인하고, 라이선스 파일과 `NOTICE.txt`와 함께 자기 `third-party/<name>/` 폴더에 넣고, `modJar`가 Unity-chan에 하듯 이를 jar에 묶고, 라이선스가 요구하는 표기를 매니페스트에 보여 줍니다.
+- 다른 그림을 쓸 때: 라이선스가 모드와 파생 이미지의 배포를 허용하는지 확인하고, 라이선스 파일과 `NOTICE.txt`와 함께 자기 `third-party/<name>/` 폴더에 넣고, `jar`가 Unity-chan에 하듯 이를 jar에 묶고, 라이선스가 요구하는 표기를 매니페스트에 보여 줍니다.
 
 #### 프레임 베이크 (저장소에 없음)
 
@@ -248,10 +248,10 @@ CC BY 4.0은 출처 표시, 라이선스 링크, 변경 사항 표시를 요구�
 
 #### 그림 변환 (`convertArt`)
 
-빌드는 그림 변환기 `ArtConverter`(`src/convert/java`)로 모든 그림 세트의 베이크된 프레임을 모드가 읽는 파일로 변환합니다. `modJar`가 이를 실행하고 그 출력을 `third-party/<set>/graphics/`, `interface/`, `portrait/` 아래에 묶습니다. Unity-chan의 경우:
+빌드는 그림 변환기 `ArtConverter`(`src/convert/java`)로 모든 그림 세트의 베이크된 프레임을 모드가 읽는 파일로 변환합니다. `jar`가 이를 실행하고 그 출력을 `third-party/<set>/graphics/`, `interface/`, `portrait/` 아래에 묶습니다. Unity-chan의 경우:
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:convertArt
+.\gradlew.bat -p mods\scr-demo convertArt
 ```
 
 `mods/scr-demo/build/converted-art/third-party/unity-chan/graphics/`에 씁니다.
@@ -279,7 +279,7 @@ shadow-hd2.anim
 베이크된 PNG와 `metadata.json`은 jar에 들어가지 않습니다. 변환기의 테스트가 출력을 메타데이터와 jar 내용(라이선스 파일은 있고 베이크된 프레임은 없음)에 대조합니다.
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
+.\gradlew.bat -p mods\scr-demo test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
 ```
 
 #### SD 프레임은 모드를 불러올 때 만든다
@@ -291,7 +291,7 @@ SD 프레임(GRP 파일)에는 설치본 타일셋 팔레트의 팔레트 인덱
 유닛을 플레이하는 테스트에는 설치본이 필요합니다(Gradle 속성 `sc4j.data`, 3절).
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:integrationTest --tests org.fogofwarlabs.sc4j.scrdemo.ScrDemoUnitUtilsTest
+.\gradlew.bat -p mods\scr-demo integrationTest --tests org.fogofwarlabs.sc4j.scrdemo.ScrDemoUnitUtilsTest
 ```
 
 테스트는 `scr-demo.jar`에서 복제 모드 자신의 클래스를 실행합니다. 등록(값, 참조, 훈련 버튼, 이미지, 스프라이트, flingy 항목, 스크립트, 설치된 팔레트로 만든 SD 프레임, HD와 HD2 프레임), Barracks가 유닛을 훈련하는 리플레이를 따로 실행한 두 복제 모드에서 기록하고 읽고 재생해 프레임별 해시가 같은지, 반전된 두 방향으로 걷고 자기 애니메이션으로 싸우고 죽는 유닛, 걷고 싸우는 동안 긴 커맨드 열을 따르는 Marine과의 그룹, jar 안의 인터페이스 그림입니다. 직접 보려면 런처에서 복제 모드를 시작하고(5절) Barracks를 지어 U를 누릅니다.
@@ -301,26 +301,26 @@ SD 프레임(GRP 파일)에는 설치본 타일셋 팔레트의 팔레트 인덱
 ## 3. 빌드
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:modJar
+.\gradlew.bat -p mods\scr-demo jar
 ```
 
-`mods/scr-demo/build/mods/scr-demo.jar`를 빌드합니다(먼저 `cloneScrMod`와 `convertArt`를 실행). 데모의 테스트는 jar를 `scr.jar`와 비교하고(오버레이의 파일만 다르고, 추가 항목은 데모 자신의 클래스, 서비스 파일, `third-party/` 아래의 그림이며, 매니페스트에는 자기 id가 있음), 오버레이와 잠금, 그림 변환, 127.0.0.1에서의 LAN과 온라인 거부, 두 모드의 런처 목록을 확인합니다.
+`mods/scr-demo/build/libs/scr-demo.jar`를 빌드합니다(먼저 `cloneScrMod`와 `convertArt`를 실행). 데모의 테스트는 jar를 `scr.jar`와 비교하고(오버레이의 파일만 다르고, 추가 항목은 데모 자신의 클래스, 서비스 파일, `third-party/` 아래의 그림이며, 매니페스트에는 자기 id가 있음), 오버레이와 잠금, 그림 변환, 127.0.0.1에서의 LAN과 온라인 거부, 두 모드의 런처 목록을 확인합니다.
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:test
+.\gradlew.bat -p mods\scr-demo test
 ```
 
-스타크래프트: 리마스터 설치본이 필요한 테스트는 `:mods:scr-demo:integrationTest`와, 설치본을 가리키는 Gradle 속성 `sc4j.data`로 실행합니다.
+스타크래프트: 리마스터 설치본이 필요한 테스트는 `-p mods\scr-demo integrationTest`와, 설치본을 가리키는 Gradle 속성 `sc4j.data`로 실행합니다.
 
 ## 4. `mods/`에 넣기
 
 모드는 jar를 SC4J 설치본의 `mods/` 폴더(`<install>/mods/`)에 `scr.jar` 옆에 넣어 설치합니다. 저장소의 개발용 설치본은 `build/dev-install/`입니다.
 
 ```powershell
-.\gradlew.bat :mods:scr-demo:devInstall
+.\gradlew.bat -p mods\scr-demo devInstall
 ```
 
-개발용 설치본(런처, 런타임, `mods/scr.jar`. SC:R 모드의 `devInstall`)을 구성하고 `scr-demo.jar`를 `build/dev-install/mods/`에 복사합니다. `userdata/` 아래에는 아무것도 쓰지 않습니다. 복제 모드의 설정은 런처가 저장합니다(5절). 다른 설치본에는 `mods/scr-demo/build/mods/scr-demo.jar`를 그 `mods/` 폴더에 직접 복사합니다.
+개발용 설치본(런처, 런타임, `mods/scr.jar`. SC:R 모드의 `devInstall`)을 구성하고 `scr-demo.jar`를 `build/dev-install/mods/`에 복사합니다(`installMod`). `userdata/` 아래에는 아무것도 쓰지 않습니다. 복제 모드의 설정은 런처가 저장합니다(5절). 다른 설치본에는 `mods/scr-demo/build/libs/scr-demo.jar`를 그 `mods/` 폴더에 직접 복사합니다.
 
 ## 5. 런처에서 실행
 

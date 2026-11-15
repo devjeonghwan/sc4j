@@ -39,7 +39,7 @@
 모드는 SC4J 설치본의 `mods/` 폴더에 설치합니다. 저장소의 개발용 설치본은 `build/dev-install/`(런처, 런타임, 저장소의 모드)입니다.
 
 ```powershell
-.\gradlew.bat :mods:demo:devInstall
+.\gradlew.bat devInstall
 ```
 
 다른 SC4J 설치본도 똑같이 쓸 수 있습니다. 설치본 폴더에는 `launcher/`, `runtime/`, `mods/`가 있고, 한 번 사용하면 `userdata/`가 생깁니다.
@@ -157,10 +157,10 @@ final class FirstScene implements ClientScene {
 저장소의 Gradle 래퍼로 모드 폴더를 빌드합니다.
 
 ```powershell
-.\gradlew.bat -p ..\my-mod devInstall
+.\gradlew.bat -p ..\my-mod installMod
 ```
 
-`..\my-mod\build\mods\my-mod.jar`를 빌드하고 `<install>/mods/`에 복사합니다. `devInstall` 대신 `modJar`를 쓰면 jar만 빌드합니다.
+`..\my-mod\build\libs\my-mod.jar`를 빌드하고 `<install>/mods/`에 복사합니다. `installMod` 대신 `jar`를 쓰면 jar만 빌드합니다.
 
 ### 2.4 헤드리스로 실행
 
@@ -332,17 +332,17 @@ sc4jMod {
 ```
 
 - 플러그인은 자기 버전의 엔진 API(`org.fogofwarlabs.sc4j:sc4j-engine`과 `sc4j-base`, `sc4j-mod-manifest`, 엔진 모듈)를 대상으로 모드를 컴파일합니다. 런타임이 제공하므로 jar에는 들어가지 않습니다.
-- `modJar`는 main 소스 세트의 클래스와 리소스를 `build/mods/<id>.jar`로 재현 가능하게 묶고(시간 기록 없음, 고정 순서, 중복이면 실패), 프로젝트 폴더의 `LICENSE`와 `NOTICE`를 `META-INF/`에 넣습니다. `sc4j-mod.json`이 다른 id나 jar에 없는 엔트리 클래스를 가리키면 실패합니다. 같은 소스는 같은 jar, 곧 같은 정체성을 만듭니다.
-- `checkApiUse`(`check`에 포함)는 모드 소스가 엔진의 내부 요소를 쓰면 실패합니다(16장).
-- `runMod`는 플러그인 버전의 엔진 런타임에서 jar를 실행하고, 설치본의 사용자 데이터(설치본이 없으면 `build/sc4j-run`)를 씁니다. `runMod --args=--headless`는 창 없이 실행하고, `--debug-jvm`은 디버거를 기다립니다.
-- `devInstall`은 jar를 `<install>/mods/`에 복사합니다. 설치본은 Gradle 속성 `sc4j.install`입니다.
-- `sc4jMod`는 `sourceSets`(jar의 소스 세트, 기본은 `main`), `install`, `licenses`(`META-INF/`의 파일)도 받습니다. `tasks.named('modJar') { from(...) }`로 jar에 파일을 더 넣습니다.
+- `jar`는 main 소스 세트의 클래스와 리소스를 `build/libs/<id>.jar`로 재현 가능하게 묶고(시간 기록 없음, 고정 순서, 중복이면 실패), 프로젝트 폴더의 `LICENSE`와 `NOTICE`를 `META-INF/`에 넣습니다. `sc4j-mod.json`이 다른 id나 jar에 없는 엔트리 클래스를 가리키면 실패합니다. 같은 소스는 같은 jar, 곧 같은 정체성을 만듭니다.
+- `run`은 플러그인 버전의 엔진 런타임에서 jar를 실행하고, 설치본의 사용자 데이터(설치본이 없으면 `build/sc4j-run`)를 씁니다. `run --args=--headless`는 창 없이 실행하고, `--debug-jvm`은 디버거를 기다립니다.
+- `installMod`는 jar를 `<install>/mods/`에 복사합니다. 설치본은 Gradle 속성 `sc4j.install`입니다.
+- `jar`, `run`, `installMod`는 태스크 그룹 `sc4j`에 있습니다.
+- `sc4jMod`는 `sourceSets`(`main` 외에 jar에 더 넣을 소스 세트), `install`, `licenses`(`META-INF/`의 파일)도 받습니다. `tasks.named('jar') { from(...) }`로 jar에 파일을 더 넣습니다.
 
 실행할 때 모드에 필요한 라이브러리는 jar에 넣어야 합니다(또는 설치본에 함께 있어야 합니다. 런타임의 `lib/`에는 LWJGL, FFmpeg 같은 엔진 라이브러리가 있습니다). 먼저 라이선스를 확인합니다(17장).
 
 ### 7.2 이 저장소 안의 모드
 
-데모 1은 같은 플러그인을 쓰는 저장소 빌드의 프로젝트입니다([`mods/demo/build.gradle`](../mods/demo/build.gradle)). 저장소 빌드 안에서는 플러그인의 엔진 의존성이 엔진 프로젝트이고, `devInstall`은 `demo.jar`를 `build/dev-install/mods/`에 복사합니다. 자체 검사는 `checkModBoundary`와 `checkDemoNames`(데모는 다른 게임의 이름을 쓰지 않음), `determinismCheck`(12장)입니다. 테스트는 jar를 런타임으로 실행하고(`DemoModTest`) 클라이언트를 화면 밖에서 실행합니다(`DemoClientScenario`).
+데모 1은 같은 플러그인을 쓰는 저장소 빌드의 프로젝트입니다([`mods/demo/build.gradle`](../mods/demo/build.gradle)). 저장소 빌드 안에서는 플러그인의 엔진 의존성이 엔진 프로젝트이고, 설치본은 `build/dev-install/`이며, 저장소의 `devInstall`이 `mods/`에 `demo.jar`를 넣어 그 설치본을 구성합니다. 자체 검사는 `checkModBoundary`와 `checkDemoNames`(데모는 다른 게임의 이름을 쓰지 않음), `determinismCheck`(12장)입니다. 테스트는 jar를 런타임으로 실행하고(`DemoModTest`) 클라이언트를 화면 밖에서 실행합니다(`DemoClientScenario`).
 
 ## 8. 맵과 첫 실행 콘텐츠
 
@@ -371,7 +371,7 @@ for (String file : List.of("maps/first-field.json")) {
 }
 ```
 
-그래서 새 설치본은 모드의 맵으로 시작하고, 플레이어 자신의 맵은 그 옆에 놓이며, 플레이어가 바꾼 맵은 덮어쓰지 않습니다(지운 맵은 다음 시작 때 다시 생깁니다). 그다음 모드가 `maps/`의 모든 `*.json`을 파일 이름 순서로 읽고, 올바른 맵이 아닌 파일은 경고와 함께 뺍니다. 맵을 하나 더 넣으려면 다른 맵과 겹치지 않는 `name`으로 `src/main/resources/<id>/seed/maps/` 아래에 두고, `<id>/seed/` 기준 경로 (`"maps/second-field.json"`)를 목록에 추가하고, 다시 빌드해 설치합니다(`devInstall`). 다음 시작 때 저장 폴더로 복사됩니다. 다른 첫 실행 파일(옵션, 튜토리얼 리플레이)도 같은 방법으로 넣습니다. jar에서 시드 맵을 바꾸거나 지워도 이전 실행이 저장 폴더에 남긴 복사본은 바뀌지 않습니다. 맵을 작업하는 동안에는 그 복사본을 지웁니다(또는 다른 `--storage`로 실행합니다).
+그래서 새 설치본은 모드의 맵으로 시작하고, 플레이어 자신의 맵은 그 옆에 놓이며, 플레이어가 바꾼 맵은 덮어쓰지 않습니다(지운 맵은 다음 시작 때 다시 생깁니다). 그다음 모드가 `maps/`의 모든 `*.json`을 파일 이름 순서로 읽고, 올바른 맵이 아닌 파일은 경고와 함께 뺍니다. 맵을 하나 더 넣으려면 다른 맵과 겹치지 않는 `name`으로 `src/main/resources/<id>/seed/maps/` 아래에 두고, `<id>/seed/` 기준 경로 (`"maps/second-field.json"`)를 목록에 추가하고, 다시 빌드해 설치합니다(`installMod`). 다음 시작 때 저장 폴더로 복사됩니다. 다른 첫 실행 파일(옵션, 튜토리얼 리플레이)도 같은 방법으로 넣습니다. jar에서 시드 맵을 바꾸거나 지워도 이전 실행이 저장 폴더에 남긴 복사본은 바뀌지 않습니다. 맵을 작업하는 동안에는 그 복사본을 지웁니다(또는 다른 `--storage`로 실행합니다).
 
 데모 1은 내장 맵을 jar에서 바로 읽고([`DemoMaps`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/map/DemoMaps.java)), 네트워크 호스트가 보낸 맵을 그 옆에 둡니다. 두 방식 모두 괜찮습니다.
 
@@ -452,7 +452,7 @@ for (String file : List.of("maps/first-field.json")) {
 ## 15. 빌드, 설치, 실행
 
 - **Jar**: 루트의 `sc4j-mod.json`, 클래스와 리소스. 엔진 jar는 넣지 않으며 재현 가능해야 합니다. 바꿀 때마다 정체성이 새로 생깁니다. 함께 플레이하거나 서로의 리플레이를 재생하려면 플레이어들이 정확히 같은 jar를 가져야 합니다.
-- **설치**: jar를 `<install>/mods/`에 넣습니다(`devInstall`, 또는 직접). 런처는 거기 있는 모든 jar를 보여 줍니다. `READY`, `WARNING` (고칠 설정이 있음), `ERROR`(망가진 jar나 매니페스트, 이 런타임이 실행할 수 없는 엔진 버전, 없는 그림, 다른 jar와 같은 id).
+- **설치**: jar를 `<install>/mods/`에 넣습니다(`installMod`, 또는 직접). 런처는 거기 있는 모든 jar를 보여 줍니다. `READY`, `WARNING` (고칠 설정이 있음), `ERROR`(망가진 jar나 매니페스트, 이 런타임이 실행할 수 없는 엔진 버전, 없는 그림, 다른 jar와 같은 id).
 - **런타임**: `sc4j-runtime --mod <jar> [--install <dir>] [--settings <json>] [--storage <dir>] [--log <dir>] [--account <dir>] [--seeds <file>] [--seed <host:port>]... [--peers <file>] [--headless] [--replay <file>] [--join <address>] [-- <mod arguments>]` (`--help`가 출력합니다). 종료 코드: 0 정상, 1 실행 실패, 2 명령줄이나 설정 오류, 3 모드 로드나 검증 실패. 로그는 `<install>/userdata/logs/<id>/sc4j.log`입니다.
 - **런처**: 모드 목록을 보여 주고, 모드 설정을 받고, 모드의 설정, 저장 폴더, 로그 폴더로 런타임을 시작합니다.
 
@@ -461,7 +461,7 @@ for (String file : List.of("maps/first-field.json")) {
 정책 자체는 [엔진 API 정책](api-policy.ko.md)에 있습니다. 요약하면:
 
 - API는 `sc4j-base`, `sc4j-mod-manifest`, `sc4j-engine-core`, `-sim`, `-net`, `-client`, `sc4j-engine`의 public, protected 클래스와 멤버이며, 각 모듈의 `api/*.api` 파일에 나열되어 있습니다. 그 Javadoc이 계약입니다.
-- **내부** 요소이며 모드가 쓰면 안 되는 것: `engine.mod.loading`, `engine.client.render.gl`, `engine.client.audio.openal`, GLFW 호스트 구현(`GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface`), Windows 플랫폼 서비스 (`WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock`). 모드 플러그인이 이를 검사합니다. `checkApiUse`는 사용할 때마다 실패합니다(7.1절). 그리기는 `engine.client.render`로 하고(자기 렌더러는 `GraphicsDevice.getCurrent()`로 GPU 캔버스와 셰이더 프로그램을 만듭니다), 소리는 `engine.client.audio`(`AudioDevice.openDefault()`)로 재생하며, 자기 창은 `engine.client.host` 인터페이스(`ClientHost.initialize()`)로 실행합니다. `HostWindow`는 키와 포인터(`createInput`, `isKeyDown`, `setPointerMode`, `createCursorSurface`), 포커스, 클립보드, 끌어다 놓은 파일, 전체 화면 감마 램프, 입력기(`getTextInputMethod`)를 제공합니다. `SystemPointerSpeed`와 `HostTickClock`은 플랫폼 서비스입니다.
+- API가 아닌 **내부** 요소: `engine.mod.loading`, `engine.client.render.gl`, `engine.client.audio.openal`, GLFW 호스트 구현(`GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface`), Windows 플랫폼 서비스 (`WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock`). 어느 버전에서든 예고 없이 바뀌거나 없어질 수 있고 호환성 약속이 없습니다. `@ApiStatus.Internal`이 붙어 있어 IDE가 사용 위치를 표시합니다. 그리기는 `engine.client.render`로 하고(자기 렌더러는 `GraphicsDevice.getCurrent()`로 GPU 캔버스와 셰이더 프로그램을 만듭니다), 소리는 `engine.client.audio`(`AudioDevice.openDefault()`)로 재생하며, 자기 창은 `engine.client.host` 인터페이스(`ClientHost.initialize()`)로 실행합니다. `HostWindow`는 키와 포인터(`createInput`, `isKeyDown`, `setPointerMode`, `createCursorSurface`), 포커스, 클립보드, 끌어다 놓은 파일, 전체 화면 감마 램프, 입력기(`getTextInputMethod`)를 제공합니다. `SystemPointerSpeed`와 `HostTickClock`은 플랫폼 서비스입니다.
 - 엔진 API 버전은 `MAJOR.MINOR`입니다(`EngineVersion.CURRENT`, 현재 0.1). 매니페스트의 `engine` 필드에 넣습니다. 새 major 버전은 모드를 깨뜨릴 수 있고, 새 minor 버전은 추가만 합니다. API가 0.x인 동안에는 안정성을 약속하지 않습니다. 호환되지 않는 변경이 일어날 수 있으며 `.api` 차이로 드러납니다.
 - 시뮬레이션 결과가 바뀌면 적어도 minor 버전을 올립니다. 리플레이와 저장 게임은 엔진 버전 사이에 호환되지 않습니다.
 

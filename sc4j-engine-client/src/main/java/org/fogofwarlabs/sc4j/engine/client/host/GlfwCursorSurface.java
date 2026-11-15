@@ -6,6 +6,7 @@ import org.fogofwarlabs.sc4j.engine.client.cursor.CursorSurface;
 import org.fogofwarlabs.sc4j.engine.client.display.DetailSet;
 import org.fogofwarlabs.sc4j.engine.resource.graphics.Picture;
 import org.fogofwarlabs.sc4j.engine.resource.graphics.PixelLayer;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -23,6 +24,7 @@ import java.util.Map;
  * is kept until {@link #close()}; {@link #hide} shows a blank one-pixel cursor. When the platform refuses a custom cursor, the platform's
  * own arrow is shown from then on. Must be used on the thread that owns the window.
  */
+@ApiStatus.Internal
 public final class GlfwCursorSurface implements CursorSurface {
     private static final @NotNull Logger LOGGER = Logger.of(GlfwCursorSurface.class);
     private static final int RGBA_BYTES = 4;

@@ -19,17 +19,15 @@ import org.jetbrains.annotations.NotNull;
  * }
  *}
  * The plugin compiles the source sets with the engine's Java version (a Java 25 toolchain) against the engine API of its own version
- * ({@code org.fogofwarlabs.sc4j:sc4j-engine}) and adds these tasks:
+ * ({@code org.fogofwarlabs.sc4j:sc4j-engine}) and sets up these tasks of the group {@code sc4j}:
  * <ul>
- *     <li>{@code modJar}: packs the classes and resources of the source sets into {@code build/mods/<id>.jar} without file times in a fixed
+ *     <li>{@code jar}: packs the classes and resources of the source sets into {@code build/libs/<id>.jar} without file times in a fixed
  *     order, with the licence files in {@code META-INF/}, and checks that its manifest {@code sc4j-mod.json} names the mod id and an entry
  *     class of the jar.</li>
- *     <li>{@code checkApiUse}: fails when the Java sources of the source sets use an internal element of the engine; {@code check} runs
- *     it.</li>
- *     <li>{@code runMod}: runs the mod jar in the engine runtime of the plugin's version, with the user data of the install or of
+ *     <li>{@code run}: runs the mod jar in the engine runtime of the plugin's version, with the user data of the install or of
  *     {@code build/sc4j-run}; {@code --args} passes runtime options (such as {@code --headless}) and {@code --debug-jvm} waits for a
- *     debugger.</li>
- *     <li>{@code devInstall}: copies the mod jar into {@code mods/} of the install.</li>
+ *     debugger. {@code prepareRun} stages the runtime's native libraries for it.</li>
+ *     <li>{@code installMod}: copies the mod jar into {@code mods/} of the install.</li>
  * </ul>
  * The variant of the usage {@code sc4j-mod-jar} ({@code modJarElements}) gives the mod jar to other projects of the build.
  */
@@ -48,15 +46,15 @@ public abstract class ModExtension {
     public abstract @NotNull Property<@NotNull String> getId();
 
     /**
-     * Returns the source sets whose classes and resources make up the mod jar and whose Java sources {@code checkApiUse} scans. The source
-     * sets of this project among them compile against the engine API. The default is the main source set.
+     * Returns the source sets whose classes and resources make up the mod jar, with those of the main source set, which the {@code jar} task
+     * always holds. The source sets of this project among them compile against the engine API. The default is the main source set.
      *
      * @return the source sets of the mod
      */
     public abstract @NotNull ListProperty<@NotNull SourceSet> getSourceSets();
 
     /**
-     * Returns the SC4J install folder that {@code devInstall} copies the mod jar into and whose user data {@code runMod} uses. The default is
+     * Returns the SC4J install folder that {@code installMod} copies the mod jar into and whose user data {@code run} uses. The default is
      * the Gradle property {@code sc4j.install}.
      *
      * @return the install folder

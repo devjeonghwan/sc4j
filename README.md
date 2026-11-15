@@ -25,7 +25,7 @@ This repository holds the engine, the launcher, the runtime, Beacon.Link and the
 |---|---|---|---|
 | Demo 1 | [`mods/demo/`](mods/demo/) | `demo` | "SC4J Demo: Dawnhold and Cindermaw", a small real-time strategy game made only of the engine |
 
-The SC:R mod and its clone, demo 2, are described in their own READMEs: [`mods/scr/`](mods/scr/README.md) and [`mods/scr-demo/`](mods/scr-demo/README.md).
+The SC:R mod and its clone SC:R Crossover are described in their own READMEs: [`mods/scr/`](mods/scr/README.md) and [`mods/scr-crossover/`](mods/scr-crossover/README.md).
 
 The [mod author guide](docs/mod-guide.md) shows how to make a new mod for the engine.
 
@@ -61,14 +61,14 @@ The [mod author guide](docs/mod-guide.md) shows how to make a new mod for the en
 
 ## Build and run
 
-You need JDK 25. The Gradle wrapper downloads Gradle itself. Commands run in PowerShell from the repository root; on Linux use `./gradlew`. The SC:R mod and demo 2 need a StarCraft: Remastered 1.23.10 installation to play; the build does not.
+You need JDK 25. The Gradle wrapper downloads Gradle itself. Commands run in PowerShell from the repository root; on Linux use `./gradlew`. The SC:R mod and SC:R Crossover need a StarCraft: Remastered 1.23.10 installation to play; the build does not.
 
 | Command | What it does |
 |---|---|
-| `.\gradlew.bat build` | compiles the engine and demo 1, runs their unit tests and checks (`-p mods\scr build`, `-p mods\scr-demo build` for the SC:R mod and demo 2) |
+| `.\gradlew.bat build` | compiles the engine and demo 1, runs their unit tests and checks (`-p mods\scr build`, `-p mods\scr-crossover build` for the SC:R mod and SC:R Crossover) |
 | `.\gradlew.bat devInstall` | assembles the development install `build/dev-install/` (launcher, runtime, `mods/demo.jar`) |
 | `.\gradlew.bat -p mods\scr devInstall` | the same with `mods/scr.jar` added |
-| `.\gradlew.bat -p mods\scr-demo devInstall` | the same with `mods/scr.jar` and `mods/scr-demo.jar` added |
+| `.\gradlew.bat -p mods\scr-crossover devInstall` | the same with `mods/scr.jar` and `mods/scr-crossover.jar` added |
 | `.\gradlew.bat runDevLauncher` | opens the launcher of the development install |
 | `.\gradlew.bat runDevInstall -Psc4j.mod=scr` | runs the runtime of the development install with `mods/scr.jar` (default `demo`) |
 | `.\gradlew.bat distribution` | builds the user package `build/distributions/SC4J-<version>.zip` |
@@ -81,7 +81,7 @@ A first run:
 .\gradlew.bat runDevLauncher
 ```
 
-The launcher lists every jar in `build/dev-install/mods/`. Choose a mod and start it. For the SC:R mod and demo 2 the launcher looks for the StarCraft: Remastered folder where Windows records the game; if it is not found there, set it once in the mod's settings.
+The launcher lists every jar in `build/dev-install/mods/`. Choose a mod and start it. For the SC:R mod and SC:R Crossover the launcher looks for the StarCraft: Remastered folder where Windows records the game; if it is not found there, set it once in the mod's settings.
 
 The user package holds the launcher, the runtime, the demo mod, a Java runtime and the start files `SC4J.bat` and `SC4J`. It holds no user data: a fresh install makes `userdata/` at its first start.
 

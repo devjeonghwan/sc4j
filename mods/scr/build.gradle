@@ -51,7 +51,7 @@ configure(subprojects) { module ->
 
 evaluationDependsOnChildren()
 
-// The module folders of the mod and their compiler arguments (mod.properties); the clone of demo 2 reads the same file.
+// The module folders of the mod and their compiler arguments (mod.properties); the clone of SC:R Crossover reads the same file.
 def modProperties = new Properties()
 file('mod.properties').withReader('UTF-8') { reader -> modProperties.load(reader) }
 def modModuleNames = modProperties.getProperty('modules').split(',').toList()

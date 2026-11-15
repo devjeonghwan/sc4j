@@ -19,9 +19,9 @@
 | Gradle | 9.1.0, 래퍼(`gradlew`, `gradlew.bat`)로 실행하므로 따로 설치할 필요 없음 |
 | IDE | 자유. IntelliJ IDEA는 Gradle 가져오기로 동작 |
 
-IntelliJ IDEA: 저장소 루트 폴더를 엽니다. 연결된 Gradle 빌드는 `mods/scr-demo`이고, 이 빌드가 SC:R 모드와 엔진 빌드를 포함하므로 모두 함께 가져옵니다. 프로젝트 SDK와 Gradle JVM(Settings, Build Tools, Gradle)을 JDK 25로 설정합니다.
+IntelliJ IDEA: 저장소 루트 폴더를 엽니다. 연결된 Gradle 빌드는 `mods/scr-crossover`이고, 이 빌드가 SC:R 모드와 엔진 빌드를 포함하므로 모두 함께 가져옵니다. 프로젝트 SDK와 Gradle JVM(Settings, Build Tools, Gradle)을 JDK 25로 설정합니다.
 
-아래 명령은 저장소 루트의 PowerShell에서 실행합니다. Linux에서는 `./gradlew`를 씁니다. 엔진과 데모 1은 루트 빌드이고, SC:R 모드와 데모 2는 각자의 빌드이므로 `-p mods\scr`, `-p mods\scr-demo`로 실행합니다.
+아래 명령은 저장소 루트의 PowerShell에서 실행합니다. Linux에서는 `./gradlew`를 씁니다. 엔진과 데모 1은 루트 빌드이고, SC:R 모드와 SC:R Crossover는 각자의 빌드이므로 `-p mods\scr`, `-p mods\scr-crossover`로 실행합니다.
 
 ## 빌드와 테스트
 
@@ -40,7 +40,7 @@ IntelliJ IDEA: 저장소 루트 폴더를 엽니다. 연결된 Gradle 빌드는 
 
 ```powershell
 .\gradlew.bat :sc4j-engine-sim:test
-.\gradlew.bat -p mods\scr-demo test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
+.\gradlew.bat -p mods\scr-crossover test --tests org.fogofwarlabs.sc4j.scrcrossover.convert.ArtConverterTest
 ```
 
 ## 코드 스타일

@@ -48,8 +48,8 @@ jobs:
       - name: Test the SC:R mod
         run: ./gradlew -p mods/scr test -Psc4j.render.smoke=false
 
-      - name: Test demo 2
-        run: ./gradlew -p mods/scr-demo test -Psc4j.render.smoke=false
+      - name: Test SC:R Crossover
+        run: ./gradlew -p mods/scr-crossover test -Psc4j.render.smoke=false
 
       - name: Upload the reports
         if: failure()

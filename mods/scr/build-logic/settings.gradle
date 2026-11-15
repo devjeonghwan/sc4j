@@ -1,4 +1,4 @@
-// The conventions of the SC:R builds (the SC:R mod and demo 2).
+// The conventions of the SC:R builds (the SC:R mod and SC:R Crossover).
 dependencyResolutionManagement {
     repositories {
         mavenCentral()

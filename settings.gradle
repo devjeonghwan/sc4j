@@ -31,7 +31,7 @@ include ':mods:demo'
 // The API tools of the engine (apiDump, apiCheck; docs/api-policy.md).
 include ':tools:api-check'
 
-// The SC:R demo build, with the SC:R build it includes, when it is in this checkout: one IDE project and `:scr-demo:<task>` from here.
-if (file('mods/scr-demo/settings.gradle').isFile()) {
-    includeBuild('mods/scr-demo')
+// The SC:R Crossover build, with the SC:R build it includes, when it is in this checkout: one IDE project and `:scr-crossover:<task>` from here.
+if (file('mods/scr-crossover/settings.gradle').isFile()) {
+    includeBuild('mods/scr-crossover')
 }

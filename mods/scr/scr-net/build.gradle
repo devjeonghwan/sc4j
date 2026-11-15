@@ -1,6 +1,6 @@
 plugins {
     id 'java-library'
-    // The in-memory LAN scenario (InMemoryLanScenario) of the LAN tests, shared with the tests of demo 2 (mods/scr-demo).
+    // The in-memory LAN scenario (InMemoryLanScenario) of the LAN tests, shared with the tests of SC:R Crossover (mods/scr-crossover).
     id 'java-test-fixtures'
     id 'org.fogofwarlabs.sc4j.scr.java'
 }

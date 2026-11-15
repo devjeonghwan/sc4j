@@ -19,9 +19,9 @@ Thank you for helping. This page covers the developer setup, the test tiers, the
 | Gradle | 9.1.0, through the wrapper (`gradlew`, `gradlew.bat`); no own installation needed |
 | IDE | any; IntelliJ IDEA works with the Gradle import |
 
-IntelliJ IDEA: open the repository root folder; its linked Gradle build is `mods/scr-demo`, which includes the SC:R mod and the engine builds, so all of them import together. Set the project SDK and the Gradle JVM (Settings, Build Tools, Gradle) to JDK 25.
+IntelliJ IDEA: open the repository root folder; its linked Gradle build is `mods/scr-crossover`, which includes the SC:R mod and the engine builds, so all of them import together. Set the project SDK and the Gradle JVM (Settings, Build Tools, Gradle) to JDK 25.
 
-Commands below run in PowerShell from the repository root. On Linux use `./gradlew`. The engine with demo 1 is the root build; the SC:R mod and demo 2 are builds of their own, run with `-p mods\scr` and `-p mods\scr-demo`.
+Commands below run in PowerShell from the repository root. On Linux use `./gradlew`. The engine with demo 1 is the root build; the SC:R mod and SC:R Crossover are builds of their own, run with `-p mods\scr` and `-p mods\scr-crossover`.
 
 ## Build and test
 
@@ -40,7 +40,7 @@ A single module or test:
 
 ```powershell
 .\gradlew.bat :sc4j-engine-sim:test
-.\gradlew.bat -p mods\scr-demo test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
+.\gradlew.bat -p mods\scr-crossover test --tests org.fogofwarlabs.sc4j.scrcrossover.convert.ArtConverterTest
 ```
 
 ## Code style

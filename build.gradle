@@ -1,3 +1,13 @@
+import com.vanniktech.maven.publish.DeploymentValidation
+import com.vanniktech.maven.publish.JavaLibrary
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SourcesJar
+
+plugins {
+    // The Maven Central publishing of the engine modules (the publishing part at the end of this file).
+    id 'com.vanniktech.maven.publish' version '0.37.0' apply false
+}
+
 def operatingSystem = System.getProperty("os.name").toUpperCase()
 def architecture = System.getProperty("os.arch").toUpperCase()
 
@@ -209,8 +219,9 @@ subprojects {
         }
     }
     // Every jar carries LICENSE and NOTICE in META-INF/, every application distribution LICENSE, NOTICE and licenses/ at its root; the
-    // install task fails when its folder misses one of them.
-    tasks.withType(Jar).configureEach {
+    // install task fails when its folder misses one of them. The base jar type org.gradle.jvm.tasks.Jar covers the jars of plugins too (the
+    // javadoc jar of the publishing plugin), which do not extend the Jar type of the build script.
+    tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
         metaInf {
             from(rootProject.licenseFiles)
         }
@@ -690,20 +701,7 @@ tasks.register('distribution', Zip) {
     }
 }
 
-// Maven Central publishing of the engine, with Gradle's own maven-publish and signing plugins. Published are the modules a mod compiles against
-// and runs its headless tests with: sc4j-engine and sc4j-runtime with every project they depend on (the runtime runs a mod's Beacon.Link
-// through sc4j-beaconlink, so the Beacon.Link client, peer and protocol are among them). Each is org.fogofwarlabs.sc4j:<module>:<version> with
-// its jar, sources jar, javadoc jar, POM and Gradle module metadata; a project dependency becomes a dependency on the published module. The test
-// fixtures are test helpers of this repository, not API, and are not published.
-//   publishToMavenLocal   the modules into the local Maven repository, signed only when a signing key is set
-//   centralBundle         the signed modules into the staging repository build/central/staging, checked and zipped as a Central Portal bundle
-//   uploadCentralBundle   that bundle to the Central Portal (its publisher API over java.net.http); the release follows in the portal by hand
-//                         unless centralPortalPublishingType is AUTOMATIC
-// The Gradle properties (-P<name>=<value>, the user's GRADLE_USER_HOME/gradle.properties or the environment variables ORG_GRADLE_PROJECT_<name>):
-//   signingInMemoryKey, signingInMemoryKeyPassword  the ASCII-armored private OpenPGP key and its password; signingInMemoryKeyId optionally
-//                                                   names a signing subkey (its last 8 hexadecimal digits)
-//   centralPortalUsername, centralPortalPassword    the user token of the Central Portal (its name and password parts)
-//   centralPortalPublishingType                     USER_MANAGED (default) or AUTOMATIC
+// The modules published to Maven Central as org.fogofwarlabs.sc4j:<module>:<version>, with their POM descriptions.
 def publishedModules = [
     'sc4j-base'               : 'Generic base of the SC4J engine and its mods: exceptions, logging, binary and JSON helpers and small utilities.',
     'sc4j-mod-manifest'       : 'SC4J mod manifest (sc4j-mod.json), its settings schema and the settings value files.',
@@ -720,108 +718,59 @@ def publishedModules = [
     'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.'
 ]
 // The values of every POM: the project, its licence and the organization as its developer.
-def publishedGroup = 'org.fogofwarlabs.sc4j'
-def publishedVersion = version.toString()
 def projectUrl = 'https://github.com/fogofwarlabs/sc4j'
 def projectLicense = [name: 'Apache-2.0', url: 'https://www.apache.org/licenses/LICENSE-2.0.txt']
 def projectDeveloper = [id: 'fogofwarlabs', name: 'Fog of War Labs', url: 'https://fogofwarlabs.org']
 def projectScm = [url: projectUrl, connection: 'scm:git:' + projectUrl + '.git', developerConnection: 'scm:git:ssh://git@github.com/fogofwarlabs/sc4j.git']
 
-def signingKey = providers.gradleProperty('signingInMemoryKey')
-def signingKeyPassword = providers.gradleProperty('signingInMemoryKeyPassword')
-def signingKeyId = providers.gradleProperty('signingInMemoryKeyId')
-def centralPortalUsername = providers.gradleProperty('centralPortalUsername')
-def centralPortalPassword = providers.gradleProperty('centralPortalPassword')
-def centralPortalPublishingType = providers.gradleProperty('centralPortalPublishingType').orElse('USER_MANAGED')
-def centralPortalPublishingTypes = ['USER_MANAGED', 'AUTOMATIC']
-def centralPortalUploadUrl = 'https://central.sonatype.com/api/v1/publisher/upload'
-// The Central Portal answers an accepted upload with 201 Created and the deployment id as the body.
-def centralPortalCreated = 201
-def snapshotSuffix = '-SNAPSHOT'
-def centralStaging = layout.buildDirectory.dir('central/staging')
-def centralStagingRepository = 'CentralStaging'
-def centralStagingPublishTask = 'publishMavenPublicationTo' + centralStagingRepository + 'Repository'
+def centralAutomaticRelease = true
+def centralDeploymentValidation = DeploymentValidation.VALIDATED
+// A blank key counts as none.
+def signingKey = providers.gradleProperty('signingInMemoryKey').filter { key -> !key.isBlank() }
 // The variants of the test fixtures plugin, left out of the published component.
 def testFixtureVariants = ['testFixturesApiElements', 'testFixturesRuntimeElements', 'testFixturesSourcesElements', 'testFixturesJavadocElements']
-// The checksum and signature files beside every artifact of a repository; Central needs the signature, the MD5 and the SHA-1 of each.
-def checksumExtensions = ['.md5', '.sha1', '.sha256', '.sha512']
-def signatureExtension = '.asc'
-def requiredCompanions = [signatureExtension, '.md5', '.sha1']
-// The files of every published module, after <module>-<version>.
-def requiredModuleFiles = ['.jar', '-sources.jar', '-javadoc.jar', '.pom', '.module']
-// The POM fields Central needs, as paths below <project>.
-def requiredPomFields = ['name', 'description', 'url', 'licenses.license.name', 'licenses.license.url', 'developers.developer.id',
-                         'developers.developer.name', 'scm.url', 'scm.connection']
-
-def cleanCentralStaging = tasks.register('cleanCentralStaging', Delete) {
-    description = 'Deletes the staging repository of the Central Portal bundle (build/central/staging).'
-    group = 'publishing'
-    delete centralStaging
-}
 
 configure(publishedModules.keySet().collect { name -> project(':' + name) }) { module ->
-    module.apply plugin: 'maven-publish'
-    module.apply plugin: 'signing'
+    module.apply plugin: 'com.vanniktech.maven.publish'
     module.plugins.withId('java-library') {
-        module.java {
-            withSourcesJar()
-            withJavadocJar()
-        }
-        module.publishing {
-            publications {
-                maven(MavenPublication) {
-                    from module.components.java
-                    // The POM and the module metadata name the resolved versions, also of the dependencies a platform manages.
-                    versionMapping {
-                        allVariants {
-                            fromResolutionResult()
-                        }
-                    }
-                    pom {
-                        name = module.name
-                        description = publishedModules[module.name]
-                        url = projectUrl
-                        licenses {
-                            license {
-                                name = projectLicense.name
-                                url = projectLicense.url
-                            }
-                        }
-                        developers {
-                            developer {
-                                id = projectDeveloper.id
-                                name = projectDeveloper.name
-                                url = projectDeveloper.url
-                            }
-                        }
-                        scm {
-                            url = projectScm.url
-                            connection = projectScm.connection
-                            developerConnection = projectScm.developerConnection
-                        }
+        module.mavenPublishing {
+            configure(new JavaLibrary(new JavadocJar.Javadoc(), new SourcesJar.Sources()))
+            publishToMavenCentral(centralAutomaticRelease, centralDeploymentValidation)
+            // publishToMavenLocal works without a key.
+            if (signingKey.isPresent()) {
+                signAllPublications()
+            }
+            pom {
+                name = module.name
+                description = publishedModules[module.name]
+                url = projectUrl
+                licenses {
+                    license {
+                        name = projectLicense.name
+                        url = projectLicense.url
                     }
                 }
-            }
-            repositories {
-                maven {
-                    name = centralStagingRepository
-                    url = centralStaging
+                developers {
+                    developer {
+                        id = projectDeveloper.id
+                        name = projectDeveloper.name
+                        url = projectDeveloper.url
+                    }
+                }
+                scm {
+                    url = projectScm.url
+                    connection = projectScm.connection
+                    developerConnection = projectScm.developerConnection
                 }
             }
         }
-        // Signed only with a key: publishToMavenLocal works without one, centralBundle refuses to start without one.
-        if (signingKey.isPresent()) {
-            module.signing {
-                if (signingKeyId.isPresent()) {
-                    useInMemoryPgpKeys(signingKeyId.get(), signingKey.get(), signingKeyPassword.getOrElse(''))
-                } else {
-                    useInMemoryPgpKeys(signingKey.get(), signingKeyPassword.getOrElse(''))
+        // The POM and the module metadata name the resolved versions, also of the dependencies a platform manages.
+        module.publishing.publications.withType(MavenPublication).configureEach {
+            versionMapping {
+                allVariants {
+                    fromResolutionResult()
                 }
-                sign module.publishing.publications.maven
             }
-        }
-        module.tasks.named(centralStagingPublishTask) {
-            dependsOn cleanCentralStaging
         }
     }
     module.plugins.withId('java-test-fixtures') {
@@ -832,137 +781,5 @@ configure(publishedModules.keySet().collect { name -> project(':' + name) }) { m
                 }
             }
         }
-    }
-}
-
-// The bundle refuses a snapshot version, which Central does not take, and a build without a signing key; the upload refuses missing
-// credentials and an unknown publishing type. All of them fail before any task runs.
-gradle.taskGraph.whenReady { graph ->
-    def taskNames = graph.allTasks.findAll { task -> task.project == rootProject }.collect { task -> task.name }
-
-    if (taskNames.contains('centralBundle')) {
-        if (publishedVersion.endsWith(snapshotSuffix)) {
-            throw new GradleException('Central does not take the snapshot version ' + publishedVersion + ': set a release version in ' +
-                                      'gradle.properties first.')
-        }
-
-        if (!signingKey.isPresent()) {
-            throw new GradleException('The Central bundle must be signed: set the Gradle properties signingInMemoryKey (the ASCII-armored ' +
-                                      'private key) and signingInMemoryKeyPassword, or ORG_GRADLE_PROJECT_signingInMemoryKey and ' +
-                                      'ORG_GRADLE_PROJECT_signingInMemoryKeyPassword.')
-        }
-    }
-
-    if (taskNames.contains('uploadCentralBundle')) {
-        if (!centralPortalUsername.isPresent() || !centralPortalPassword.isPresent()) {
-            throw new GradleException('The upload needs the Central Portal user token: set the Gradle properties centralPortalUsername and ' +
-                                      'centralPortalPassword, or ORG_GRADLE_PROJECT_centralPortalUsername and ' +
-                                      'ORG_GRADLE_PROJECT_centralPortalPassword.')
-        }
-
-        if (!centralPortalPublishingTypes.contains(centralPortalPublishingType.get())) {
-            throw new GradleException('centralPortalPublishingType must be one of ' + centralPortalPublishingTypes.join(', ') + ', not ' +
-                                      centralPortalPublishingType.get() + '.')
-        }
-    }
-}
-
-// Checks the staging repository before it is zipped: every module has its jar, sources jar, javadoc jar, POM and module metadata, every
-// artifact its signature and checksums, every POM the fields Central needs and only dependencies on published modules of this group.
-def checkCentralStaging = { File root ->
-    def problems = []
-    def groupFolder = new File(root, publishedGroup.replace('.', '/'))
-
-    publishedModules.keySet().each { name ->
-        def folder = new File(groupFolder, name + '/' + publishedVersion)
-        def baseName = name + '-' + publishedVersion
-        def present = folder.isDirectory() ? folder.listFiles().collect { file -> file.name }.toSet() : [] as Set
-
-        requiredModuleFiles.collect { suffix -> baseName + suffix }.findAll { file -> !present.contains(file) }.each { file ->
-            problems << name + ': no ' + file
-        }
-        present.findAll { file -> !(checksumExtensions + [signatureExtension]).any { extension -> file.endsWith(extension) } }.each { file ->
-            requiredCompanions.findAll { extension -> !present.contains(file + extension) }.each { extension ->
-                problems << name + ': no ' + file + extension
-            }
-        }
-
-        def pomFile = new File(folder, baseName + '.pom')
-
-        if (pomFile.isFile()) {
-            def pom = new groovy.xml.XmlSlurper().parse(pomFile)
-
-            requiredPomFields.findAll { path ->
-                path.split('\\.').inject(pom) { node, child -> node[child] }.text().isBlank()
-            }.each { path ->
-                problems << name + ': the POM has no ' + path
-            }
-            pom.dependencies.dependency.findAll { dependency ->
-                dependency.groupId.text() == publishedGroup && !publishedModules.containsKey(dependency.artifactId.text())
-            }.each { dependency ->
-                problems << name + ': the POM depends on the unpublished ' + dependency.artifactId.text()
-            }
-        }
-    }
-
-    if (!problems.isEmpty()) {
-        throw new GradleException('The Central staging repository ' + root + ' is not complete:\n  ' + problems.join('\n  '))
-    }
-}
-
-def centralBundle = tasks.register('centralBundle', Zip) {
-    description = 'Builds the Central Portal bundle build/central/sc4j-<version>-bundle.zip: the signed engine modules, published into ' +
-            'build/central/staging and checked.'
-    group = 'publishing'
-    dependsOn publishedModules.keySet().collect { name -> ':' + name + ':' + centralStagingPublishTask }
-    archiveFileName = 'sc4j-' + publishedVersion + '-bundle.zip'
-    destinationDirectory = layout.buildDirectory.dir('central')
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
-    // The bundle holds the module files only; the repository's own metadata is not part of a deployment.
-    from(centralStaging) {
-        exclude '**/maven-metadata.xml*'
-    }
-    doFirst {
-        checkCentralStaging(centralStaging.get().asFile)
-    }
-}
-
-tasks.register('uploadCentralBundle') {
-    description = 'Uploads the Central Portal bundle of centralBundle to the Central Portal (centralPortalUsername, centralPortalPassword, ' +
-            'centralPortalPublishingType).'
-    group = 'publishing'
-    def bundle = centralBundle.flatMap { task -> task.archiveFile }
-    inputs.file(bundle)
-    doLast {
-        def file = bundle.get().asFile
-        def charset = java.nio.charset.StandardCharsets.UTF_8
-        def token = Base64.getEncoder().encodeToString((centralPortalUsername.get() + ':' + centralPortalPassword.get()).getBytes(charset))
-        def boundary = 'sc4j-' + UUID.randomUUID()
-        def partHead = '--' + boundary + '\r\nContent-Disposition: form-data; name="bundle"; filename="' + file.name + '"\r\n' +
-                'Content-Type: application/octet-stream\r\n\r\n'
-        def partTail = '\r\n--' + boundary + '--\r\n'
-        def publishers = java.net.http.HttpRequest.BodyPublishers
-        def body = publishers.concat(publishers.ofByteArray(partHead.getBytes(charset)), publishers.ofFile(file.toPath()),
-                                     publishers.ofByteArray(partTail.getBytes(charset)))
-        def deploymentName = 'sc4j-' + publishedVersion
-        def uri = URI.create(centralPortalUploadUrl + '?publishingType=' + centralPortalPublishingType.get() + '&name=' +
-                             URLEncoder.encode(deploymentName, charset))
-        def request = java.net.http.HttpRequest.newBuilder(uri)
-                .header('Authorization', 'Bearer ' + token)
-                .header('Content-Type', 'multipart/form-data; boundary=' + boundary)
-                .POST(body)
-                .build()
-        def response = java.net.http.HttpClient.newHttpClient().withCloseable { client ->
-            client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
-        }
-
-        if (response.statusCode() != centralPortalCreated) {
-            throw new GradleException('The Central Portal refused the bundle ' + file.name + ': HTTP ' + response.statusCode() + ' ' +
-                                      response.body())
-        }
-
-        logger.lifecycle('Uploaded ' + file.name + ' to the Central Portal as ' + centralPortalPublishingType.get() + ', deployment ' +
-                         response.body().trim() + '.')
     }
 }

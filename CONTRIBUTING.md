@@ -9,6 +9,7 @@ Thank you for helping. This page covers the developer setup, the test tiers, the
 - [The game folder property](#the-game-folder-property)
 - [Code style](#code-style)
 - [Commits and pull requests](#commits-and-pull-requests)
+- [Releases](#releases)
 - [Licence of contributions](#licence-of-contributions)
 
 ## Setup
@@ -110,6 +111,13 @@ Test classes are named `<Subject>Test`; test methods use `snake_case` names that
 - An API change commits the regenerated `.api` files with the change and states its version effect in the commit message.
 - Behaviour changes come with tests. Do not commit build output, local paths or game data.
 - New art, sound or other assets need a licence that allows redistribution in a mod. Add the licence files and a notice next to them and an entry in [NOTICE](NOTICE).
+- The CI workflow runs the unit tests (`test`) of every pull request into `main` or `develop`; its check `test` must pass before the merge.
+
+## Releases
+
+`develop` holds the next version as `X.Y.Z-SNAPSHOT` and publishes snapshots to the Central Portal. `main` holds release versions and publishes each push to Maven Central with the tag `vX.Y.Z`.
+
+A release is a pull request from `develop` into `main` that sets `version=X.Y.Z` in `gradle.properties`.
 
 ## Licence of contributions
 

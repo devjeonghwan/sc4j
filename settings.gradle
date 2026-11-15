@@ -31,3 +31,8 @@ include ':mods:demo'
 // The API tools of the engine (apiDump, apiCheck, checkApiUse; docs/api-policy.md), published as sc4j-api-check.
 include ':sc4j-api-check'
 project(':sc4j-api-check').projectDir = file('tools/api-check')
+
+// The SC:R demo build, with the SC:R build it includes, when it is in this checkout: one IDE project and `:scr-demo:<task>` from here.
+if (file('mods/scr-demo/settings.gradle').isFile()) {
+    includeBuild('mods/scr-demo')
+}

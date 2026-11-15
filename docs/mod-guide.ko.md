@@ -2,7 +2,7 @@
 
 [English](mod-guide.md) | **한국어**
 
-이 가이드는 SC4J 엔진용 게임, 즉 모드를 만드는 방법을 설명합니다. 2장에서는 빌드, 설치, 실행되는 첫 모드를 처음부터 만듭니다. 그 뒤의 장들은 모드의 각 부분을 설명하고, 그 부분을 구현한 데모 1의 클래스를 알려 줍니다. 데모 1([`mods/demo/`](../mods/demo/), 모드 id `demo`, "SC4J Demo: Dawnhold and Cindermaw")은 엔진만으로 만든 작은 실시간 전략 게임입니다. 그림, 소리, 메뉴, 컴퓨터 플레이어, 리플레이, 저장 게임, 네트워크 플레이가 있습니다.
+이 가이드는 SC4J 엔진용 게임, 즉 모드를 만드는 방법을 설명합니다. 2장에서는 빌드, 설치, 실행되는 첫 모드를 처음부터 만듭니다. 그 뒤의 장들은 모드의 각 부분을 설명하고, 그 부분을 구현한 데모의 클래스를 알려 줍니다. 데모([`mods/demo/`](../mods/demo/), 모드 id `demo`, "SC4J Demo: Dawnhold and Cindermaw")은 엔진만으로 만든 작은 실시간 전략 게임입니다. 그림, 소리, 메뉴, 컴퓨터 플레이어, 리플레이, 저장 게임, 네트워크 플레이가 있습니다.
 
 이 저장소의 모든 모드는 루트 [README](../README.ko.md)에 있습니다.
 
@@ -211,7 +211,7 @@ READY   my-mod               my-mod.jar
 
 ## 3. 매니페스트와 정체성
 
-`sc4j-mod.json`은 jar 루트에 있습니다(2.2절, [데모 1](../mods/demo/src/main/resources/sc4j-mod.json)). 런처와 런타임은 클래스를 불러오지 않고 이 파일을 읽습니다(`ModManifestReader`). 문제가 있으면 런처에서 모드가 `ERROR`가 됩니다.
+`sc4j-mod.json`은 jar 루트에 있습니다(2.2절, [데모](../mods/demo/src/main/resources/sc4j-mod.json)). 런처와 런타임은 클래스를 불러오지 않고 이 파일을 읽습니다(`ModManifestReader`). 문제가 있으면 런처에서 모드가 `ERROR`가 됩니다.
 
 | 필드 | 필수 | 값 |
 |---|---|---|
@@ -245,7 +245,7 @@ READY   my-mod               my-mod.jar
 - `initialize(ModContext)`: 모드에 필요한 것을 열고 확인합니다. 실행을 거부하려면 `ModException`을 던집니다. `ModContext`는 매니페스트, 저장된 설정, 저장 폴더(`ModStorage`), 설치 폴더, 모드 자체의 명령줄 인자(`--` 뒤), 로거를 줍니다. 리소스는 자기 클래스 로더로 읽습니다(`MyMod.class.getClassLoader()`).
 - `register(ModRegistration)`: 모드가 추가하는 것을 엔진에 알립니다. 메서드가 반환되면 등록이 닫힙니다.
 
-| 등록 | 내용 | 첫 모드 | 데모 1 |
+| 등록 | 내용 | 첫 모드 | 데모 |
 |---|---|---|---|
 | `getSimulation()` | 게임 정의: 한계, 시스템, 프레임 단계, 열, 훅(6장) | - | `DemoRules.define` |
 | `getContent()` | 콘텐츠 레지스트리: 타입과 정의(5장) | - | `DemoContent.register` |
@@ -257,7 +257,7 @@ READY   my-mod               my-mod.jar
 
 - `close()`: `initialize`가 연 것을 역순으로 닫습니다.
 
-모드는 첫 씬과 헤드리스 러너를 등록하거나(첫 모드와 데모 1의 방식), 자기 프레임을 직접 실행하는 `ModApplication`을 등록합니다. 둘 다 등록할 수는 없습니다. 두 방식은 20장에서 비교합니다.
+모드는 첫 씬과 헤드리스 러너를 등록하거나(첫 모드와 데모의 방식), 자기 프레임을 직접 실행하는 `ModApplication`을 등록합니다. 둘 다 등록할 수는 없습니다. 두 방식은 20장에서 비교합니다.
 
 ## 5. 콘텐츠: 표준 데이터 팩
 
@@ -265,7 +265,7 @@ READY   my-mod               my-mod.jar
 
 `content.json`은 콘텐츠 타입을 정의합니다. `resourceKinds`, `motionProfiles`(유닛의 이동 방식: 최고 속도, 가속도, 정지 거리, 회전 속도), `weapons`, `factions`(일꾼, 본진 건물, 보급 건물, 자원 종류, 시작 유닛), `units`(진영, 이동 프로필, 체력, 방어력, 시야, 무기, 비용, 생산 시간, 보급, 충돌 상자, 배치 크기, 특성, 대기 명령), `requirements`입니다. `StandardPack.readContent`가 이 파일을 `PackContent`로 읽고, 모드는 그 타입을 게임의 콘텐츠에 등록합니다(`PackContent.register`).
 
-데모 1([팩](../mods/demo/src/main/resources/demo/pack/), [`DemoContent`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/content/DemoContent.java)): 일꾼, 건물, 전투 유닛, 금이 있는 진영 둘. 스프라이트 시트, 타일셋, 글꼴, 대화 상자, 소리, 그림.
+데모([팩](../mods/demo/src/main/resources/demo/pack/), [`DemoContent`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/content/DemoContent.java)): 일꾼, 건물, 전투 유닛, 금이 있는 진영 둘. 스프라이트 시트, 타일셋, 글꼴, 대화 상자, 소리, 그림.
 
 유닛을 추가하려면 `content.json`에 넣고(그리고 진영의 `startUnits`에 넣거나 맵의 `units`로 배치하고), 그 유닛이 이해하는 명령을 줍니다(6장).
 
@@ -283,11 +283,11 @@ registration.getSimulation()
         .addFramePhase(MovementSystem.KEY, system -> (StandardMovementSystem) system);
 ```
 
-데모 1: [`DemoRules`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/rules/DemoRules.java): 모든 기본 시스템, 채집, 전투, 생산, 트리거, 컴퓨터 플레이어.
+데모: [`DemoRules`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/rules/DemoRules.java): 모든 기본 시스템, 채집, 전투, 생산, 트리거, 컴퓨터 플레이어.
 
-**새 게임.** `GameSetup`은 맵(`MapReference`), 플레이어 슬롯(`PlayerSlot`: 슬롯, 컨트롤러 종류, 팀, 색, 진영), 시드를 정합니다. `Game.create(definition, setup)`이 게임을 만들고, `MapPlacementUtils.placeUnits`가 맵의 유닛을 배치합니다. 데모 1: [`DemoGames`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/game/DemoGames.java).
+**새 게임.** `GameSetup`은 맵(`MapReference`), 플레이어 슬롯(`PlayerSlot`: 슬롯, 컨트롤러 종류, 팀, 색, 진영), 시드를 정합니다. `Game.create(definition, setup)`이 게임을 만들고, `MapPlacementUtils.placeUnits`가 맵의 유닛을 배치합니다. 데모: [`DemoGames`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/game/DemoGames.java).
 
-**명령.** 명령 타입(`OrderType`)은 콘텐츠이고, 그 동작(`MoveBehavior`, `AttackBehavior`, `GatherBehavior`, `BuildBehavior` 등, 또는 자기 `OrderBehavior`)은 게임마다 명령 시스템에 등록합니다. 명령 시스템은 등록을 함수로 받습니다. `new StandardOrderSystem((game, behaviors) -> behaviors.register(move, new MoveBehavior(16)))`은 명령 타입 `move`에 도착 거리 16 월드 픽셀의 동작을 줍니다. 데모 1: 명령 11개([`DemoOrders`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/order/DemoOrders.java)).
+**명령.** 명령 타입(`OrderType`)은 콘텐츠이고, 그 동작(`MoveBehavior`, `AttackBehavior`, `GatherBehavior`, `BuildBehavior` 등, 또는 자기 `OrderBehavior`)은 게임마다 명령 시스템에 등록합니다. 명령 시스템은 등록을 함수로 받습니다. `new StandardOrderSystem((game, behaviors) -> behaviors.register(move, new MoveBehavior(16)))`은 명령 타입 `move`에 도착 거리 16 월드 픽셀의 동작을 줍니다. 데모: 명령 11개([`DemoOrders`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/order/DemoOrders.java)).
 
 **커맨드.** 플레이어가 하는 모든 일은 모드의 커맨드 스트림에 있는 커맨드로 게임에 전달됩니다(고정 id를 가진 `CommandType`들의 `CommandRegistry`: `IssueOrderCommandType`, `TrainUnitCommandType`, `ConstructBuildingCommandType`, 또는 자기 타입). 커맨드는 `CommandSink`를 거치고, 프레임의 `ControllerCommandSource`가 프레임 단계보다 먼저 적용합니다. 리플레이와 네트워크 턴에는 바로 이 커맨드가 담기므로 id와 커맨드 인코딩은 모드 형식의 일부입니다. 바꿀 때는 모드 버전도 새로 올립니다.
 
@@ -342,13 +342,13 @@ sc4jMod {
 
 ### 7.2 이 저장소 안의 모드
 
-데모 1은 같은 플러그인을 쓰는 저장소 빌드의 프로젝트입니다([`mods/demo/build.gradle`](../mods/demo/build.gradle)). 저장소 빌드 안에서는 플러그인의 엔진 의존성이 엔진 프로젝트이고, 설치본은 `build/dev-install/`이며, 저장소의 `devInstall`이 `mods/`에 `demo.jar`를 넣어 그 설치본을 구성합니다. 자체 검사는 `checkModBoundary`와 `checkDemoNames`(데모는 다른 게임의 이름을 쓰지 않음), `determinismCheck`(12장)입니다. 테스트는 jar를 런타임으로 실행하고(`DemoModTest`) 클라이언트를 화면 밖에서 실행합니다(`DemoClientScenario`).
+데모는 같은 플러그인을 쓰는 저장소 빌드의 프로젝트입니다([`mods/demo/build.gradle`](../mods/demo/build.gradle)). 저장소 빌드 안에서는 플러그인의 엔진 의존성이 엔진 프로젝트이고, 설치본은 `build/dev-install/`이며, 저장소의 `devInstall`이 `mods/`에 `demo.jar`를 넣어 그 설치본을 구성합니다. 자체 검사는 `checkModBoundary`와 `checkDemoNames`(데모는 다른 게임의 이름을 쓰지 않음), `determinismCheck`(12장)입니다. 테스트는 jar를 런타임으로 실행하고(`DemoModTest`) 클라이언트를 화면 밖에서 실행합니다(`DemoClientScenario`).
 
 ## 8. 맵과 첫 실행 콘텐츠
 
 **맵 형식.** 엔진 맵 형식은 JSON 파일 하나입니다(`"format": "sc4j-map"`, 버전 1). 이름, 타일셋 이름, 타일과 보행 셀 크기, 타일 단위 크기, 범례(보행 가능, 건설 가능, 고도)가 있는 한 글자 코드 행으로 된 지형, 중립 슬롯, 시작 위치, 미리 배치된 유닛, 자원 컨테이너, 로케이션, 승리 규칙, 트리거가 들어 있습니다. 전체 필드 목록은 `JsonMapLoader`의 Javadoc에 있습니다 ([소스](../sc4j-engine-sim/src/main/java/org/fogofwarlabs/sc4j/engine/map/JsonMapLoader.java)). 모드는 `new JsonMapLoader(unitTypes, resourceKinds)`로 맵을 읽어 `MapCatalog`에 둡니다. `MapCatalog`는 맵마다 `MapReference`(이름과 다이제스트)를 줍니다. 승리 규칙과 트리거는 트리거 시스템이 있는 게임에서만 동작합니다. 모드는 게임 맵의 트리거 위의 `StandardTriggerSystem` (맵의 `StandardMapData`로 `new StandardTriggerSystem.Builder().addTriggers(data.getTriggers()).build()`, 승리 규칙이 처음)을 마지막 프레임 단계로 등록합니다.
 
-**격자와 투영.** 시뮬레이션은 보행 셀로 된 정사각형 격자(`TerrainGrid`) 위에서 월드 픽셀 단위로 동작합니다. 클라이언트가 이를 보여 주는 방식은 클라이언트의 투영입니다. `SquareProjection`(위에서 내려다봄) 또는 `IsometricProjection`(마름모; 데모 1, [`DemoWorldUtils`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/DemoWorldUtils.java)). 육각형이나 엇갈린 격자는 아직 엔진에 없습니다. 격자와 투영 인터페이스는 이를 추가할 수 있게 되어 있습니다.
+**격자와 투영.** 시뮬레이션은 보행 셀로 된 정사각형 격자(`TerrainGrid`) 위에서 월드 픽셀 단위로 동작합니다. 클라이언트가 이를 보여 주는 방식은 클라이언트의 투영입니다. `SquareProjection`(위에서 내려다봄) 또는 `IsometricProjection`(마름모; 데모, [`DemoWorldUtils`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/DemoWorldUtils.java)). 육각형이나 엇갈린 격자는 아직 엔진에 없습니다. 격자와 투영 인터페이스는 이를 추가할 수 있게 되어 있습니다.
 
 **첫 실행 콘텐츠.** 새 설치본의 저장 폴더는 비어 있습니다. 맵을 저장 폴더에 두는 모드(플레이어가 자기 맵을 추가하는 곳)는 자기 맵을 직접 거기에 넣어야 합니다. 그러지 않으면 첫 시작 때 맵이 없습니다(그래서 18장의 복제 모드는 빈 맵 목록으로 시작합니다). 일반적인 방법은 이렇습니다. jar는 `<id>/seed/` 아래에 맵을 담고, `initialize`가 목록의 시드 파일을 **저장 폴더에 같은 경로의 파일이 없을 때만** 복사합니다.
 
@@ -373,13 +373,13 @@ for (String file : List.of("maps/first-field.json")) {
 
 그래서 새 설치본은 모드의 맵으로 시작하고, 플레이어 자신의 맵은 그 옆에 놓이며, 플레이어가 바꾼 맵은 덮어쓰지 않습니다(지운 맵은 다음 시작 때 다시 생깁니다). 그다음 모드가 `maps/`의 모든 `*.json`을 파일 이름 순서로 읽고, 올바른 맵이 아닌 파일은 경고와 함께 뺍니다. 맵을 하나 더 넣으려면 다른 맵과 겹치지 않는 `name`으로 `src/main/resources/<id>/seed/maps/` 아래에 두고, `<id>/seed/` 기준 경로 (`"maps/second-field.json"`)를 목록에 추가하고, 다시 빌드해 설치합니다(`installMod`). 다음 시작 때 저장 폴더로 복사됩니다. 다른 첫 실행 파일(옵션, 튜토리얼 리플레이)도 같은 방법으로 넣습니다. jar에서 시드 맵을 바꾸거나 지워도 이전 실행이 저장 폴더에 남긴 복사본은 바뀌지 않습니다. 맵을 작업하는 동안에는 그 복사본을 지웁니다(또는 다른 `--storage`로 실행합니다).
 
-데모 1은 내장 맵을 jar에서 바로 읽고([`DemoMaps`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/map/DemoMaps.java)), 네트워크 호스트가 보낸 맵을 그 옆에 둡니다. 두 방식 모두 괜찮습니다.
+데모는 내장 맵을 jar에서 바로 읽고([`DemoMaps`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/map/DemoMaps.java)), 네트워크 호스트가 보낸 맵을 그 옆에 둡니다. 두 방식 모두 괜찮습니다.
 
 ## 9. 헤드리스 러너
 
 `HeadlessRunner.run(ModLaunch)`이 `--headless` 실행입니다. 창, 오디오, 입력이 없으며 테스트, 서버, 분석에 씁니다. `ModLaunch`는 리플레이(`getReplay()`, `getReplayFormat()`)나 참가할 게임(`getJoin()`)을 요청했는지 알려 주고, 정체성, 게임 정의, 리소스 제공자, 리플레이와 저장 형식, 실행의 Beacon.Link를 담고 있습니다. 모드 자체의 인자는 `ModContext.getArguments()`입니다.
 
-데모 1: [`DemoHeadlessRunner`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/DemoHeadlessRunner.java)는 `--map`에서 컴퓨터 플레이어 둘의 게임을 끝까지 진행하고 리플레이를 기록합니다. 또는 `--replay`를 재생하고, 상태 해시 체크포인트가 다르면 실패합니다. `--frame-hashes`는 게임 루프마다 해시 하나를 씁니다. 127.0.0.1의 네트워크 게임(`--host`, 런타임의 `--join`)과 Beacon.Link 게임 (`--beaconlink-host`, `--beaconlink-join`, 런타임의 `--seed <host:port>`와 함께)도 진행합니다.
+데모: [`DemoHeadlessRunner`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/DemoHeadlessRunner.java)는 `--map`에서 컴퓨터 플레이어 둘의 게임을 끝까지 진행하고 리플레이를 기록합니다. 또는 `--replay`를 재생하고, 상태 해시 체크포인트가 다르면 실패합니다. `--frame-hashes`는 게임 루프마다 해시 하나를 씁니다. 127.0.0.1의 네트워크 게임(`--host`, 런타임의 `--join`)과 Beacon.Link 게임 (`--beaconlink-host`, `--beaconlink-join`, 런타임의 `--seed <host:port>`와 함께)도 진행합니다.
 
 ## 10. 클라이언트 화면
 
@@ -391,9 +391,9 @@ for (String file : List.of("maps/first-field.json")) {
 - 그림과 함께: 팩의 타일셋과 스프라이트 시트 위의 `TilesetLayer`와 `UnitSpriteLayer`. 배율이 있는 화면에서는 팩의 고해상도 판 `<id>-2x`부터 `<id>-4x`까지에서 그립니다(`DetailUtils`. 고해상도 스프라이트 시트는 `spriteSheetDetails`에 나열합니다).
 - `GameScreen`: 엔진 기본 게임 화면. 선택, 커맨드 카드, 미니맵, 자원 표시줄, 선택 패널, 안개가 HUD 스킨 안에 있습니다. 팩의 글꼴이 필요합니다.
 
-데모 1의 클라이언트([패키지](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/)): `DemoClient`(공유 서비스: 글꼴, 스프라이트, 스킨, 소리, 커서), `MainMenuScene`과 `DemoMenuScene`(팩 대화 상자를 메뉴로), `GameSetupScene`, `LoadingScene`, `DemoGameScene`과 `DemoGameScreen`(커맨드 카드와 데모의 스마트 오른쪽 버튼 `DemoSmartAction`이 있는 `GameScreen`), `ReplayViewerScene`(엔진의 저장 게임 목록 `GameFileListScene`), `OutcomeScene`, `NetworkScene`, `NetworkRoomScene`, `BeaconLinkScene`, `DemoSkin`, `DemoSprites`, `DemoSounds`, `DemoNotifications`.
+데모의 클라이언트([패키지](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/)): `DemoClient`(공유 서비스: 글꼴, 스프라이트, 스킨, 소리, 커서), `MainMenuScene`과 `DemoMenuScene`(팩 대화 상자를 메뉴로), `GameSetupScene`, `LoadingScene`, `DemoGameScene`과 `DemoGameScreen`(커맨드 카드와 데모의 스마트 오른쪽 버튼 `DemoSmartAction`이 있는 `GameScreen`), `ReplayViewerScene`(엔진의 저장 게임 목록 `GameFileListScene`), `OutcomeScene`, `NetworkScene`, `NetworkRoomScene`, `BeaconLinkScene`, `DemoSkin`, `DemoSprites`, `DemoSounds`, `DemoNotifications`.
 
-**창 없이 화면 테스트하기.** `ImageCanvas`는 메모리 안의 `Canvas`입니다. 이 위에 무음 오디오 장치로 `SceneClient`를 만들고, 첫 씬을 시작하고, `client.handleInput`으로 입력을 보내고 `client.runFrame`으로 프레임을 실행합니다. 데모 1의 `DemoClientScenario`가 이렇게 합니다. 런타임에는 화면 밖 모드가 없으므로, 이 저장소 밖의 모드는 자기 빌드에서 같은 일을 합니다. 모드의 클래스와 `<install>/runtime/lib`의 모든 jar가 클래스 경로에 있는 main 클래스를 가진 소스 세트, 임시 폴더 위의 `ModStorage` (`getRoot`와 `resolve`. 런타임 자체의 구현은 API가 아닙니다), `ModIdentity.create(EngineVersion.CURRENT, manifest, digest, List.of())`와 모드가 `register`에서처럼 만든 게임 정의를 가진 `ModLaunch`, 그림은 `ImageIO.write(canvas.getImage(), "png", file)`입니다. 클라이언트의 슬래시 명령과 키 바인딩은 모드가 정합니다(`ConsoleCommandRegistry`, `KeyBindingTable`).
+**창 없이 화면 테스트하기.** `ImageCanvas`는 메모리 안의 `Canvas`입니다. 이 위에 무음 오디오 장치로 `SceneClient`를 만들고, 첫 씬을 시작하고, `client.handleInput`으로 입력을 보내고 `client.runFrame`으로 프레임을 실행합니다. 데모의 `DemoClientScenario`가 이렇게 합니다. 런타임에는 화면 밖 모드가 없으므로, 이 저장소 밖의 모드는 자기 빌드에서 같은 일을 합니다. 모드의 클래스와 `<install>/runtime/lib`의 모든 jar가 클래스 경로에 있는 main 클래스를 가진 소스 세트, 임시 폴더 위의 `ModStorage` (`getRoot`와 `resolve`. 런타임 자체의 구현은 API가 아닙니다), `ModIdentity.create(EngineVersion.CURRENT, manifest, digest, List.of())`와 모드가 `register`에서처럼 만든 게임 정의를 가진 `ModLaunch`, 그림은 `ImageIO.write(canvas.getImage(), "png", file)`입니다. 클라이언트의 슬래시 명령과 키 바인딩은 모드가 정합니다(`ConsoleCommandRegistry`, `KeyBindingTable`).
 
 ## 11. 컴퓨터 플레이어
 
@@ -409,11 +409,11 @@ for (String file : List.of("maps/first-field.json")) {
 - 게임은 프레임 시작에 적용되는 커맨드와 시스템의 프레임 단계를 통해서만 바뀝니다. 씬, 입력 처리기, 다른 스레드에서 직접 바꾸지 않습니다.
 - 모든 것의 순서가 정해져 있습니다. 시스템과 단계는 등록 순서, 컨트롤러는 목록 순서, 커맨드는 제출 순서입니다.
 
-클라이언트(그리기, 소리, 메뉴)는 무엇이든 쓸 수 있습니다. 데모 1의 `determinismCheck`처럼 확인합니다. 같은 게임을 두 번 진행해 게임 루프마다 상태 해시를 비교하고(`Game.computeStateHash`, `--frame-hashes`), 리플레이를 재생해 같은 해시가 나오는지 봅니다.
+클라이언트(그리기, 소리, 메뉴)는 무엇이든 쓸 수 있습니다. 데모의 `determinismCheck`처럼 확인합니다. 같은 게임을 두 번 진행해 게임 루프마다 상태 해시를 비교하고(`Game.computeStateHash`, `--frame-hashes`), 리플레이를 재생해 같은 해시가 나오는지 봅니다.
 
 ## 13. 리플레이와 저장 게임
 
-`EngineReplayFormat`(`.sc4r`, 매직 `SC4R`)은 설정과 모든 커맨드를 기록하고, n 게임 루프마다 상태 해시 체크포인트를 남깁니다 (`createRecorder`, `ControllerCommandSource`에 설정). `read`와 `createController`는 이를 재생하고 체크포인트 불일치를 셉니다. `EngineSaveFormat`(매직 `SC4S`)은 게임 상태를 저장합니다. 둘 다 실행의 정체성으로 만들어지고 같은 정체성에서만 불러옵니다. 같은 엔진 API 버전, 모드 id, 버전, jar입니다. 자기 형식을 쓰는 모드는 `ReplayFormat` / `SaveFormat`을 구현합니다. 파일은 저장 폴더 (`replays/`, `saves/`)에 두며, 엔진의 `GameFileListScene`이 목록을 보여 줍니다. 데모 1: 클라이언트의 리플레이 뷰어와 저장 게임, 헤드리스 러너의 리플레이.
+`EngineReplayFormat`(`.sc4r`, 매직 `SC4R`)은 설정과 모든 커맨드를 기록하고, n 게임 루프마다 상태 해시 체크포인트를 남깁니다 (`createRecorder`, `ControllerCommandSource`에 설정). `read`와 `createController`는 이를 재생하고 체크포인트 불일치를 셉니다. `EngineSaveFormat`(매직 `SC4S`)은 게임 상태를 저장합니다. 둘 다 실행의 정체성으로 만들어지고 같은 정체성에서만 불러옵니다. 같은 엔진 API 버전, 모드 id, 버전, jar입니다. 자기 형식을 쓰는 모드는 `ReplayFormat` / `SaveFormat`을 구현합니다. 파일은 저장 폴더 (`replays/`, `saves/`)에 두며, 엔진의 `GameFileListScene`이 목록을 보여 줍니다. 데모: 클라이언트의 리플레이 뷰어와 저장 게임, 헤드리스 러너의 리플레이.
 
 ## 14. 네트워크 플레이
 
@@ -424,18 +424,18 @@ for (String file : List.of("maps/first-field.json")) {
 - `LanRoomDiscovery`: 로컬 네트워크의 방.
 - Beacon.Link(`ModLaunch.getBeaconLink()`): 모든 SC4J가 실행하는 피어를 거치는 인터넷의 방, 게임, 커뮤니티(14.1절과 14.2절).
 
-데모 1은 이 모두를 씁니다. [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java), [`DemoNetworkGame`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkGame.java), [`DemoNetworkSettings`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkSettings.java), 네트워크 씬과 헤드리스 네트워크 실행입니다. 네트워크 코드는 데모 1의 테스트와 `determinismCheck`처럼 127.0.0.1에서만 테스트합니다.
+데모는 이 모두를 씁니다. [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java), [`DemoNetworkGame`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkGame.java), [`DemoNetworkSettings`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkSettings.java), 네트워크 씬과 헤드리스 네트워크 실행입니다. 네트워크 코드는 데모의 테스트와 `determinismCheck`처럼 127.0.0.1에서만 테스트합니다.
 
 ### 14.1 Beacon.Link 방
 
 `ModLaunch.getBeaconLink()`는 실행의 `BeaconLink`이며, 실행이 Beacon.Link를 제공하지 않으면 `null`입니다. 명령줄에 시드 출처(`--seeds <file>`, `--seed <host:port>`, `--peers <file>`)가 있을 때만 제공합니다. `--account <dir>`는 계정을 정하며, 없으면 `Guest` 라는 이름의 게스트로 플레이합니다(`BeaconLink.GUEST_NAME`). 런처는 이 모두를 넘깁니다. `BeaconLink.open()` 전에는 아무것도 열리지 않습니다. `open()`은 `BeaconLinkSession`을 반환합니다. 계정의 연결 하나입니다(`getParticipant()`, `LinkParticipant`: 플레이어와 연결 번호). 모든 호출은 작업을 시작하기만 합니다. 세션의 스레드가 자기 루프에서 `poll()`을 호출하고, 끝날 때 `close()`를 호출합니다. `getFailure()`(`LinkFailure`)는 노드에 닿을 수 없는 이유를, `getNodes()`는 노드마다의 상태를 알려 줍니다.
 
-- **호스트.** `publishRoom(settings, password)`는 방을 게시하고(비밀번호가 비어 있으면 공개 방) `HostedRoom`을 반환합니다. `getState()`(`PUBLISHING`, `PUBLISHED`, `WITHDRAWN`, `FAILED`), 플레이어가 드나들 때 `update(settings)`, 참가 확인을 통과한 참가자마다 `acceptChannel()`, `withdraw()`. `RoomSettings`에는 방 이름과 맵 이름(각각 UTF-8 최대 48바이트), 플레이어 수, 정원, 게임 시작 여부, 모드가 정의하고 찾은 방에서 다시 읽는 최대 64바이트의 모드 데이터(데모 1: 턴 속도)가 있습니다.
+- **호스트.** `publishRoom(settings, password)`는 방을 게시하고(비밀번호가 비어 있으면 공개 방) `HostedRoom`을 반환합니다. `getState()`(`PUBLISHING`, `PUBLISHED`, `WITHDRAWN`, `FAILED`), 플레이어가 드나들 때 `update(settings)`, 참가 확인을 통과한 참가자마다 `acceptChannel()`, `withdraw()`. `RoomSettings`에는 방 이름과 맵 이름(각각 UTF-8 최대 48바이트), 플레이어 수, 정원, 게임 시작 여부, 모드가 정의하고 찾은 방에서 다시 읽는 최대 64바이트의 모드 데이터(데모: 턴 속도)가 있습니다.
 - **검색.** `searchRooms()`는 `RoomSearch`를 반환합니다. `getRooms()`는 실행 자신의 모드 정체성을 가진 방이고, `getOtherRooms()`는 모드의 다른 버전의 방과 그 호스트가 줄 거부 사유(`FoundRoom.getJoinRefusal()`)입니다. 모든 노드가 답하거나 실패하면 `isComplete()`가 true가 됩니다. `FoundRoom`은 호스트, 설정, `isJoinable()`, `isPrivate()`, 모드 id와 버전, `getLatencyEstimate()`(`LatencyClass`: 100 ms까지 `GOOD`, 200 ms까지 `FAIR`, `POOR`, `UNKNOWN`)를 줍니다.
 - **참가.** `joinRoom(room, password)`는 호스트로 `ParticipantChannel`을 엽니다. `CONNECTING` 다음 `OPEN`이 되거나, `ChannelFailure`와 함께 `CLOSED`가 됩니다. `JOIN_REFUSED`에는 `JoinRefusal`이 따라옵니다(다른 엔진 버전이나 모드 정체성, 꽉 찬 방, 시작된 게임, 틀린 비밀번호).
 - **플레이.** `getOverlay()`는 세션의 `LinkOverlay`를 반환합니다. 채널을 통해 참가자 단위로 데이터그램을 보냅니다(최대 1023바이트, 신뢰성 없음). 포트 1(`LOBBY_PORT`)은 엔진의 `NetworkLobby`, 포트 2(`GAME_PORT`)는 엔진의 락스텝 전송(`LinkLockstepTransport`)이고, 포트 16부터 255까지(`FIRST_MOD_PORT`부터)는 모드 자체의 프로토콜에 쓸 수 있습니다. `NetworkLobby.host(room, overlay, ...)`와 `NetworkLobby.join(channel, overlay, ...)`는 로컬 네트워크와 같은 로비와 락스텝 게임을 줍니다.
 
-데모 1: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java)(호스트, 참가, 오버레이 위의 게임), [`BeaconLinkScene`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/BeaconLinkScene.java)(방 목록, 호스트, 참가, 채팅), `DemoHeadlessRunner`(`--beaconlink-host`, `--beaconlink-join`).
+데모: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java)(호스트, 참가, 오버레이 위의 게임), [`BeaconLinkScene`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/BeaconLinkScene.java)(방 목록, 호스트, 참가, 채팅), `DemoHeadlessRunner`(`--beaconlink-host`, `--beaconlink-join`).
 
 ### 14.2 Beacon.Link 커뮤니티
 
@@ -447,7 +447,7 @@ for (String file : List.of("maps/first-field.json")) {
 - **친구와 무시한 플레이어.** `addFriend`, `removeFriend`(친구 최대 16명), `ignore`, `unignore`, `isIgnored`. 무시 목록은 계정에 속합니다. 무시한 플레이어의 채팅 줄과 귓속말은 전달되지 않으며, 그 방은 모드가 숨깁니다.
 - **리스너.** `addListener(CommunityListener)`: `onChatLine`, `onMembersChanged`, `onWhisper`, `onWhisperResult`. `poll()` 안에서 호출됩니다.
 
-`BeaconLinkSession.signOutOtherDevices()`는 계정의 다른 연결을 끝냅니다. `sc4j-engine`의 `engine.client.community` 패키지에는 커뮤니티 화면의 기본 부품이 있습니다. `ChannelChat`(슬래시 명령, 친구, 차단한 플레이어가 있는 채널 채팅), `RoomFilter`, `ChatLogBox`, `TableBox`와 그 텍스트이며, 데모 1의 `BeaconLinkScene`이 씁니다. 와이어 프로토콜은 [Beacon.Link 프로토콜 참조](beaconlink/protocol.ko.md)에, 다른 플레이어를 위한 피어 운영은 [Beacon.Link 운영 가이드](beaconlink/operator.ko.md)에 있습니다.
+`BeaconLinkSession.signOutOtherDevices()`는 계정의 다른 연결을 끝냅니다. `sc4j-engine`의 `engine.client.community` 패키지에는 커뮤니티 화면의 기본 부품이 있습니다. `ChannelChat`(슬래시 명령, 친구, 차단한 플레이어가 있는 채널 채팅), `RoomFilter`, `ChatLogBox`, `TableBox`와 그 텍스트이며, 데모의 `BeaconLinkScene`이 씁니다. 와이어 프로토콜은 [Beacon.Link 프로토콜 참조](beaconlink/protocol.ko.md)에, 다른 플레이어를 위한 피어 운영은 [Beacon.Link 운영 가이드](beaconlink/operator.ko.md)에 있습니다.
 
 ## 15. 빌드, 설치, 실행
 
@@ -470,13 +470,13 @@ for (String file : List.of("maps/first-field.json")) {
 jar에 넣은 모든 것은 jar를 받는 모든 플레이어에게 전달됩니다.
 
 - 자기 작업물이나, 모드에 담아 재배포할 수 있는 라이선스의 자료(CC0 같은 퍼블릭 도메인, 또는 조건을 지킬 수 있는 라이선스)를 씁니다. 라이선스 파일과 고지문을 에셋과 함께 두어 jar에 넣고, 라이선스가 요구하는 표기를 매니페스트의 `license`와 `description`에 보여 줍니다.
-- 데모 1: [`mods/demo/THIRD-PARTY.md`](../mods/demo/THIRD-PARTY.md)가 그림의 출처를 밝히며 `demo.jar`에 들어 있습니다.
+- 데모: [`mods/demo/THIRD-PARTY.md`](../mods/demo/THIRD-PARTY.md)가 그림의 출처를 밝히며 `demo.jar`에 들어 있습니다.
 - 고지를 요구하는 라이선스의 그림: 그 `NOTICE.txt`와 `license/` 폴더를 그림과 함께 두고, 빌드가 jar에 넣게 하고, 표기를 매니페스트에 넣습니다.
 - 다른 게임 설치본의 파일(그림, 소리, 데이터, 맵)은 절대 jar나 저장소에 넣지 않습니다. 다른 게임의 데이터를 쓰는 모드는 실행할 때 폴더 설정(3장)을 통해 플레이어 본인의 설치본에서 읽습니다.
 
 ## 18. 기존 모드 복제
 
-처음부터 만들지 않고 기존 모드를 바꾸려면 복제합니다. 빌드할 때 그 모드의 소스를 복사하고, 몇몇 파일을 자기 판으로 덮어쓰고(일반 파일로 편집하는 오버레이), 자기 모드 id를 씁니다. 복제한 모드가 자신이 바꾼 파일을 바꾸면 잠금이 빌드를 멈춥니다. SC:R 모드의 복제 모드인 SC:R Crossover에는 별도 가이드 [SC:R 복제 모드 가이드](../mods/scr-crossover/docs/scr-crossover.ko.md)가 있습니다. 복제 단계, 오버레이와 잠금, 정체성, 콘텐츠 확장, 바꾼 값, 자체 그래픽을 가진 추가 유닛, 그림 라이선스, 빌드, 설치, 런처를 다룹니다.
+처음부터 만들지 않고 기존 모드를 바꾸려면 복제합니다. 빌드할 때 그 모드의 소스를 복사하고, 몇몇 파일을 자기 판으로 덮어쓰고(일반 파일로 편집하는 오버레이), 자기 모드 id를 씁니다. 복제한 모드가 자신이 바꾼 파일을 바꾸면 잠금이 빌드를 멈춥니다. SC:R 모드의 복제 모드인 SC:R Crossover에는 별도 가이드 [SC:R 복제 모드 가이드](https://github.com/fogofwarlabs/sc4j-scr-crossover/blob/main/docs/scr-crossover.ko.md)가 있습니다. 복제 단계, 오버레이와 잠금, 정체성, 콘텐츠 확장, 바꾼 값, 자체 그래픽을 가진 추가 유닛, 그림 라이선스, 빌드, 설치, 런처를 다룹니다.
 
 - 복제 모드는 다른 모드입니다. 자기 id, 설정, 저장 폴더, 로그 폴더를 가집니다. 저장 폴더도 비어 있는 채로 시작하므로, 플레이어에게 필요한 맵을 넣어 둡니다(8장).
 - 복제 모드는 정체성이 같은 플레이어와만 플레이합니다(1장). 모드 id를 담지 않는 자체 네트워크 프로토콜에는 복제 모드만의 값이 필요합니다. 예를 들어 호스트가 참가할 때 확인하는 버전입니다.
@@ -496,7 +496,7 @@ jar에 넣은 모든 것은 jar를 받는 모든 플레이어에게 전달됩니
 | 등록 | `registerFirstScene(FirstSceneFactory)`와 `registerHeadlessRunner(HeadlessRunner)` | `registerApplication(ModApplication)` |
 | 창 실행 | 런타임이 창, 캔버스, 오디오, 커서, 입력을 열고, 첫 씬을 `SceneClient`에서 시작하고, 엔진 호스트(`ClientHost`) 위에서 `WindowClient`로 프레임을 실행합니다. | 런타임은 창을 열지 않고 `ModApplication.run(ModLaunch)`을 호출합니다. 모드가 창을 열고 같은 엔진 호스트 위에서 자기 프레임을 실행합니다(`ClientHost.initialize()`, `createWindow`, 자기 `HostApplication`으로 `ClientHost.run`). |
 | `--headless` 실행 | `HeadlessRunner` | `isHeadlessCapable()`이 `true`를 반환하면 같은 `run` |
-| 사용하는 모드 | 2장의 첫 모드, 데모 1 | SC:R 모드. 원본 게임의 프레임 타이밍을 따르기 위해 |
+| 사용하는 모드 | 2장의 첫 모드, 데모 | [SC:R 모드](https://github.com/fogofwarlabs/sc4j-scr). 원본 게임의 프레임 타이밍을 따르기 위해 |
 
 **엔진 씬.** `WindowClient`는 `HostApplication`입니다. 프레임마다 호스트가 창 이벤트를 폴링하고, `WindowClient`가 입력을 씬에 넘기고, `SceneClient` 프레임을 실행하고, 수직 동기화로 화면에 표시합니다. 모드는 씬(10장)을 작성하며 프레임 루프를 직접 다루지 않습니다.
 

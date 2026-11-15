@@ -2,7 +2,7 @@
 
 **English** | [한국어](mod-guide.ko.md)
 
-This guide shows how to make a game for the SC4J engine: a mod. Chapter 2 takes you from nothing to a first mod that builds, installs and runs; the chapters after it explain each part of a mod and name the classes of demo 1 that implement it. Demo 1 ([`mods/demo/`](../mods/demo/), mod id `demo`, "SC4J Demo: Dawnhold and Cindermaw") is a small real-time strategy game made only of the engine, with art, sound, menus, computer players, replays, saved games and network play.
+This guide shows how to make a game for the SC4J engine: a mod. Chapter 2 takes you from nothing to a first mod that builds, installs and runs; the chapters after it explain each part of a mod and name the classes of the demo that implement it. The demo ([`mods/demo/`](../mods/demo/), mod id `demo`, "SC4J Demo: Dawnhold and Cindermaw") is a small real-time strategy game made only of the engine, with art, sound, menus, computer players, replays, saved games and network play.
 
 The root [README](../README.md) lists every mod of this repository.
 
@@ -211,7 +211,7 @@ A small game needs units that move and fight, a building that trains them and a 
 
 ## 3. Manifest and identity
 
-`sc4j-mod.json` at the jar root (section 2.2, [demo 1](../mods/demo/src/main/resources/sc4j-mod.json)). The launcher and the runtime read it without loading a class (`ModManifestReader`); a problem makes the mod `ERROR` in the launcher.
+`sc4j-mod.json` at the jar root (section 2.2, [the demo](../mods/demo/src/main/resources/sc4j-mod.json)). The launcher and the runtime read it without loading a class (`ModManifestReader`); a problem makes the mod `ERROR` in the launcher.
 
 | Field | Required | Value |
 |---|---|---|
@@ -245,7 +245,7 @@ The mod reads the folder like any setting, with `ModContext.getSettings().getDir
 - `initialize(ModContext)`: open and check what the mod needs; throw `ModException` to refuse the run. `ModContext` gives the manifest, the saved settings, the storage (`ModStorage`), the install folder, the mod's own command line arguments (after `--`) and the logger. Read your resources through your own class loader (`MyMod.class.getClassLoader()`).
 - `register(ModRegistration)`: tell the engine what the mod adds. The registration closes when the method returns.
 
-| Registration | What | First mod | Demo 1 |
+| Registration | What | First mod | The demo |
 |---|---|---|---|
 | `getSimulation()` | the game definition: limits, systems, frame phases, columns, hooks (chapter 6) | - | `DemoRules.define` |
 | `getContent()` | the content registry: types and definitions (chapter 5) | - | `DemoContent.register` |
@@ -257,7 +257,7 @@ The mod reads the folder like any setting, with `ModContext.getSettings().getDir
 
 - `close()`: release what `initialize` opened, in reverse order.
 
-A mod registers either a first scene and a headless runner (as the first mod and demo 1 do) or a `ModApplication` that runs its own frames; not both. Chapter 20 compares the two.
+A mod registers either a first scene and a headless runner (as the first mod and the demo do) or a `ModApplication` that runs its own frames; not both. Chapter 20 compares the two.
 
 ## 5. Content: the standard data pack
 
@@ -265,7 +265,7 @@ An engine-only mod keeps its data in the engine standard data pack: JSON definit
 
 `content.json` defines the content types: `resourceKinds`, `motionProfiles` (how units move: top speed, acceleration, stopping distance, turn rate), `weapons`, `factions` (worker, town hall, supply provider, resource kinds, start units), `units` (faction, motion profile, hit points, armor, sight, weapons, cost, build time, supply, collision box, placement size, traits, idle orders) and `requirements`. `StandardPack.readContent` reads it into a `PackContent`; the mod registers its types in the game's content (`PackContent.register`).
 
-Demo 1 ([pack](../mods/demo/src/main/resources/demo/pack/), [`DemoContent`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/content/DemoContent.java)): two factions with workers, buildings, fighters and gold; sprite sheets, tilesets, a font, dialogs, sounds, pictures.
+The demo ([pack](../mods/demo/src/main/resources/demo/pack/), [`DemoContent`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/content/DemoContent.java)): two factions with workers, buildings, fighters and gold; sprite sheets, tilesets, a font, dialogs, sounds, pictures.
 
 To add a unit: add it to `content.json` (and to a faction's `startUnits`, or place it on the map with `units`), and give it orders it understands (chapter 6).
 
@@ -283,11 +283,11 @@ registration.getSimulation()
         .addFramePhase(MovementSystem.KEY, system -> (StandardMovementSystem) system);
 ```
 
-Demo 1: [`DemoRules`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/rules/DemoRules.java): every default system, harvest, combat, production, triggers and computer players.
+The demo: [`DemoRules`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/rules/DemoRules.java): every default system, harvest, combat, production, triggers and computer players.
 
-**New games.** A `GameSetup` names the map (`MapReference`), the player slots (`PlayerSlot`: slot, controller kind, team, colour, faction) and the seed. `Game.create(definition, setup)` creates the game, `MapPlacementUtils.placeUnits` places the map's units. Demo 1: [`DemoGames`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/game/DemoGames.java).
+**New games.** A `GameSetup` names the map (`MapReference`), the player slots (`PlayerSlot`: slot, controller kind, team, colour, faction) and the seed. `Game.create(definition, setup)` creates the game, `MapPlacementUtils.placeUnits` places the map's units. The demo: [`DemoGames`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/game/DemoGames.java).
 
-**Orders.** An order type (`OrderType`) is content; its behavior (`MoveBehavior`, `AttackBehavior`, `GatherBehavior`, `BuildBehavior`, ..., or your own `OrderBehavior`) is registered per game in the order system, which takes the registration as a function: `new StandardOrderSystem((game, behaviors) -> behaviors.register(move, new MoveBehavior(16)))` gives the order type `move` its behavior with an arrival distance of 16 world pixels. Demo 1: eleven orders ([`DemoOrders`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/order/DemoOrders.java)).
+**Orders.** An order type (`OrderType`) is content; its behavior (`MoveBehavior`, `AttackBehavior`, `GatherBehavior`, `BuildBehavior`, ..., or your own `OrderBehavior`) is registered per game in the order system, which takes the registration as a function: `new StandardOrderSystem((game, behaviors) -> behaviors.register(move, new MoveBehavior(16)))` gives the order type `move` its behavior with an arrival distance of 16 world pixels. The demo: eleven orders ([`DemoOrders`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/order/DemoOrders.java)).
 
 **Commands.** Everything a player does reaches the game as a command of the mod's command stream (`CommandRegistry` of `CommandType`s with fixed ids: `IssueOrderCommandType`, `TrainUnitCommandType`, `ConstructBuildingCommandType`, or your own). Commands go through a `CommandSink`; the frame's `ControllerCommandSource` applies them before the frame's phases. Replays and network turns carry exactly these commands, so the ids and the command encoding are part of your formats: change them only with a new mod version.
 
@@ -342,13 +342,13 @@ A library your mod needs at run time must go into the jar (or come with the inst
 
 ### 7.2 A mod inside this repository
 
-Demo 1 is a project of the repository build ([`mods/demo/build.gradle`](../mods/demo/build.gradle)) with the same plugin: inside the repository build the plugin's engine dependency is the engine projects, its install is `build/dev-install/`, and the repository's `devInstall` assembles that install with `demo.jar` in `mods/`. Its own checks: `checkModBoundary` and `checkDemoNames` (the demo names no other game), and `determinismCheck` (chapter 12). Its tests run the jar through the runtime (`DemoModTest`) and the client offscreen (`DemoClientScenario`).
+The demo is a project of the repository build ([`mods/demo/build.gradle`](../mods/demo/build.gradle)) with the same plugin: inside the repository build the plugin's engine dependency is the engine projects, its install is `build/dev-install/`, and the repository's `devInstall` assembles that install with `demo.jar` in `mods/`. Its own checks: `checkModBoundary` and `checkDemoNames` (the demo names no other game), and `determinismCheck` (chapter 12). Its tests run the jar through the runtime (`DemoModTest`) and the client offscreen (`DemoClientScenario`).
 
 ## 8. Maps and first-run content
 
 **Map format.** The engine map format is one JSON file (`"format": "sc4j-map"`, version 1): name, tileset name, tile and walk cell size, size in tiles, terrain as rows of one-character codes with a legend (walkable, buildable, elevation), the neutral slot, start locations, preplaced units, resource containers, locations, the victory rule and triggers. The full field list is the Javadoc of `JsonMapLoader` ([source](../sc4j-engine-sim/src/main/java/org/fogofwarlabs/sc4j/engine/map/JsonMapLoader.java)). The mod reads maps with `new JsonMapLoader(unitTypes, resourceKinds)` and keeps them in a `MapCatalog`, which gives each map its `MapReference` (name and digest). The victory rule and the triggers take effect only in a game with a trigger system: the mod registers `StandardTriggerSystem` over the triggers of the game's map (`new StandardTriggerSystem.Builder().addTriggers(data.getTriggers()).build()` with the map's `StandardMapData`, the victory rule first) as the last frame phase.
 
-**Grids and projection.** The simulation works in world pixels on a square grid of walk cells (`TerrainGrid`). How the client shows it is the client's projection: `SquareProjection` (from above) or `IsometricProjection` (diamonds; demo 1, [`DemoWorldUtils`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/DemoWorldUtils.java)). Hexagonal or staggered grids are not part of the engine today; the grid and projection interfaces leave room for them.
+**Grids and projection.** The simulation works in world pixels on a square grid of walk cells (`TerrainGrid`). How the client shows it is the client's projection: `SquareProjection` (from above) or `IsometricProjection` (diamonds; the demo, [`DemoWorldUtils`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/DemoWorldUtils.java)). Hexagonal or staggered grids are not part of the engine today; the grid and projection interfaces leave room for them.
 
 **First-run content.** The storage of a new install is empty. A mod that keeps its maps in the storage (where players add their own) must put its own maps there itself, or its first start finds none (a clone, chapter 18, starts with an empty map list for this reason). The general way: the jar carries the maps under `<id>/seed/`, and `initialize` copies every listed seed file into the storage **only when the storage has no file of that path**:
 
@@ -373,13 +373,13 @@ for (String file : List.of("maps/first-field.json")) {
 
 A new install starts with the mod's maps, a player's own maps sit next to them, and a map the player changed is never overwritten (a deleted one comes back at the next start). Then the mod reads every `*.json` of `maps/` in file name order and leaves out, with a warning, a file that is no valid map. To ship another map, put it under `src/main/resources/<id>/seed/maps/` with a `name` no other map has, add its path relative to `<id>/seed/` (`"maps/second-field.json"`) to the list, rebuild and reinstall (`installMod`); the next start copies it into the storage. Seed any other first-run file (options, a tutorial replay) the same way. A seed map you change or remove in the jar does not change the copy an earlier run left in the storage: while you work on a map, delete that copy (or run with another `--storage`).
 
-Demo 1 reads its built-in maps straight from the jar ([`DemoMaps`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/map/DemoMaps.java)) and keeps the maps a network host sent it next to them; both ways are fine.
+The demo reads its built-in maps straight from the jar ([`DemoMaps`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/map/DemoMaps.java)) and keeps the maps a network host sent it next to them; both ways are fine.
 
 ## 9. The headless runner
 
 `HeadlessRunner.run(ModLaunch)` is the `--headless` run: no window, audio or input; for tests, servers and research. `ModLaunch` says whether a replay (`getReplay()`, `getReplayFormat()`) or a game to join (`getJoin()`) was asked for, and holds the identity, the game definition, the resource provider, the replay and save formats and the run's Beacon.Link. The mod's own arguments are `ModContext.getArguments()`.
 
-Demo 1: [`DemoHeadlessRunner`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/DemoHeadlessRunner.java) plays a game of two computer players on `--map` to its end and records its replay, or plays `--replay` back and fails on a state hash checkpoint that differs; `--frame-hashes` writes one hash per game loop. It also plays network games on 127.0.0.1 (`--host`, the runtime's `--join`) and over Beacon.Link (`--beaconlink-host`, `--beaconlink-join`, with the runtime's `--seed <host:port>`).
+The demo: [`DemoHeadlessRunner`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/DemoHeadlessRunner.java) plays a game of two computer players on `--map` to its end and records its replay, or plays `--replay` back and fails on a state hash checkpoint that differs; `--frame-hashes` writes one hash per game loop. It also plays network games on 127.0.0.1 (`--host`, the runtime's `--join`) and over Beacon.Link (`--beaconlink-host`, `--beaconlink-join`, with the runtime's `--seed <host:port>`).
 
 ## 10. Client screens
 
@@ -391,9 +391,9 @@ The runtime opens the window, the audio and the input, creates the mod's first s
 - with art: `TilesetLayer` and `UnitSpriteLayer` over the pack's tilesets and sprite sheets; on a scaled display they draw from the pack's detail versions `<id>-2x` up to `<id>-4x` (`DetailUtils`; detail sprite sheets are listed under `spriteSheetDetails`);
 - `GameScreen`: the engine default in-game screen with selection, command card, minimap, resource bar, selection panel and fog, in a HUD skin; it needs a font from the pack.
 
-Demo 1's client ([package](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/)): `DemoClient` (shared services: font, sprites, skin, sounds, cursors), `MainMenuScene` and `DemoMenuScene` (pack dialogs as menus), `GameSetupScene`, `LoadingScene`, `DemoGameScene` and `DemoGameScreen` (the `GameScreen` with the command card and the demo's smart right press `DemoSmartAction`), `ReplayViewerScene` (the engine's stored-game list `GameFileListScene`), `OutcomeScene`, `NetworkScene`, `NetworkRoomScene`, `BeaconLinkScene`, `DemoSkin`, `DemoSprites`, `DemoSounds`, `DemoNotifications`.
+The demo's client ([package](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/)): `DemoClient` (shared services: font, sprites, skin, sounds, cursors), `MainMenuScene` and `DemoMenuScene` (pack dialogs as menus), `GameSetupScene`, `LoadingScene`, `DemoGameScene` and `DemoGameScreen` (the `GameScreen` with the command card and the demo's smart right press `DemoSmartAction`), `ReplayViewerScene` (the engine's stored-game list `GameFileListScene`), `OutcomeScene`, `NetworkScene`, `NetworkRoomScene`, `BeaconLinkScene`, `DemoSkin`, `DemoSprites`, `DemoSounds`, `DemoNotifications`.
 
-**Testing screens without a window.** An `ImageCanvas` is a `Canvas` in memory: create a `SceneClient` over it with a silent audio device, start the first scene, send input with `client.handleInput` and run frames with `client.runFrame`; demo 1's `DemoClientScenario` does so. The runtime has no offscreen mode, so a mod outside this repository does the same from its own build: a source set with a main class whose class path holds the mod's classes and every jar of `<install>/runtime/lib`; a `ModStorage` over a scratch folder (`getRoot` and `resolve`; the runtime's own implementation is not API); a `ModLaunch` with `ModIdentity.create(EngineVersion.CURRENT, manifest, digest, List.of())` and a game definition the mod built as in `register`; and `ImageIO.write(canvas.getImage(), "png", file)` for a picture. Slash commands and key bindings of the client are the mod's choice (`ConsoleCommandRegistry`, `KeyBindingTable`).
+**Testing screens without a window.** An `ImageCanvas` is a `Canvas` in memory: create a `SceneClient` over it with a silent audio device, start the first scene, send input with `client.handleInput` and run frames with `client.runFrame`; the demo's `DemoClientScenario` does so. The runtime has no offscreen mode, so a mod outside this repository does the same from its own build: a source set with a main class whose class path holds the mod's classes and every jar of `<install>/runtime/lib`; a `ModStorage` over a scratch folder (`getRoot` and `resolve`; the runtime's own implementation is not API); a `ModLaunch` with `ModIdentity.create(EngineVersion.CURRENT, manifest, digest, List.of())` and a game definition the mod built as in `register`; and `ImageIO.write(canvas.getImage(), "png", file)` for a picture. Slash commands and key bindings of the client are the mod's choice (`ConsoleCommandRegistry`, `KeyBindingTable`).
 
 ## 11. Computer players
 
@@ -409,11 +409,11 @@ Lockstep network games and replays need the same simulation results from the sam
 - the game changes only through commands applied at frame start and the systems' frame phases; never from a scene, an input handler or another thread directly;
 - the order of everything is fixed: systems and phases in registration order, controllers in list order, commands in submission order.
 
-The client (drawing, sound, menus) may use anything. Check it the way demo 1's `determinismCheck` does: play the same game twice and compare the state hash after every game loop (`Game.computeStateHash`, `--frame-hashes`), and play the replay back to the same hashes.
+The client (drawing, sound, menus) may use anything. Check it the way the demo's `determinismCheck` does: play the same game twice and compare the state hash after every game loop (`Game.computeStateHash`, `--frame-hashes`), and play the replay back to the same hashes.
 
 ## 13. Replays and saved games
 
-`EngineReplayFormat` (`.sc4r`, magic `SC4R`) records the setup and every command with a state hash checkpoint every n game loops (`createRecorder`, set on the `ControllerCommandSource`); `read` and `createController` play it back and count checkpoint mismatches. `EngineSaveFormat` (magic `SC4S`) stores a game's state. Both are created with the run's identity and load only with an equal identity: the same engine API version, mod id, version and jar. A mod with its own formats implements `ReplayFormat` / `SaveFormat`. Keep them in the storage (`replays/`, `saves/`); the engine's `GameFileListScene` lists them. Demo 1: replay viewer and saves in its client, replays in its headless runner.
+`EngineReplayFormat` (`.sc4r`, magic `SC4R`) records the setup and every command with a state hash checkpoint every n game loops (`createRecorder`, set on the `ControllerCommandSource`); `read` and `createController` play it back and count checkpoint mismatches. `EngineSaveFormat` (magic `SC4S`) stores a game's state. Both are created with the run's identity and load only with an equal identity: the same engine API version, mod id, version and jar. A mod with its own formats implements `ReplayFormat` / `SaveFormat`. Keep them in the storage (`replays/`, `saves/`); the engine's `GameFileListScene` lists them. The demo: replay viewer and saves in its client, replays in its headless runner.
 
 ## 14. Network play
 
@@ -424,18 +424,18 @@ The engine's network layer (`sc4j-engine-net`) runs lockstep games: every machin
 - `LanRoomDiscovery`: rooms on the local network.
 - Beacon.Link (`ModLaunch.getBeaconLink()`): rooms, games and the community over the Internet, through the peers every SC4J runs (sections 14.1 and 14.2).
 
-Demo 1 uses all of these: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java), [`DemoNetworkGame`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkGame.java), [`DemoNetworkSettings`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkSettings.java), its network scenes and its headless network runs. Test network code on 127.0.0.1 only, as demo 1's tests and `determinismCheck` do.
+The demo uses all of these: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java), [`DemoNetworkGame`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkGame.java), [`DemoNetworkSettings`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkSettings.java), its network scenes and its headless network runs. Test network code on 127.0.0.1 only, as the demo's tests and `determinismCheck` do.
 
 ### 14.1 Beacon.Link rooms
 
 `ModLaunch.getBeaconLink()` is the run's `BeaconLink`, or `null` when the run offers none. A run offers it only when its command line names a seed source (`--seeds <file>`, `--seed <host:port>` or `--peers <file>`); `--account <dir>` names the account, and without it the run plays as a guest named `Guest` (`BeaconLink.GUEST_NAME`). The launcher passes them all. Nothing opens before `BeaconLink.open()`, which returns a `BeaconLinkSession`: one connection of the account (`getParticipant()`, a `LinkParticipant`: the player and the connection number). Every call only starts work: the session's thread calls `poll()` from its loop, and `close()` at the end. `getFailure()` (`LinkFailure`) tells why no node is reachable, `getNodes()` gives the state of each node.
 
-- **Host.** `publishRoom(settings, password)` publishes a room (an empty password makes it public) and returns a `HostedRoom`: `getState()` (`PUBLISHING`, `PUBLISHED`, `WITHDRAWN`, `FAILED`), `update(settings)` when players come and go, `acceptChannel()` for each joiner that passed the join check, `withdraw()`. `RoomSettings` holds the room name and the map name (at most 48 UTF-8 bytes each), the players, the capacity, whether the game started, and up to 64 bytes of mod data that the mod defines and reads back from the rooms it finds (demo 1: its turn rate).
+- **Host.** `publishRoom(settings, password)` publishes a room (an empty password makes it public) and returns a `HostedRoom`: `getState()` (`PUBLISHING`, `PUBLISHED`, `WITHDRAWN`, `FAILED`), `update(settings)` when players come and go, `acceptChannel()` for each joiner that passed the join check, `withdraw()`. `RoomSettings` holds the room name and the map name (at most 48 UTF-8 bytes each), the players, the capacity, whether the game started, and up to 64 bytes of mod data that the mod defines and reads back from the rooms it finds (the demo: its turn rate).
 - **Search.** `searchRooms()` returns a `RoomSearch`: `getRooms()` are the rooms of the run's own mod identity, `getOtherRooms()` the rooms of the mod's other versions with the refusal their hosts would give (`FoundRoom.getJoinRefusal()`), and `isComplete()` turns true once every node answered or failed. A `FoundRoom` gives the host, the settings, `isJoinable()`, `isPrivate()`, the mod id and version and `getLatencyEstimate()` (`LatencyClass`: `GOOD` up to 100 ms, `FAIR` up to 200 ms, `POOR`, `UNKNOWN`).
 - **Join.** `joinRoom(room, password)` opens a `ParticipantChannel` to the host: `CONNECTING`, then `OPEN`, or `CLOSED` with a `ChannelFailure`; `JOIN_REFUSED` comes with the `JoinRefusal` (another engine version or mod identity, a full room, a started game, a wrong password).
 - **Play.** `getOverlay()` returns the session's `LinkOverlay`, which carries datagrams by participant over the channels (at most 1023 bytes, not reliable). Port 1 (`LOBBY_PORT`) is the engine's `NetworkLobby`, port 2 (`GAME_PORT`) its lockstep transport (`LinkLockstepTransport`); ports 16 to 255 (from `FIRST_MOD_PORT`) are free for the mod's own protocols. `NetworkLobby.host(room, overlay, ...)` and `NetworkLobby.join(channel, overlay, ...)` give the same lobby and lockstep game as on the local network.
 
-Demo 1: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java) (host, join and the game over the overlay), [`BeaconLinkScene`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/BeaconLinkScene.java) (the room list, host, join and chat) and `DemoHeadlessRunner` (`--beaconlink-host`, `--beaconlink-join`).
+The demo: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java) (host, join and the game over the overlay), [`BeaconLinkScene`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/BeaconLinkScene.java) (the room list, host, join and chat) and `DemoHeadlessRunner` (`--beaconlink-host`, `--beaconlink-join`).
 
 ### 14.2 Beacon.Link community
 
@@ -447,7 +447,7 @@ Demo 1: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/
 - **Friends and ignored players.** `addFriend`, `removeFriend` (at most 16 friends), `ignore`, `unignore`, `isIgnored`: the ignore list belongs to the account. Lines and whispers of ignored players are not handed out; the mod hides their rooms.
 - **Listeners.** `addListener(CommunityListener)`: `onChatLine`, `onMembersChanged`, `onWhisper` and `onWhisperResult`, called inside `poll()`.
 
-`BeaconLinkSession.signOutOtherDevices()` ends the account's other connections. The package `engine.client.community` of `sc4j-engine` holds the default parts of community screens: `ChannelChat` (the channel chat with its slash commands, friends and blocked players), `RoomFilter`, `ChatLogBox`, `TableBox` and their texts; demo 1's `BeaconLinkScene` uses them. The wire protocol is in the [Beacon.Link protocol reference](beaconlink/protocol.md); running a peer for other players is in the [Beacon.Link operator guide](beaconlink/operator.md).
+`BeaconLinkSession.signOutOtherDevices()` ends the account's other connections. The package `engine.client.community` of `sc4j-engine` holds the default parts of community screens: `ChannelChat` (the channel chat with its slash commands, friends and blocked players), `RoomFilter`, `ChatLogBox`, `TableBox` and their texts; the demo's `BeaconLinkScene` uses them. The wire protocol is in the [Beacon.Link protocol reference](beaconlink/protocol.md); running a peer for other players is in the [Beacon.Link operator guide](beaconlink/operator.md).
 
 ## 15. Building, installing and running
 
@@ -470,13 +470,13 @@ The policy itself is the [engine API policy](api-policy.md). In short:
 Everything in your jar is given to every player who gets the jar.
 
 - Use your own work, or material whose licence allows it to be redistributed in a mod (public domain such as CC0, or a licence whose conditions you meet). Keep the licence files and a notice with your assets, put them into the jar, and show the notation the licence asks for in the manifest's `license` and `description`.
-- Demo 1: [`mods/demo/THIRD-PARTY.md`](../mods/demo/THIRD-PARTY.md) names the sources of its pictures and is in `demo.jar`.
+- The demo: [`mods/demo/THIRD-PARTY.md`](../mods/demo/THIRD-PARTY.md) names the sources of its pictures and is in `demo.jar`.
 - Art under a licence that asks for a notice: keep its `NOTICE.txt` and `license/` folder with the art, let the build pack them into the jar, and put the notation into the manifest.
 - Never put files of another game's installation (graphics, sounds, data, maps) into your jar or repository. A mod that uses another game's data reads it from the player's own installation at run time, through a directory setting (chapter 3).
 
 ## 18. Clone an existing mod
 
-To change an existing mod instead of starting from nothing, clone it: copy its sources at build time and put your own versions of a few files over them (an overlay of normal, editable files), under your own mod id; a lock stops the build when the cloned mod changes a file you replaced. SC:R Crossover, the clone of the SC:R mod, has its own guide, the [SC:R clone modder guide](../mods/scr-crossover/docs/scr-crossover.md): the clone step, the overlay and its lock, the identity, the content extension, changed values, an added unit with its own graphics, the art licences, building, installing and the launcher.
+To change an existing mod instead of starting from nothing, clone it: copy its sources at build time and put your own versions of a few files over them (an overlay of normal, editable files), under your own mod id; a lock stops the build when the cloned mod changes a file you replaced. SC:R Crossover, the clone of the SC:R mod, has its own guide, the [SC:R clone modder guide](https://github.com/fogofwarlabs/sc4j-scr-crossover/blob/main/docs/scr-crossover.md): the clone step, the overlay and its lock, the identity, the content extension, changed values, an added unit with its own graphics, the art licences, building, installing and the launcher.
 
 - A clone is another mod: its own id, settings, storage and log folders. Its storage starts empty too: put the maps your players need into it (chapter 8).
 - A clone plays only with players of the same identity (chapter 1). A network protocol of its own that carries no mod id needs a value of the clone's own, such as a version that the host checks on a join.
@@ -496,7 +496,7 @@ In `register` a mod tells the runtime how it runs. There are two ways, and a mod
 | Registration | `registerFirstScene(FirstSceneFactory)` and `registerHeadlessRunner(HeadlessRunner)` | `registerApplication(ModApplication)` |
 | Window run | the runtime opens the window, the canvas, the audio, the cursor and the input, starts the first scene on a `SceneClient` and runs the frames through `WindowClient` on the engine host (`ClientHost`) | the runtime opens no window and calls `ModApplication.run(ModLaunch)`; the mod opens its window and runs its own frames on the same engine host (`ClientHost.initialize()`, `createWindow`, `ClientHost.run` with a `HostApplication` of its own) |
 | `--headless` run | the `HeadlessRunner` | the same `run`, if `isHeadlessCapable()` returns `true` |
-| Used by | the first mod of chapter 2, demo 1 | the SC:R mod, for its native frame timing |
+| Used by | the first mod of chapter 2, the demo | the [SC:R mod](https://github.com/fogofwarlabs/sc4j-scr), for its native frame timing |
 
 **Engine scenes.** `WindowClient` is a `HostApplication`: every frame the host polls the window events, `WindowClient` hands the input to the scenes, runs the `SceneClient` frame and presents it with vertical sync. The mod writes scenes (chapter 10) and does not see the frame loop.
 

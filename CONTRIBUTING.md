@@ -19,28 +19,24 @@ Thank you for helping. This page covers the developer setup, the test tiers, the
 | Gradle | 9.1.0, through the wrapper (`gradlew`, `gradlew.bat`); no own installation needed |
 | IDE | any; IntelliJ IDEA works with the Gradle import |
 
-IntelliJ IDEA: open the repository root folder; its linked Gradle build is `mods/scr-crossover`, which includes the SC:R mod and the engine builds, so all of them import together. Set the project SDK and the Gradle JVM (Settings, Build Tools, Gradle) to JDK 25.
+IntelliJ IDEA: open the repository root folder and import its Gradle build. Set the project SDK and the Gradle JVM (Settings, Build Tools, Gradle) to JDK 25.
 
-Commands below run in PowerShell from the repository root. On Linux use `./gradlew`. The engine with demo 1 is the root build; the SC:R mod and SC:R Crossover are builds of their own, run with `-p mods\scr` and `-p mods\scr-crossover`.
+Commands below run in PowerShell from the repository root. On Linux use `./gradlew`.
 
 ## Build and test
-
-The tests come in tiers. The first tier needs nothing outside the repository; the others need the player's own StarCraft: Remastered installation or other external folders.
 
 | Command | What runs | What it needs |
 |---|---|---|
 | `.\gradlew.bat build` | compile, unit tests (`test`) and the checks of `check`: API listings, module boundaries, determinism | nothing outside the repository |
-| `.\gradlew.bat -p mods\scr integrationTest` | tests tagged `integration` (`@RequiresInstallation`), including the GPU render smoke tests | `sc4j.data`; a GPU for the smoke tests |
-| `.\gradlew.bat -p mods\scr corpusTest` | tests tagged `corpus` (`@CorpusTest`): long runs and tests over external replay and map folders | `sc4j.data`; a test whose folder property is not set is skipped |
 | `.\gradlew.bat :sc4j-runtime:distributionTest` | builds the user package, unpacks it and starts its runtime headless | nothing outside the repository |
 
-`integrationTest` fails before it starts when `sc4j.data` is not set or names no folder. The GPU render smoke tests run when the Gradle property `sc4j.render.smoke` is `true` (the default in `gradle.properties`); `-Psc4j.render.smoke=false` turns them off.
+The OpenGL and GLFW checks of the `sc4j-engine-client` tests open a hidden window when the Gradle property `sc4j.render.smoke` is `true` (the default in `gradle.properties`); `-Psc4j.render.smoke=false` turns them off.
 
 A single module or test:
 
 ```powershell
 .\gradlew.bat :sc4j-engine-sim:test
-.\gradlew.bat -p mods\scr-crossover test --tests org.fogofwarlabs.sc4j.scrcrossover.convert.ArtConverterTest
+.\gradlew.bat :mods:demo:test --tests org.fogofwarlabs.sc4j.demo.DemoModTest
 ```
 
 ## Code style
@@ -81,7 +77,7 @@ throw Exceptions.newIllegalStateException("Invalid frame index: {0}", index);
 
 **Engine rules**
 
-- The engine-side modules name no mod: the build fails when they depend on or mention the SC:R mod (`checkModBoundary`).
+- The engine-side modules name no mod: the build fails when they mention the packages or types of the SC:R mod (`checkModBoundary`).
 - Simulation code is deterministic: no clock, no `java.util` random generator, no hash-ordered collection the simulation sees, no floating point ([mod author guide, chapter 12](docs/mod-guide.md#12-determinism)).
 - A change of the engine API updates its listings: see the [engine API policy](docs/api-policy.md#6-updating-the-listings).
 
@@ -92,7 +88,7 @@ Test classes are named `<Subject>Test`; test methods use `snake_case` names that
 ## Commits and pull requests
 
 - One topic per commit. The first line is a short English summary; the body says what changed and why.
-- Before a pull request, `.\gradlew.bat build` passes. If the change touches the SC:R mod and you have the installation, run `integrationTest` too. Name the tiers you ran in the pull request.
+- Before a pull request, `.\gradlew.bat build` passes. Name the tests you ran in the pull request.
 - An API change commits the regenerated `.api` files with the change and states its version effect in the commit message.
 - Behaviour changes come with tests. Do not commit build output, local paths or game data.
 - New art, sound or other assets need a licence that allows redistribution in a mod. Add the licence files and a notice next to them and an entry in [NOTICE](NOTICE).

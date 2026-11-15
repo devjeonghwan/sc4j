@@ -44,13 +44,6 @@ jobs:
       - name: Test the engine
         run: ./gradlew test -Psc4j.render.smoke=false
 
-      # The SC:R builds test against the engine of this checkout (included build).
-      - name: Test the SC:R mod
-        run: ./gradlew -p mods/scr test -Psc4j.render.smoke=false
-
-      - name: Test SC:R Crossover
-        run: ./gradlew -p mods/scr-crossover test -Psc4j.render.smoke=false
-
       - name: Upload the reports
         if: failure()
         uses: actions/upload-artifact@v7

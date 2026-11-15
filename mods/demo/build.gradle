@@ -7,7 +7,7 @@ sc4jMod {
     id = 'demo'
 }
 
-// Demo 1: a small real-time strategy game made only of the engine, its standard data pack and its default systems. It depends on
+// The demo: a small real-time strategy game made only of the engine, its standard data pack and its default systems. It depends on
 // the engine only; the runtime provides the engine when it loads mods/demo.jar. The tests also run the jar through the runtime.
 // The build tools of the demo's assets (src/assets/java): DemoArtExport turns the SVG font drawings (src/assets/svg/fonts) into the PNG font
 // pictures of the pack, DemoSoundSynthesis writes its sound effects (JDK only). They run at build time only; neither they nor Apache Batik are

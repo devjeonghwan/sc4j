@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 
 /**
- * Represents demo 1, a small real-time strategy game made only of the engine: its content comes from the engine standard data pack in the
+ * Represents the demo, a small real-time strategy game made only of the engine: its content comes from the engine standard data pack in the
  * demo's jar, its maps are files of the engine map format, its rules are the engine default systems with declarative requirements, and its
  * replays and saved games are the engine formats. It needs no external data and has no pre-run settings.
  */

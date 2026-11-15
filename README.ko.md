@@ -23,9 +23,9 @@ SC4J(Simulation Core for Java)는 실시간 전략 게임을 위한 엔진입니
 
 | 모드 | 폴더 | 모드 id | 설명 |
 |---|---|---|---|
-| 데모 1 | [`mods/demo/`](mods/demo/) | `demo` | "SC4J Demo: Dawnhold and Cindermaw". 엔진만으로 만든 작은 실시간 전략 게임 |
+| 데모 | [`mods/demo/`](mods/demo/) | `demo` | "SC4J Demo: Dawnhold and Cindermaw". 엔진만으로 만든 작은 실시간 전략 게임 |
 
-SC:R 모드와 그 복제 모드인 SC:R Crossover는 각자의 README에서 설명합니다: [`mods/scr/`](mods/scr/README.ko.md), [`mods/scr-crossover/`](mods/scr-crossover/README.ko.md).
+SC:R 모드와 그 복제 모드인 SC:R Crossover는 각자의 저장소에 있습니다: [sc4j-scr](https://github.com/fogofwarlabs/sc4j-scr), [sc4j-scr-crossover](https://github.com/fogofwarlabs/sc4j-scr-crossover).
 
 새 엔진 모드를 만드는 방법은 [모드 제작 가이드](docs/mod-guide.ko.md)에 있습니다.
 
@@ -61,16 +61,14 @@ SC:R 모드와 그 복제 모드인 SC:R Crossover는 각자의 README에서 설
 
 ## 빌드와 실행
 
-JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래 명령은 저장소 루트의 PowerShell에서 실행합니다. Linux에서는 `./gradlew`를 씁니다. SC:R 모드와 SC:R Crossover를 플레이하려면 스타크래프트: 리마스터 1.23.10 설치본이 필요하지만, 빌드에는 필요하지 않습니다.
+JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래 명령은 저장소 루트의 PowerShell에서 실행합니다. Linux에서는 `./gradlew`를 씁니다.
 
 | 명령 | 하는 일 |
 |---|---|
-| `.\gradlew.bat build` | 엔진과 데모 1을 컴파일하고 단위 테스트와 검사를 실행(SC:R 모드와 SC:R Crossover는 `-p mods\scr build`, `-p mods\scr-crossover build`) |
+| `.\gradlew.bat build` | 엔진과 데모를 컴파일하고 단위 테스트와 검사를 실행 |
 | `.\gradlew.bat devInstall` | 개발용 설치본 `build/dev-install/` 구성(런처, 런타임, `mods/demo.jar`) |
-| `.\gradlew.bat -p mods\scr devInstall` | 같은 구성에 `mods/scr.jar` 추가 |
-| `.\gradlew.bat -p mods\scr-crossover devInstall` | 같은 구성에 `mods/scr.jar`와 `mods/scr-crossover.jar` 추가 |
 | `.\gradlew.bat runDevLauncher` | 개발용 설치본의 런처 열기 |
-| `.\gradlew.bat runDevInstall -Psc4j.mod=scr` | 개발용 설치본의 런타임을 `mods/scr.jar`로 실행(기본값 `demo`) |
+| `.\gradlew.bat runDevInstall -Psc4j.mod=<id>` | 개발용 설치본의 런타임을 `mods/<id>.jar`로 실행(기본값 `demo`) |
 | `.\gradlew.bat distribution` | 사용자 패키지 `build/distributions/SC4J-<version>.zip` 생성 |
 | `.\gradlew.bat :sc4j-beaconlink-node:installDist` | 헤드리스 Beacon.Link 노드를 `sc4j-beaconlink-node/build/install/`에 빌드 |
 
@@ -81,11 +79,11 @@ JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래
 .\gradlew.bat runDevLauncher
 ```
 
-런처는 `build/dev-install/mods/`의 모든 jar를 보여 줍니다. 모드를 골라 시작하면 됩니다. SC:R 모드와 SC:R Crossover는 Windows에 기록된 위치에서 스타크래프트: 리마스터 폴더를 찾고, 찾지 못하면 모드 설정에서 한 번 지정하면 됩니다.
+런처는 `build/dev-install/mods/`의 모든 jar를 보여 줍니다. 모드를 골라 시작하면 됩니다.
 
 사용자 패키지에는 런처, 런타임, 데모 모드, Java 런타임, 시작 파일 `SC4J.bat`와 `SC4J`가 들어 있습니다. 사용자 데이터는 들어 있지 않으며, 새 설치본은 처음 시작할 때 `userdata/`를 만듭니다.
 
-테스트 단계와 코드 스타일은 [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md)에 있습니다.
+테스트와 코드 스타일은 [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md)에 있습니다.
 
 ## 문서
 
@@ -106,5 +104,5 @@ SC4J는 [Apache License 2.0](LICENSE)으로 배포됩니다. 저장소와 배포
 
 | 자료 | 라이선스 | 자세히 |
 |---|---|---|
-| 데모 1 그림: KayKit 모델과 Poly Haven 텍스처의 렌더 | CC0 1.0 | [`mods/demo/THIRD-PARTY.md`](mods/demo/THIRD-PARTY.md) |
+| 데모 그림: KayKit 모델과 Poly Haven 텍스처의 렌더 | CC0 1.0 | [`mods/demo/THIRD-PARTY.md`](mods/demo/THIRD-PARTY.md) |
 | 배포본의 라이브러리(LWJGL, JavaCPP, FFmpeg, OpenJFX 등) | 각 라이브러리의 라이선스 | [NOTICE](NOTICE), [`licenses/`](licenses/) |

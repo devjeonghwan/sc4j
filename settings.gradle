@@ -25,13 +25,8 @@ include 'sc4j-beaconlink-node'
 // The Beacon.Link client that the runtime gives a mod, with the loopback NAT emulator of the network tests (test fixtures).
 include 'sc4j-beaconlink'
 
-// Demo 1, a mod made only of the engine: one module in mods/demo/ (project :mods:demo).
+// The demo, a mod made only of the engine: one module in mods/demo/ (project :mods:demo).
 include ':mods:demo'
 
 // The API tools of the engine (apiDump, apiCheck; docs/api-policy.md).
 include ':tools:api-check'
-
-// The SC:R Crossover build, with the SC:R build it includes, when it is in this checkout: one IDE project and `:scr-crossover:<task>` from here.
-if (file('mods/scr-crossover/settings.gradle').isFile()) {
-    includeBuild('mods/scr-crossover')
-}

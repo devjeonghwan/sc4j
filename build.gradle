@@ -61,7 +61,7 @@ def scrTypeNamePattern = ~/\bScr[A-Z]\w*/
 def eudNamePattern = ~/(?i)\beuds?\b/
 def nativeAddressPattern = ~/\b0x14[0-9A-Fa-f]{7}\b/
 
-// Demo 1 (mods/demo) proves that the engine stands without SC:R, so the same check runs on it.
+// The demo (mods/demo) proves that the engine stands without SC:R, so the same check runs on it.
 def modBoundaryModules = engineSideModules + ['mods:demo']
 
 configure(modBoundaryModules.collect { name -> project(':' + name) }) { module ->

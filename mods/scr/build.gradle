@@ -142,15 +142,16 @@ configure(subprojects + [project(':tools:sc-recorder')]) { module ->
 
 evaluationDependsOnChildren()
 
-// The module folders of the mod; the clone of demo 2 (mods/scr-demo) copies the same list.
-ext.modModuleNames = ['scr-data', 'scr-game', 'scr-render', 'scr-net', 'scr-client']
+// The module folders of the mod and their compiler arguments (mod.properties); the clone of demo 2 (mods/scr-demo) reads the same file.
+def modProperties = new Properties()
+file('mod.properties').withReader('UTF-8') { reader -> modProperties.load(reader) }
+def modModuleNames = modProperties.getProperty('modules').split(',').toList()
 def modModules = modModuleNames.collect { name -> project(':mods:scr:' + name) }
 
-// The compiler arguments of every module of the mod; the clone of demo 2 (mods/scr-demo) compiles with the same list. -parameters records
-// the parameter names in the class files: javac names the constructor parameters of an anonymous class after those of its superclass's
-// constructor, which it knows from a class file only when they are recorded there. Without it a class compiled against the class file of
-// its superclass (another module, or an incremental compile) gets other bytes than when both are compiled together.
-ext.modCompilerArgs = ['-parameters']
+// -parameters records the parameter names in the class files: javac names the constructor parameters of an anonymous class after those of
+// its superclass's constructor, which it knows from a class file only when they are recorded there. Without it a class compiled against the
+// class file of its superclass (another module, or an incremental compile) gets other bytes than when both are compiled together.
+def modCompilerArgs = modProperties.getProperty('compilerArgs').split(' ').toList()
 modModules.each { module ->
     module.tasks.withType(JavaCompile).configureEach {
         options.compilerArgs += modCompilerArgs
@@ -175,6 +176,12 @@ def modJar = tasks.register('modJar', Jar) {
 
 tasks.named('assemble') {
     dependsOn modJar
+}
+
+// scr.jar as the variant of this project with the usage sc4j-mod-jar.
+configurations.consumable('modJarElements') {
+    attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, 'sc4j-mod-jar'))
+    outgoing.artifact(modJar)
 }
 
 // The development install (gradlew :mods:scr:devInstall): the root project's devInstall assembles build/dev-install, then scr.jar is

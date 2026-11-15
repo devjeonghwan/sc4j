@@ -1,9 +1,14 @@
 plugins {
     id 'java-library'
+    // The in-memory LAN scenario (InMemoryLanScenario) of the LAN tests, shared with the tests of demo 2 (mods/scr-demo).
+    id 'java-test-fixtures'
 }
 
 dependencies {
     api project(':mods:scr:scr-game')
+
+    testFixturesImplementation platform("org.junit:junit-bom:5.11.4")
+    testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
 
     testImplementation testFixtures(project(':mods:scr:scr-data'))
     // The SC:R Storm games over Beacon.Link run with real nodes and clients on 127.0.0.1 behind emulated NATs.

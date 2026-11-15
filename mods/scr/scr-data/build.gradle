@@ -14,5 +14,5 @@ dependencies {
     testFixturesApi "org.junit.jupiter:junit-jupiter-api"
 
     // The replays of the scr-game test resources (replays/focused/...), read as files by TestResourceUtils.
-    testRuntimeOnly files(rootProject.file('mods/scr/scr-game/src/test/resources'))
+    testRuntimeOnly files('../scr-game/src/test/resources')
 }

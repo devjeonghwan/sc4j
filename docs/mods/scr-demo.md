@@ -30,7 +30,7 @@ This guide is the clone chapter of the [mod author guide](../mod-guide.md#18-clo
 The clone is not checked in. The build makes it: the task `cloneScrMod` runs the clone tool `ScrModClone` (`mods/scr-demo/src/clone/java`), which
 
 1. checks the overlay against its lock (section 2, "When the SC:R mod changes");
-2. copies `mods/scr/<module>/src/main` of every module of the SC:R mod (`scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`; the list is `modModuleNames` in `mods/scr/build.gradle`) into `build/clone/<module>/src/main`, the folder layout a copy by hand has;
+2. copies `mods/scr/<module>/src/main` of every module of the SC:R mod (`scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`; the list is `modules` in `mods/scr/mod.properties`) into `build/clone/<module>/src/main`, the folder layout a copy by hand has;
 3. copies the overlay `overlay/` over it: every file there replaces the cloned file of the same path, or adds a new one.
 
 ```powershell
@@ -63,8 +63,8 @@ The clone keeps the SC:R mod's package names (`org.fogofwarlabs.sc4j.scr...`). O
 | task `cloneScrMod` | checks `overlay.lock`, copies the SC:R mod's sources into `build/clone` and copies `overlay/` over them; reruns when a SC:R source, an overlay file or the lock changes |
 | tasks `overlayDiff`, `acceptOverlay` | show the SC:R mod's changes under your overlay files, and record the SC:R mod files after you merged them (section 2) |
 | source set `mod` | your mod: `src/mod/java` and `src/mod/resources` (your own classes and resources) plus every module folder of `build/clone` |
-| dependencies of `mod` | `sc4j-base` and `sc4j-engine` (the runtime provides them, they are not in the jar) and the third-party libraries the SC:R mod modules compile against, taken from those modules (no second list) |
-| compiler arguments of `mod` | the SC:R mod's own (`-parameters`), taken from `mods/scr`, so that the classes of unchanged SC:R sources match `scr.jar` byte for byte |
+| dependencies of `mod` | `sc4j-base` and `sc4j-engine` (the runtime provides them, they are not in the jar) and the third-party libraries of the SC:R mod modules, resolved from those modules (no second list) |
+| compiler arguments of `mod` | the SC:R mod's own (`-parameters`), `compilerArgs` in `mods/scr/mod.properties`, so that the classes of unchanged SC:R sources match `scr.jar` byte for byte |
 | source set `convert` | the art converter (`ArtConverter`, section 2); it compiles against the clone, runs at build time only and is not in the jar |
 | task `convertArt` | converts the baked frames of every art set in `third-party/<set>` (section 2, "Art sets") into the units' graphics files under `build/converted-art`; reruns when a file under `third-party` changes |
 | task `modJar` | packages the `mod` source set, the output of `convertArt` and each art set's `NOTICE.txt` and `license/` into `build/mods/scr-demo.jar`: reproducible order, no timestamps, a duplicate entry fails the build |

@@ -21,3 +21,11 @@ dependencies {
 tasks.withType(Test).configureEach {
     maxHeapSize = '2g'
 }
+
+// The test resources folder (replays, saves and maps) as the variant of this project with the usage sc4j-test-resources.
+configurations.consumable('testResourceElements') {
+    attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, 'sc4j-test-resources'))
+    outgoing.artifact(file('src/test/resources')) {
+        type = ArtifactTypeDefinition.DIRECTORY_TYPE
+    }
+}

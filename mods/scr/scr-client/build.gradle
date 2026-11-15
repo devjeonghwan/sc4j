@@ -23,7 +23,7 @@ dependencies {
     // Shared game test fixtures (InstallationTestResources, GameTestResources) and the replays, saves and maps of the scr-game test
     // resources, read as files from their source directory.
     testImplementation testFixtures(project(':mods:scr:scr-game'))
-    testRuntimeOnly files(rootProject.file('mods/scr/scr-game/src/test/resources'))
+    testRuntimeOnly files('../scr-game/src/test/resources')
     // The engine's Beacon.Link session and community part played by hand (RecordingBeaconLink, RecordingCommunitySession) of the
     // community screen tests.
     testImplementation testFixtures(project(':sc4j-engine'))
@@ -64,7 +64,7 @@ tasks.named('installDist', Sync) {
 
 def defaultRunRoot = layout.buildDirectory.dir('run')
 def runRoot = providers.gradleProperty('sc4j.root').map { configured ->
-    configured.isBlank() ? defaultRunRoot.get().asFile : rootProject.file(configured)
+    configured.isBlank() ? defaultRunRoot.get().asFile : layout.settingsDirectory.file(configured).asFile
 }.orElse(defaultRunRoot.map { directory -> directory.asFile })
 def runTemporaryDirectory = layout.dir(runRoot.map { directory -> new File(directory, '.cache/tmp') })
 def runNativeDirectory = runRoot.map { directory -> new File(directory, 'lib/natives') }

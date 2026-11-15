@@ -27,7 +27,7 @@ final class CloneRunScenario implements AutoCloseable {
      */
     private static final @NotNull List<@NotNull String> SHARED_PACKAGES = List.of("org.junit.", "org.opentest4j.", "org.apiguardian.");
     /**
-     * A class of the SC:R LAN tests, whose location the class loader holds.
+     * A class of the SC:R LAN test fixtures, whose location the class loader holds.
      */
     private static final @NotNull String LAN_SCENARIO_CLASS = "org.fogofwarlabs.sc4j.scr.net.lan.InMemoryLanScenario";
 

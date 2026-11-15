@@ -30,7 +30,7 @@
 복제본은 저장소에 체크인되어 있지 않습니다. 빌드가 만듭니다. `cloneScrMod` 태스크가 복제 도구 `ScrModClone` (`mods/scr-demo/src/clone/java`)을 실행하며, 이 도구는
 
 1. 오버레이를 잠금과 대조합니다(2절 "SC:R 모드가 바뀔 때").
-2. SC:R 모드의 모든 모듈(`scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`. 목록은 `mods/scr/build.gradle`의 `modModuleNames`)의 `mods/scr/<module>/src/main`을 `build/clone/<module>/src/main`에 복사합니다. 손으로 복사했을 때와 같은 폴더 구조입니다.
+2. SC:R 모드의 모든 모듈(`scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`. 목록은 `mods/scr/mod.properties`의 `modules`)의 `mods/scr/<module>/src/main`을 `build/clone/<module>/src/main`에 복사합니다. 손으로 복사했을 때와 같은 폴더 구조입니다.
 3. 그 위에 오버레이 `overlay/`를 복사합니다. 거기 있는 모든 파일은 같은 경로의 복제 파일을 대신하거나 새 파일로 추가됩니다.
 
 ```powershell
@@ -63,8 +63,8 @@ mods\scr-demo\build\clone\scr-client\src\main\resources\sc4j-mod.json:3:  "id": 
 | 태스크 `cloneScrMod` | `overlay.lock`을 확인하고, SC:R 모드의 소스를 `build/clone`에 복사하고, 그 위에 `overlay/`를 복사합니다. SC:R 소스, 오버레이 파일, 잠금이 바뀌면 다시 실행됩니다. |
 | 태스크 `overlayDiff`, `acceptOverlay` | 자기 오버레이 파일 아래에서 SC:R 모드가 바꾼 내용을 보여 주고, 병합한 뒤 SC:R 모드 파일을 기록합니다(2절). |
 | 소스 세트 `mod` | 자신의 모드: `src/mod/java`와 `src/mod/resources`(자기 클래스와 리소스)에 `build/clone`의 모든 모듈 폴더를 더한 것 |
-| `mod`의 의존성 | `sc4j-base`와 `sc4j-engine`(런타임이 제공하며 jar에는 없음), 그리고 SC:R 모드 모듈이 컴파일할 때 쓰는 서드파티 라이브러리. 그 모듈에서 가져옵니다(목록을 두 번 두지 않음). |
-| `mod`의 컴파일러 인자 | SC:R 모드 자신의 것(`-parameters`). `mods/scr`에서 가져오므로, 바꾸지 않은 SC:R 소스의 클래스는 `scr.jar`와 바이트 단위로 같습니다. |
+| `mod`의 의존성 | `sc4j-base`와 `sc4j-engine`(런타임이 제공하며 jar에는 없음), 그리고 SC:R 모드 모듈의 서드파티 라이브러리. 그 모듈에서 가져옵니다(목록을 두 번 두지 않음). |
+| `mod`의 컴파일러 인자 | SC:R 모드 자신의 것(`-parameters`, `mods/scr/mod.properties`의 `compilerArgs`). 그래서 바꾸지 않은 SC:R 소스의 클래스는 `scr.jar`와 바이트 단위로 같습니다. |
 | 소스 세트 `convert` | 그림 변환기(`ArtConverter`, 2절). 복제본을 대상으로 컴파일하고, 빌드할 때만 실행되며 jar에는 없습니다. |
 | 태스크 `convertArt` | `third-party/<set>`의 모든 그림 세트(2절 "그림 세트")의 베이크된 프레임을 `build/converted-art` 아래 유닛 그래픽 파일로 변환합니다. `third-party` 아래 파일이 바뀌면 다시 실행됩니다. |
 | 태스크 `modJar` | `mod` 소스 세트, `convertArt`의 출력, 각 그림 세트의 `NOTICE.txt`와 `license/`를 `build/mods/scr-demo.jar`로 묶습니다. 재현 가능한 순서, 시간 기록 없음, 중복 항목이면 빌드 실패 |

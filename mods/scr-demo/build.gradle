@@ -14,13 +14,14 @@ plugins {
 // Unity-chan (Unity-chan License 3.0) and the giant monster Myriarch (CC BY 4.0). convertArt turns every set's frames, portrait clips,
 // wireframe strips and command icon into the unit's frame files and interface art at build time, and modJar packs those with each set's
 // NOTICE and license files.
-evaluationDependsOn(':mods:scr')
-// The LAN morph test runs the SC:R mod's in-memory LAN scenario of the scr-net tests inside the clone.
-evaluationDependsOn(':mods:scr:scr-net')
 
-def scrMod = project(':mods:scr')
-def scrModuleNames = scrMod.modModuleNames
-def scrModules = scrModuleNames.collect { name -> project(':mods:scr:' + name) }
+// The SC:R mod's folder, and its module folders and their compiler arguments (mod.properties there).
+def scrFolder = file('../scr')
+def scrModProperties = new File(scrFolder, 'mod.properties')
+def scrProperties = new Properties()
+scrModProperties.withReader('UTF-8') { reader -> scrProperties.load(reader) }
+def scrModuleNames = scrProperties.getProperty('modules').split(',').toList()
+def scrCompilerArgs = scrProperties.getProperty('compilerArgs').split(' ').toList()
 def overlay = file('overlay')
 def overlayLock = file('overlay.lock')
 def overlayBase = file('overlay-base')
@@ -56,13 +57,51 @@ sourceSets {
     }
 }
 
-// The third-party libraries the SC:R mod modules compile against (LWJGL, FFmpeg/JavaCPP, ...), taken from the modules themselves so that the
-// clone compiles against exactly what the SC:R mod does.
-def scrLibraries = files(scrModules.collect { module ->
-    module.configurations.compileClasspath.incoming.artifactView {
+// The third-party libraries of the SC:R mod modules (LWJGL, FFmpeg/JavaCPP, ...), resolved from the modules themselves so that the clone
+// compiles against what the SC:R mod uses.
+def scrModuleDependencies = configurations.dependencyScope('scrModules')
+def scrModuleClasspath = configurations.resolvable('scrModuleClasspath') {
+    extendsFrom scrModuleDependencies.get()
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+    }
+}
+def scrLibraries = files(scrModuleClasspath.map { configuration ->
+    configuration.incoming.artifactView {
         componentFilter { component -> component instanceof ModuleComponentIdentifier }
     }.files
 })
+
+// scr.jar of the SC:R mod and the scr-game test resources folder, as the variants of their projects.
+def resolvableVariant = { String name, String usage ->
+    def scope = configurations.dependencyScope(name)
+    return configurations.resolvable(name + 'Files') {
+        extendsFrom scope.get()
+        attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, usage))
+    }
+}
+def scrModJarFiles = resolvableVariant('scrModJar', 'sc4j-mod-jar')
+def scrGameTestResourceFiles = resolvableVariant('scrGameTestResources', 'sc4j-test-resources')
+
+// The LWJGL native libraries of the GPU sample check, staged for the tests.
+def testNativeDependencies = configurations.dependencyScope('testNativeLibraries')
+def testNativeLibraryFiles = configurations.resolvable('testNativeLibraryFiles') {
+    extendsFrom testNativeDependencies.get()
+}
+def testNativeDirectory = layout.buildDirectory.dir('native-libraries')
+def stageTestNativeLibraries = tasks.register('stageTestNativeLibraries', Sync) {
+    description = 'Stages the LWJGL native libraries of the tests outside the Java runtime classpath.'
+    from({ testNativeLibraryFiles.get().collect { archive -> zipTree(archive) } }) {
+        include '**/*.dll', '**/*.so', '**/*.so.*'
+        exclude 'META-INF/**', '**/*.sha1', '**/*.git'
+        eachFile { details -> details.path = details.name }
+        includeEmptyDirs = false
+    }
+    into testNativeDirectory
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+}
 
 dependencies {
     cloneImplementation project(':sc4j-base')
@@ -77,20 +116,28 @@ dependencies {
     // The SC:R mod itself (its entry and its Beacon.Link provider) hosts the room the clone must not join.
     testImplementation project(':mods:scr:scr-client')
     testImplementation project(':mods:scr:scr-net')
-    // The in-memory LAN scenario (InMemoryLanScenario) of the scr-net tests, which the clone's LAN morph test plays over.
-    testImplementation project(':mods:scr:scr-net').sourceSets.test.output
+    // The in-memory LAN scenario (InMemoryLanScenario) of the scr-net test fixtures, which the clone's LAN morph test plays over.
+    testImplementation testFixtures(project(':mods:scr:scr-net'))
     // The GPU sample check of the added unit draws through the SC:R renderers and LWJGL (as the clone's classes, see CloneRenderScenario).
     testImplementation project(':mods:scr:scr-render')
     testImplementation scrLibraries
     testImplementation testFixtures(project(':mods:scr:scr-data'))
     // The game tests' fixtures and replays: the value test creates a replay's game with each mod.
     testImplementation testFixtures(project(':mods:scr:scr-game'))
-    testRuntimeOnly files(rootProject.file('mods/scr/scr-game/src/test/resources'))
+    scrGameTestResources project(':mods:scr:scr-game')
+    testRuntimeOnly files(scrGameTestResourceFiles)
     testImplementation testFixtures(project(':sc4j-beaconlink'))
     // The launcher's mod list, settings forms and runtime command lines over an install that holds both mod jars, with installation
     // records that the test lays out.
     testImplementation project(':sc4j-launcher')
     testImplementation testFixtures(project(':sc4j-mod-manifest'))
+
+    scrModuleNames.each { name -> scrModules project(':mods:scr:' + name) }
+    scrModJar project(':mods:scr')
+    testNativeLibraries "org.lwjgl:lwjgl:$LWJGL_VERSION:$LWJGL_NATIVES"
+    testNativeLibraries "org.lwjgl:lwjgl-glfw:$LWJGL_VERSION:$LWJGL_NATIVES"
+    testNativeLibraries "org.lwjgl:lwjgl-opengl:$LWJGL_VERSION:$LWJGL_NATIVES"
+    testNativeLibraries "org.lwjgl:lwjgl-stb:$LWJGL_VERSION:$LWJGL_NATIVES"
 }
 
 // The clone tool's tasks. A failure of the tool (a changed SC:R mod file under an overlay file, an overlay file the lock does not record)
@@ -103,7 +150,7 @@ def configureCloneTool = { JavaExec task, String mode ->
     task.errorOutput = errors
     task.ignoreExitValue = true
     task.argumentProviders.add({
-        [mode, scrMod.projectDir.absolutePath, overlay.absolutePath, overlayLock.absolutePath, overlayBase.absolutePath, project.path + ':']
+        [mode, scrFolder.absolutePath, overlay.absolutePath, overlayLock.absolutePath, overlayBase.absolutePath, project.path + ':']
     } as CommandLineArgumentProvider)
     task.doFirst {
         errors.reset()
@@ -119,7 +166,8 @@ def configureCloneTool = { JavaExec task, String mode ->
 def cloneScrMod = tasks.register('cloneScrMod', JavaExec) { task ->
     description = 'Clones the main sources of the SC:R mod into build/clone and copies the overlay of demo 2 over them.'
     configureCloneTool(task, 'clone')
-    scrModuleNames.each { name -> inputs.dir(scrMod.file(name + '/src/main')).withPropertyName('scrSources-' + name) }
+    scrModuleNames.each { name -> inputs.dir(new File(scrFolder, name + '/src/main')).withPropertyName('scrSources-' + name) }
+    inputs.files(scrModProperties).withPropertyName('scrModProperties')
     inputs.dir(overlay).withPropertyName('overlay')
     inputs.files(overlayLock).withPropertyName('overlayLock')
     outputs.dir(cloneRoot)
@@ -144,7 +192,7 @@ tasks.register('acceptOverlay', JavaExec) { task ->
 // The clone compiles with the SC:R mod's compiler arguments, so that the classes of the unchanged SC:R sources equal those of scr.jar.
 tasks.named('compileModJava') {
     dependsOn cloneScrMod
-    options.compilerArgs += scrMod.modCompilerArgs
+    options.compilerArgs += scrCompilerArgs
 }
 
 def convertArt = tasks.register('convertArt', JavaExec) {
@@ -195,30 +243,26 @@ tasks.named('assemble') {
 // The development install (gradlew :mods:scr-demo:devInstall): the SC:R mod's devInstall assembles build/dev-install, then scr-demo.jar is
 // copied into its mods/ folder next to scr.jar. Nothing under userdata/ is written here; the launcher saves the clone's own settings
 // (userdata/settings/scr-demo.json) when the player sets them.
-def scrDevInstall = scrMod.tasks.named('devInstall')
 tasks.register('devInstall', Copy) {
     description = 'Copies scr-demo.jar into the mods folder of the development install build/dev-install.'
     group = 'distribution'
-    dependsOn scrDevInstall
+    dependsOn ':mods:scr:devInstall'
     from(modJar)
-    into scrDevInstall.map { task -> new File(task.destinationDir, 'mods') }
+    into layout.settingsDirectory.dir('build/dev-install/mods')
 }
 
 // The tests read scr-demo.jar and scr.jar as a user's mods/ folder has them.
-def scrModJar = scrMod.tasks.named('modJar')
-// The GPU sample check loads LWJGL's native libraries from those the SC:R renderer module stages for its own tests.
-def scrRender = project(':mods:scr:scr-render')
-def scrRenderNatives = scrRender.tasks.named('stageNativeLibraries')
 tasks.withType(Test).configureEach {
-    dependsOn modJar, scrModJar
+    dependsOn modJar
+    inputs.files(scrModJarFiles).withPropertyName('scrModJar')
     systemProperty 'sc4j.scrdemo.jar', modJar.get().archiveFile.get().asFile.absolutePath
-    systemProperty 'sc4j.scr.jar', scrModJar.get().archiveFile.get().asFile.absolutePath
+    jvmArgumentProviders.add({ ['-Dsc4j.scr.jar=' + scrModJarFiles.get().singleFile.absolutePath] } as CommandLineArgumentProvider)
     systemProperty 'sc4j.scrdemo.overlay', overlay.absolutePath
     systemProperty 'sc4j.scrdemo.art', artSets.absolutePath
     // The GPU sample check of the added unit's graphics (integration tier) runs only with this property, as the SC:R render tests do.
     systemProperty 'sc4j.render.smoke', providers.gradleProperty('sc4j.render.smoke').getOrElse('false')
-    dependsOn scrRenderNatives
-    systemProperty 'org.lwjgl.librarypath', scrRender.layout.buildDirectory.dir('native-libraries').get().asFile.absolutePath
+    dependsOn stageTestNativeLibraries
+    systemProperty 'org.lwjgl.librarypath', testNativeDirectory.get().asFile.absolutePath
     systemProperty 'org.lwjgl.system.SharedLibraryExtractPath', layout.buildDirectory.dir('tmp/native-extract').get().asFile.absolutePath
     jvmArgs '--enable-native-access=ALL-UNNAMED'
     maxHeapSize = '4g'

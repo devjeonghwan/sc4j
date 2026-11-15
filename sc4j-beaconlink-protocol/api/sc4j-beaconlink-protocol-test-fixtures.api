@@ -1,0 +1,6 @@
+public final class org.fogofwarlabs.sc4j.beaconlink.protocol.test.ManualProtocolClock implements org.fogofwarlabs.sc4j.beaconlink.protocol.ProtocolClock {
+  public long getEpochMillis();
+  public org.fogofwarlabs.sc4j.beaconlink.protocol.test.ManualProtocolClock();
+  public static final long START_MILLIS = 1800000000000l;
+  public void advance(long);
+}

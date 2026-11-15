@@ -487,6 +487,7 @@ To change an existing mod instead of starting from nothing, clone it: copy its s
 ## 19. Testing your mod
 
 - A mod outside this repository tests from its own build: build the jar, install it into a scratch install, run the install's runtime headless twice and once on the replay, and compare the frame hashes (chapter 12).
+- The engine's published test fixtures (`testImplementation testFixtures('org.fogofwarlabs.sc4j:<module>:<version>')`, [API policy](api-policy.md#1-what-the-api-is)) play the community and Beacon.Link by hand (`RecordingCommunitySession`, `RecordingBeaconLink` of `sc4j-engine`), run nodes and clients on 127.0.0.1 behind emulated NATs (`ClientScenario` of `sc4j-beaconlink`) and stand in for the installation records (`FakeInstallationRecords` of `sc4j-mod-manifest`).
 - Inside the repository, run the jar through `RuntimeSession.run` in the test JVM (`DemoModTest`), the client offscreen (`DemoClientScenario`), and two runtime JVMs against each other (`determinismCheck`).
 
 ## 20. Two ways a mod runs

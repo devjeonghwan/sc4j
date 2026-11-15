@@ -1,0 +1,79 @@
+public final class org.fogofwarlabs.sc4j.beaconlink.test.client.ClientScenario implements java.lang.AutoCloseable {
+  public org.fogofwarlabs.sc4j.beaconlink.client.BeaconLinkClient openClient(org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, java.util.List<org.fogofwarlabs.sc4j.beaconlink.protocol.file.ConfiguredNode>) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.beaconlink.client.BeaconLinkClient openClient(org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, java.util.List<org.fogofwarlabs.sc4j.beaconlink.protocol.file.ConfiguredNode>, org.fogofwarlabs.sc4j.engine.net.DatagramEndpoint);
+  public org.fogofwarlabs.sc4j.beaconlink.client.BeaconLinkClient openConnection(org.fogofwarlabs.sc4j.beaconlink.client.BeaconLinkClient, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, java.util.List<org.fogofwarlabs.sc4j.beaconlink.protocol.file.ConfiguredNode>) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.beaconlink.client.BeaconLinkClient openConnection(org.fogofwarlabs.sc4j.beaconlink.client.BeaconLinkClient, org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity, java.util.List<org.fogofwarlabs.sc4j.beaconlink.protocol.file.ConfiguredNode>, org.fogofwarlabs.sc4j.beaconlink.protocol.ProtocolClock) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.beaconlink.client.ClientConfiguration getConfiguration();
+  public org.fogofwarlabs.sc4j.beaconlink.peer.PeerSocket openNode(org.fogofwarlabs.sc4j.beaconlink.peer.configuration.PeerConfiguration) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.beaconlink.protocol.test.ManualProtocolClock getClock();
+  public org.fogofwarlabs.sc4j.beaconlink.test.client.ClientScenario();
+  public org.fogofwarlabs.sc4j.beaconlink.test.nat.LoopbackNat openNat(org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType);
+  public static final int STAMP_DIFFICULTY = 16;
+  public static final java.net.InetAddress LOOPBACK;
+  public static final long RANDOM_SEED = 20261108l;
+  public static final long STEP_MILLIS = 1000l;
+  public static org.fogofwarlabs.sc4j.beaconlink.peer.configuration.PeerConfiguration createNodeConfiguration();
+  public static org.fogofwarlabs.sc4j.beaconlink.peer.configuration.PeerConfiguration$Builder createNodeBuilder();
+  public static org.fogofwarlabs.sc4j.beaconlink.protocol.file.ConfiguredNode listed(org.fogofwarlabs.sc4j.beaconlink.peer.PeerSocket) throws java.io.IOException;
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity createIdentity(java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity createIdentity(org.fogofwarlabs.sc4j.manifest.version.EngineVersion, java.lang.String);
+  public static org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity createIdentity(org.fogofwarlabs.sc4j.manifest.version.EngineVersion, java.lang.String, java.lang.String);
+  public void addPollAction(org.fogofwarlabs.sc4j.beaconlink.test.client.ClientScenario$PollAction);
+  public void advance(long) throws java.io.IOException;
+  public void advanceUntil(java.util.function.BooleanSupplier, long, java.lang.String) throws java.io.IOException;
+  public void advanceUntil(java.util.function.BooleanSupplier, long, long, java.lang.String) throws java.io.IOException;
+  public void await(java.util.function.BooleanSupplier, java.lang.String) throws java.io.IOException;
+  public void close();
+  public void closeNode(org.fogofwarlabs.sc4j.beaconlink.peer.PeerSocket);
+  public void pollAll() throws java.io.IOException;
+  public void removePollAction(org.fogofwarlabs.sc4j.beaconlink.test.client.ClientScenario$PollAction);
+}
+
+public interface org.fogofwarlabs.sc4j.beaconlink.test.client.ClientScenario$PollAction {
+  public abstract void poll() throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.beaconlink.test.nat.LoopbackHosts {
+  public java.lang.String find(java.net.InetSocketAddress);
+  public java.lang.String findNetwork(java.net.InetSocketAddress);
+  public org.fogofwarlabs.sc4j.beaconlink.test.nat.LoopbackHosts();
+  public void assign(java.net.InetSocketAddress, java.lang.String);
+  public void assignPrivate(java.net.InetSocketAddress, java.lang.String);
+  public void release(java.net.InetSocketAddress);
+}
+
+public final class org.fogofwarlabs.sc4j.beaconlink.test.nat.LoopbackNat implements java.io.Closeable {
+  public int getFilteredCount();
+  public int getLostCount();
+  public java.lang.String getName();
+  public java.util.List<java.net.InetSocketAddress> getPublicAddresses();
+  public org.fogofwarlabs.sc4j.beaconlink.test.nat.LoopbackNat(org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType, java.lang.String, org.fogofwarlabs.sc4j.beaconlink.test.nat.LoopbackHosts, org.fogofwarlabs.sc4j.beaconlink.protocol.ProtocolClock, java.util.random.RandomGenerator);
+  public org.fogofwarlabs.sc4j.beaconlink.test.nat.NatEndpoint openEndpoint() throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType getType();
+  public static final long IDLE_MILLIS = 30000l;
+  public void close();
+  public void setDelayMillis(long);
+  public void setLossRate(double);
+}
+
+public final class org.fogofwarlabs.sc4j.beaconlink.test.nat.NatEndpoint implements org.fogofwarlabs.sc4j.engine.net.DatagramEndpoint {
+  public java.lang.Object receive(java.nio.ByteBuffer) throws java.io.IOException;
+  public java.net.InetSocketAddress getLocalAddress();
+  public java.net.InetSocketAddress receive(java.nio.ByteBuffer) throws java.io.IOException;
+  public org.fogofwarlabs.sc4j.beaconlink.test.nat.LoopbackNat getNat();
+  public void close() throws java.io.IOException;
+  public void send(java.nio.ByteBuffer, java.lang.Object) throws java.io.IOException;
+  public void send(java.nio.ByteBuffer, java.net.InetSocketAddress) throws java.io.IOException;
+}
+
+public final class org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType extends java.lang.Enum<org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType> {
+  public boolean isFilteringByAddress();
+  public boolean isFilteringByHost();
+  public boolean isMappingPerDestination();
+  public static final org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType ADDRESS_RESTRICTED;
+  public static final org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType FULL_CONE;
+  public static final org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType PORT_RESTRICTED;
+  public static final org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType SYMMETRIC;
+  public static org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType valueOf(java.lang.String);
+  public static org.fogofwarlabs.sc4j.beaconlink.test.nat.NatType[] values();
+}

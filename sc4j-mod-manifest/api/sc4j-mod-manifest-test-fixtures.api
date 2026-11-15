@@ -1,0 +1,14 @@
+public final class org.fogofwarlabs.sc4j.manifest.test.FakeInstallationRecords implements org.fogofwarlabs.sc4j.manifest.settings.InstallationRecords {
+  public java.util.List<java.nio.file.Path> findUninstallLocations(java.lang.String);
+  public java.util.List<java.nio.file.Path> getProgramDirectories();
+  public org.fogofwarlabs.sc4j.manifest.test.FakeInstallationRecords(java.util.Map<java.lang.String, java.util.List<java.nio.file.Path>>, java.util.List<java.nio.file.Path>);
+}
+
+public final class org.fogofwarlabs.sc4j.manifest.test.TestJarUtils {
+  public static byte[] readClass(java.lang.Class<?>) throws java.io.IOException;
+  public static final byte[] PNG_CONTENTS;
+  public static final java.lang.String MANIFEST_ENTRY = "sc4j-mod.json";
+  public static java.lang.String getEntryName(java.lang.Class<?>);
+  public static java.util.Map<java.lang.String, byte[]> createEntries(java.lang.String, java.lang.Class<?>...) throws java.io.IOException;
+  public static void write(java.nio.file.Path, java.util.Map<java.lang.String, byte[]>) throws java.io.IOException;
+}

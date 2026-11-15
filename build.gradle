@@ -468,40 +468,65 @@ def createApiToolConfiguration = { module ->
     return configuration
 }
 
-configure(apiModules.collect { name -> project(':' + name) }) { module ->
+// The modules whose test fixtures are published (the testFixtures variants of their component), with the API listing
+// api/<module>-test-fixtures.api of the tasks testFixturesApiDump and testFixturesApiCheck; check also builds their Javadoc.
+def publishedTestFixtureModules = ['sc4j-mod-manifest', 'sc4j-engine', 'sc4j-beaconlink-protocol', 'sc4j-beaconlink']
+// The listing file suffix, the task names and the report of each listed source set.
+def apiListings = [
+    main        : [suffix: '', dump: 'apiDump', check: 'apiCheck', report: 'api-check'],
+    testFixtures: [suffix: '-test-fixtures', dump: 'testFixturesApiDump', check: 'testFixturesApiCheck', report: 'test-fixtures-api-check']
+]
+def registerApiTasks = { module, apiTool, String sourceSetName ->
+    def listing = apiListings[sourceSetName]
+    def apiFileName = 'api/' + module.name + listing.suffix + '.api'
+    def apiFile = module.file(apiFileName)
+    def report = module.layout.buildDirectory.file('reports/' + listing.report + '.txt')
+    def classes = module.sourceSets.getByName(sourceSetName).output.classesDirs
+    def classArguments = { classes.files.sort().collectMany { directory -> ['--classes', directory.absolutePath] } }
+    def apiDump = module.tasks.register(listing.dump, JavaExec) {
+        description = 'Writes the public API list of the ' + sourceSetName + ' classes of this module (' + apiFileName + ') with javap.'
+        group = 'build'
+        classpath = apiTool
+        mainClass = apiToolMainClass
+        inputs.files(classes)
+        inputs.property('internalApiElements', internalApiElements)
+        outputs.file(apiFile)
+        argumentProviders.add({ ['dump', '--api-file', apiFile.absolutePath] + classArguments() + internalApiArguments } as CommandLineArgumentProvider)
+    }
+    def apiCheck = module.tasks.register(listing.check, JavaExec) {
+        description = 'Checks that the public API of the ' + sourceSetName + ' classes of this module equals ' + apiFileName + ' (' + listing.dump +
+                ' updates the file).'
+        group = 'verification'
+        classpath = apiTool
+        mainClass = apiToolMainClass
+        mustRunAfter apiDump
+        inputs.files(classes)
+        inputs.files(apiFile)
+        inputs.property('internalApiElements', internalApiElements)
+        outputs.file(report)
+        argumentProviders.add({
+            ['check', '--api-file', apiFile.absolutePath] + classArguments() + internalApiArguments +
+                    ['--update-task', module.path + ':' + listing.dump, '--report', report.get().asFile.absolutePath]
+        } as CommandLineArgumentProvider)
+    }
+    module.tasks.named('check') {
+        dependsOn apiCheck
+    }
+}
+
+configure((apiModules + publishedTestFixtureModules).unique().collect { name -> project(':' + name) }) { module ->
     def apiTool = createApiToolConfiguration(module)
-    def apiFile = module.file('api/' + module.name + '.api')
-    def report = module.layout.buildDirectory.file('reports/api-check.txt')
-    module.plugins.withId('java-library') {
-        def classes = module.sourceSets.main.output.classesDirs
-        def classArguments = { classes.files.sort().collectMany { directory -> ['--classes', directory.absolutePath] } }
-        def apiDump = module.tasks.register('apiDump', JavaExec) {
-            description = 'Writes the public API list of this module (api/' + module.name + '.api) from its compiled classes with javap.'
-            group = 'build'
-            classpath = apiTool
-            mainClass = apiToolMainClass
-            inputs.files(classes)
-            inputs.property('internalApiElements', internalApiElements)
-            outputs.file(apiFile)
-            argumentProviders.add({ ['dump', '--api-file', apiFile.absolutePath] + classArguments() + internalApiArguments } as CommandLineArgumentProvider)
+    if (module.name in apiModules) {
+        module.plugins.withId('java-library') {
+            registerApiTasks(module, apiTool, SourceSet.MAIN_SOURCE_SET_NAME)
         }
-        def apiCheck = module.tasks.register('apiCheck', JavaExec) {
-            description = 'Checks that the public API of this module equals api/' + module.name + '.api (apiDump updates the file).'
-            group = 'verification'
-            classpath = apiTool
-            mainClass = apiToolMainClass
-            mustRunAfter apiDump
-            inputs.files(classes)
-            inputs.files(apiFile)
-            inputs.property('internalApiElements', internalApiElements)
-            outputs.file(report)
-            argumentProviders.add({
-                ['check', '--api-file', apiFile.absolutePath] + classArguments() + internalApiArguments +
-                        ['--update-task', module.path + ':apiDump', '--report', report.get().asFile.absolutePath]
-            } as CommandLineArgumentProvider)
-        }
-        module.tasks.named('check') {
-            dependsOn apiCheck
+    }
+    if (module.name in publishedTestFixtureModules) {
+        module.plugins.withId('java-test-fixtures') {
+            registerApiTasks(module, apiTool, 'testFixtures')
+            module.tasks.named('check') {
+                dependsOn 'testFixturesJavadoc'
+            }
         }
     }
 }
@@ -727,7 +752,7 @@ def centralAutomaticRelease = true
 def centralDeploymentValidation = DeploymentValidation.VALIDATED
 // A blank key counts as none.
 def signingKey = providers.gradleProperty('signingInMemoryKey').filter { key -> !key.isBlank() }
-// The variants of the test fixtures plugin, left out of the published component.
+// The variants of the test fixtures plugin, left out of the published component of the modules outside publishedTestFixtureModules.
 def testFixtureVariants = ['testFixturesApiElements', 'testFixturesRuntimeElements', 'testFixturesSourcesElements', 'testFixturesJavadocElements']
 
 configure(publishedModules.keySet().collect { name -> project(':' + name) }) { module ->
@@ -774,6 +799,9 @@ configure(publishedModules.keySet().collect { name -> project(':' + name) }) { m
         }
     }
     module.plugins.withId('java-test-fixtures') {
+        if (module.name in publishedTestFixtureModules) {
+            return
+        }
         module.afterEvaluate {
             testFixtureVariants.findAll { name -> module.configurations.findByName(name) != null }.each { name ->
                 module.components.java.withVariantsFromConfiguration(module.configurations.getByName(name)) { variant ->

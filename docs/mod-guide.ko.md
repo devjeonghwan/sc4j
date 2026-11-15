@@ -487,6 +487,7 @@ jar에 넣은 모든 것은 jar를 받는 모든 플레이어에게 전달됩니
 ## 19. 모드 테스트
 
 - 이 저장소 밖의 모드는 자기 빌드에서 테스트합니다. jar를 빌드하고, 임시 설치본에 설치하고, 설치본의 런타임을 헤드리스로 두 번, 리플레이로 한 번 실행해 프레임 해시를 비교합니다(12장).
+- 배포되는 엔진 테스트 픽스처(`testImplementation testFixtures('org.fogofwarlabs.sc4j:<module>:<version>')`, [API 정책](api-policy.ko.md#1-api란))는 커뮤니티와 Beacon.Link를 손으로 재생하고(`sc4j-engine`의 `RecordingCommunitySession`, `RecordingBeaconLink`), 에뮬레이션한 NAT 뒤에서 노드와 클라이언트를 127.0.0.1에서 실행하고(`sc4j-beaconlink`의 `ClientScenario`), 설치 기록을 대신합니다(`sc4j-mod-manifest`의 `FakeInstallationRecords`).
 - 저장소 안에서는 jar를 테스트 JVM의 `RuntimeSession.run`으로 실행하고(`DemoModTest`), 클라이언트를 화면 밖에서 실행하고 (`DemoClientScenario`), 런타임 JVM 둘을 서로 맞붙입니다(`determinismCheck`).
 
 ## 20. 모드가 실행되는 두 방식

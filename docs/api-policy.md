@@ -29,6 +29,8 @@ The API is every `public` or `protected` class, interface, constructor, method a
 
 A mod depends on `sc4j-engine`; the other modules come with it. `sc4j-base` and `sc4j-mod-manifest` are listed because every mod compiles against them through the engine.
 
+The test fixtures of `sc4j-mod-manifest`, `sc4j-engine`, `sc4j-beaconlink-protocol` and `sc4j-beaconlink` are published with their module (`testImplementation testFixtures('org.fogofwarlabs.sc4j:<module>:<version>')`) and are API the same way, listed in `<module>/api/<module>-test-fixtures.api`: `FakeInstallationRecords` and `TestJarUtils` (`sc4j-mod-manifest`), `RecordingBeaconLink` and `RecordingCommunitySession` (`sc4j-engine`), `ManualProtocolClock` (`sc4j-beaconlink-protocol`), `ClientScenario` and the loopback NAT emulator (`sc4j-beaconlink`). The test fixtures of the other modules are not published.
+
 Each listing is the JDK's `javap -protected -constants` output of the module's compiled classes: one block per class, sorted by class name, with its members sorted. A class is listed when it and every class enclosing it are `public` or `protected`. Sorting keeps the listing independent of the order of declarations, so moving a method in a source file changes nothing. The listing also shows the bridge methods the compiler adds for generic overrides. It does not show annotations, so a change of a nullability annotation is a contract change that the review must catch (section 3).
 
 The Javadoc of an API element is part of its contract. Every API element has Javadoc, and `javadoc` runs without warnings.
@@ -105,12 +107,12 @@ Each format has its own version number, independent of the API version. Before 1
 
 ## 6. Updating the listings
 
-`check` (and so `build`) runs `apiCheck` on every module of section 1. It fails when the compiled classes differ from the module's `.api` file and prints the removed (`-`) and added (`+`) lines per class.
+`check` (and so `build`) runs `apiCheck` on every module of section 1 and `testFixturesApiCheck` on the published test fixtures. It fails when the compiled classes differ from the module's `.api` file and prints the removed (`-`) and added (`+`) lines per class.
 
 An intended API change:
 
 1. Make the change, with its Javadoc.
-2. Run `gradlew apiDump` (every module) or `gradlew :<module>:apiDump`.
+2. Run `gradlew apiDump testFixturesApiDump` (every listing) or `gradlew :<module>:apiDump` (`:<module>:testFixturesApiDump` for the test fixtures).
 3. Review the `.api` diff against section 3.2 and note the version effect in the commit message.
 4. Commit the `.api` files with the change. A change made in a separate branch updates the files in its own commit; after a merge of two API changes, `apiDump` runs once more on the merged state.
 

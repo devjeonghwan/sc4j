@@ -29,6 +29,8 @@ API는 아래 모듈의 main 클래스에 있는 모든 `public` 또는 `protect
 
 모드는 `sc4j-engine`에 의존하고, 다른 모듈은 함께 따라옵니다. `sc4j-base`와 `sc4j-mod-manifest`도 목록에 있는 것은 모든 모드가 엔진을 통해 이들을 대상으로 컴파일하기 때문입니다.
 
+`sc4j-mod-manifest`, `sc4j-engine`, `sc4j-beaconlink-protocol`, `sc4j-beaconlink`의 테스트 픽스처는 모듈과 함께 배포되며(`testImplementation testFixtures('org.fogofwarlabs.sc4j:<module>:<version>')`), 같은 방식으로 API이고 `<module>/api/<module>-test-fixtures.api`에 나열됩니다. `FakeInstallationRecords`와 `TestJarUtils`(`sc4j-mod-manifest`), `RecordingBeaconLink`와 `RecordingCommunitySession`(`sc4j-engine`), `ManualProtocolClock`(`sc4j-beaconlink-protocol`), `ClientScenario`와 루프백 NAT 에뮬레이터(`sc4j-beaconlink`)입니다. 다른 모듈의 테스트 픽스처는 배포되지 않습니다.
+
 각 목록은 모듈의 컴파일된 클래스에 대한 JDK `javap -protected -constants` 출력입니다. 클래스마다 블록 하나이고, 블록은 클래스 이름순, 멤버도 정렬되어 있습니다. 클래스와 그 클래스를 감싸는 모든 클래스가 `public` 또는 `protected`일 때 목록에 들어갑니다. 정렬 덕분에 목록은 선언 순서와 무관하므로, 소스 파일 안에서 메서드를 옮겨도 바뀌지 않습니다. 목록에는 컴파일러가 제네릭 오버라이드를 위해 추가하는 브리지 메서드도 보입니다. 애너테이션은 보이지 않으므로, null 여부 애너테이션의 변경은 리뷰에서 잡아야 하는 계약 변경입니다(3절).
 
 API 요소의 Javadoc은 계약의 일부입니다. 모든 API 요소에는 Javadoc이 있고, `javadoc`은 경고 없이 실행됩니다.
@@ -105,12 +107,12 @@ API 요소의 Javadoc은 계약의 일부입니다. 모든 API 요소에는 Java
 
 ## 6. 목록 갱신
 
-`check`(그리고 `build`)는 1절의 모든 모듈에서 `apiCheck`를 실행합니다. 컴파일된 클래스가 모듈의 `.api` 파일과 다르면 실패하고, 클래스마다 삭제된 줄(`-`)과 추가된 줄(`+`)을 출력합니다.
+`check`(그리고 `build`)는 1절의 모든 모듈에서 `apiCheck`를, 배포되는 테스트 픽스처에서 `testFixturesApiCheck`를 실행합니다. 컴파일된 클래스가 모듈의 `.api` 파일과 다르면 실패하고, 클래스마다 삭제된 줄(`-`)과 추가된 줄(`+`)을 출력합니다.
 
 의도한 API 변경:
 
 1. Javadoc과 함께 변경합니다.
-2. `gradlew apiDump`(모든 모듈) 또는 `gradlew :<module>:apiDump`를 실행합니다.
+2. `gradlew apiDump testFixturesApiDump`(모든 목록) 또는 `gradlew :<module>:apiDump`(테스트 픽스처는 `:<module>:testFixturesApiDump`)를 실행합니다.
 3. `.api` 차이를 3.2절에 비추어 검토하고, 버전에 미치는 영향을 커밋 메시지에 적습니다.
 4. `.api` 파일을 변경과 함께 커밋합니다. 다른 브랜치에서 한 변경은 자기 커밋에서 파일을 갱신하고, API 변경 둘을 병합한 뒤에는 병합한 상태에서 `apiDump`를 한 번 더 실행합니다.
 

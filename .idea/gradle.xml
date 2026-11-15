@@ -13,6 +13,7 @@
             <option value="$PROJECT_DIR$/mods/demo" />
             <option value="$PROJECT_DIR$/mods/scr" />
             <option value="$PROJECT_DIR$/mods/scr-demo" />
+            <option value="$PROJECT_DIR$/mods/scr/sc-recorder" />
             <option value="$PROJECT_DIR$/mods/scr/scr-benchmark" />
             <option value="$PROJECT_DIR$/mods/scr/scr-client" />
             <option value="$PROJECT_DIR$/mods/scr/scr-data" />
@@ -34,7 +35,6 @@
             <option value="$PROJECT_DIR$/sc4j-runtime" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-check" />
-            <option value="$PROJECT_DIR$/tools/sc-recorder" />
           </set>
         </option>
       </GradleProjectSettings>

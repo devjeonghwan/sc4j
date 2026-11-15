@@ -35,12 +35,13 @@ List<String> scrModules = [
 for (item in scrModules) {
     include(":mods:scr:scr-" + item)
 }
+// The read-only frame recorder of the native game (SCRECBIN recordings) that the scr-game tests read: mods/scr/sc-recorder.
+include ':mods:scr:sc-recorder'
 
 // Demo 1, a mod made only of the engine: one module in mods/demo/.
 include ':mods:demo'
 // Demo 2, a clone of the SC:R mod with its own identity: one module in mods/scr-demo/ that builds the clone from mods/scr.
 include ':mods:scr-demo'
 
-include ':tools:sc-recorder'
 // The API tools of the engine (apiDump, apiCheck, checkApiUse; docs/api-policy.md).
 include ':tools:api-check'

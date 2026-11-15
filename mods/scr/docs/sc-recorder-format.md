@@ -2,7 +2,7 @@
 
 **English** | [한국어](sc-recorder-format.ko.md)
 
-SCRECBIN is the binary file format of the frame recorder `sc-recorder` (`tools/sc-recorder/`): the observed state of a game, frame by frame, written as typed samples. This document describes the file layout, the samples, the capture rules and the bounds a reader checks.
+SCRECBIN is the binary file format of the frame recorder `sc-recorder` (`mods/scr/sc-recorder/`): the observed state of a game, frame by frame, written as typed samples. This document describes the file layout, the samples, the capture rules and the bounds a reader checks.
 
 **Contents**
 

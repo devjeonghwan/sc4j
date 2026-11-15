@@ -28,6 +28,9 @@
       <module name="sc4j.mods.scr-demo.main" options="-Xlint:all -Xmaxwarns 100000" />
       <module name="sc4j.mods.scr-demo.mod" options="-Xlint:all -Xmaxwarns 100000 -parameters" />
       <module name="sc4j.mods.scr-demo.test" options="-Xlint:all -Xmaxwarns 100000" />
+      <module name="sc4j.mods.scr.sc-recorder" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
+      <module name="sc4j.mods.scr.sc-recorder.main" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
+      <module name="sc4j.mods.scr.sc-recorder.test" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
       <module name="sc4j.mods.scr.scr-benchmark" options="-Xlint:all,-processing -Xmaxwarns 100000" />
       <module name="sc4j.mods.scr.scr-benchmark.jmh" options="-Xlint:all,-processing -Xmaxwarns 100000" />
       <module name="sc4j.mods.scr.scr-benchmark.main" options="-Xlint:all,-processing -Xmaxwarns 100000" />
@@ -96,9 +99,6 @@
       <module name="sc4j.tools.api-check" options="-Xlint:all -Xmaxwarns 100000" />
       <module name="sc4j.tools.api-check.main" options="-Xlint:all -Xmaxwarns 100000" />
       <module name="sc4j.tools.api-check.test" options="-Xlint:all -Xmaxwarns 100000" />
-      <module name="sc4j.tools.sc-recorder" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
-      <module name="sc4j.tools.sc-recorder.main" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
-      <module name="sc4j.tools.sc-recorder.test" options="-Xlint:all -Xmaxwarns 100000 -Xlint:all" />
     </option>
   </component>
 </project>

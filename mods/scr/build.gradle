@@ -40,9 +40,9 @@ gradle.taskGraph.whenReady { graph ->
     }
 }
 
-// The test tiers of every mods/scr module, of demo 2 (mods/scr-demo) and of the recorder (tools/sc-recorder). The unit tier (test) leaves
-// out the tags integration and corpus (root project).
-configure(subprojects + [project(':mods:scr-demo'), project(':tools:sc-recorder')]) { module ->
+// The test tiers of every mods/scr module (the recorder mods/scr/sc-recorder included) and of demo 2 (mods/scr-demo). The unit tier (test)
+// leaves out the tags integration and corpus (root project).
+configure(subprojects + [project(':mods:scr-demo')]) { module ->
     module.plugins.withType(JavaLibraryPlugin).configureEach {
         // The external properties are forwarded blank to the unit tier so a -P value never turns it into an external run.
         def unitTest = module.tasks.named('test') {
@@ -94,9 +94,9 @@ configure(subprojects + [project(':mods:scr-demo'), project(':tools:sc-recorder'
     }
 }
 
-// The internal use check of the root project over the main sources of every mods/scr module and the demo 2 classes of mods/scr-demo (its
-// clone is the SC:R mod's sources).
-subprojects.each { module ->
+// The internal use check of the root project over the main sources of every mods/scr module but the recorder and the demo 2 classes of
+// mods/scr-demo (its clone is the SC:R mod's sources).
+(subprojects - project(':mods:scr:sc-recorder')).each { module ->
     rootProject.configureApiUse(module, 'src/main/java')
 }
 rootProject.configureApiUse(project(':mods:scr-demo'), 'src/mod/java')
@@ -108,7 +108,7 @@ rootProject.configureApiUse(project(':mods:scr-demo'), 'src/mod/java')
 def nativeIdEnumPattern = ~/org[.\/]fogofwarlabs[.\/]sc4j[.\/]scr[.\/]data[.\/]type[.\/]constant[.\/](UnitType|WeaponType|UpgradeType|TechType|OrderType|Race)\b/
 def constantPackage = 'org/fogofwarlabs/sc4j/scr/data/type/constant/'
 
-configure(subprojects + [project(':tools:sc-recorder')]) { module ->
+configure(subprojects) { module ->
     def sourceFiles = module.fileTree(module.file('src')) { include '**/*.java' }
     def report = module.layout.buildDirectory.file('reports/native-id-boundary.txt')
     def checkNativeIdBoundary = module.tasks.register('checkNativeIdBoundary') {

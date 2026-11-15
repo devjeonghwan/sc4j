@@ -32,9 +32,8 @@ __pycache__/
 /.cache/
 /.lwjgl/
 
-# Ignore game data: StarCraft: Remastered installations and unfinished recordings
+# Ignore game data: StarCraft: Remastered installations
 /StarCraft/
-*.screc.partial
 
 # Ignore local tool installations
 /tools/mcp-venv/

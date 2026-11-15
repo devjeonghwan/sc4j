@@ -54,8 +54,8 @@ SC4J(Simulation Core for Java)는 실시간 전략 게임을 위한 엔진입니
 | `sc4j-runtime` | 모드 jar 하나를 창 모드 또는 헤드리스로 실행 |
 | `sc4j-launcher` | 런처(JavaFX) |
 | `sc4j-beaconlink-protocol`, `sc4j-beaconlink-peer`, `sc4j-beaconlink-node`, `sc4j-beaconlink` | Beacon.Link: 와이어 프로토콜, 피어 라이브러리, 헤드리스 노드, 런타임이 모드에 주는 클라이언트 |
-| [`mods/`](mods/) | 세 모드: `demo`, `scr`(모듈 `scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`, `scr-benchmark`), `scr-demo` |
-| [`tools/`](tools/) | `api-check`(API 목록), `sc-recorder`(SC:R 모드 비교용으로 원본 게임의 프레임을 읽기만 하는 기록기) |
+| [`mods/`](mods/) | 세 모드: `demo`, `scr`(모듈 `scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`, `scr-benchmark`, SC:R 모드 비교용으로 원본 게임의 프레임을 읽기만 하는 기록기), `scr-demo` |
+| [`tools/`](tools/) | `api-check`(API 목록) |
 | [`docs/`](docs/) | 가이드와 참조 문서([목록](docs/README.ko.md)). `docs/branding/`: 로고, 배너, 모드의 런처 그림 |
 | [`licenses/`](licenses/) | 서드파티 라이브러리의 라이선스 전문 |
 
@@ -98,7 +98,7 @@ JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래
 | [엔진 API 정책](docs/api-policy.ko.md) | 엔진 API의 범위, 버전, 내부 요소 |
 | [Beacon.Link 프로토콜](docs/beaconlink/protocol.ko.md) | Beacon.Link의 와이어 프로토콜과 파일 |
 | [Beacon.Link 운영 가이드](docs/beaconlink/operator.ko.md) | 다른 플레이어를 위한 피어 운영: 헤드리스 노드와 런처 공개 모드 |
-| [SCRECBIN 형식](docs/tools/sc-recorder-format.ko.md) | 프레임 기록기의 파일 형식 |
+| [SCRECBIN 형식](mods/scr/docs/sc-recorder-format.ko.md) | 프레임 기록기의 파일 형식 |
 | [브랜딩](docs/branding/README.ko.md) | 로고, 배너, 모드 그림과 PNG 내보내기 |
 | [기여 안내](CONTRIBUTING.ko.md) | 개발 환경, 테스트, 코드 스타일, 커밋과 풀 리퀘스트 |
 

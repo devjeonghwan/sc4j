@@ -15,7 +15,7 @@ dependencies {
 
     testImplementation testFixtures(project(':mods:scr:scr-data'))
     // SCRECBIN recording reader (org.fogofwarlabs.screcorder.format.recording) of the native recording pairs (replays/native).
-    testImplementation project(':tools:sc-recorder')
+    testImplementation project(':mods:scr:sc-recorder')
 }
 
 tasks.withType(Test).configureEach {

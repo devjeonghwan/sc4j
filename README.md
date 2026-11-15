@@ -54,8 +54,8 @@ The [mod author guide](docs/mod-guide.md) shows how to make a new mod for the en
 | `sc4j-runtime` | runs one mod jar, in a window or headless |
 | `sc4j-launcher` | the launcher (JavaFX) |
 | `sc4j-beaconlink-protocol`, `sc4j-beaconlink-peer`, `sc4j-beaconlink-node`, `sc4j-beaconlink` | Beacon.Link: the wire protocol, the peer library, the headless node and the client that the runtime gives a mod |
-| [`mods/`](mods/) | the three mods: `demo`, `scr` (modules `scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`, `scr-benchmark`), `scr-demo` |
-| [`tools/`](tools/) | `api-check` (API listings), `sc-recorder` (a read-only frame recorder of the native game, used to compare the SC:R mod) |
+| [`mods/`](mods/) | the three mods: `demo`, `scr` (modules `scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`, `scr-benchmark` and a read-only frame recorder of the native game, used to compare the SC:R mod), `scr-demo` |
+| [`tools/`](tools/) | `api-check` (API listings) |
 | [`docs/`](docs/) | the guides and references ([index](docs/README.md)); `docs/branding/`: logos, banners and the launcher art of the mods |
 | [`licenses/`](licenses/) | the licence texts of the third-party libraries |
 
@@ -98,7 +98,7 @@ The guides are in [`docs/`](docs/README.md), each in English and Korean.
 | [Engine API policy](docs/api-policy.md) | what the engine API is, its versions and the internal elements |
 | [Beacon.Link protocol](docs/beaconlink/protocol.md) | the wire protocol and the files of Beacon.Link |
 | [Beacon.Link operator guide](docs/beaconlink/operator.md) | running a peer for other players: the headless node and the launcher's public mode |
-| [SCRECBIN format](docs/tools/sc-recorder-format.md) | the file format of the frame recorder |
+| [SCRECBIN format](mods/scr/docs/sc-recorder-format.md) | the file format of the frame recorder |
 | [Branding](docs/branding/README.md) | the logos, banners and mod art, and how to export them |
 | [Contributing](CONTRIBUTING.md) | setup, tests, code style, commits and pull requests |
 

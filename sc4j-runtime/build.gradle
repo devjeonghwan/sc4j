@@ -10,6 +10,9 @@ dependencies {
     // The Beacon.Link client behind the engine's Beacon.Link interface of the launch request; it opens nothing until a mod asks.
     implementation project(':sc4j-beaconlink')
 
+    // The native libraries of the engine client (LWJGL, FFmpeg through JavaCPP) for lib/natives of the distribution.
+    nativeLibraries project(path: ':sc4j-engine-client', configuration: 'nativeLibraries')
+
     // Test mod jars (org.fogofwarlabs.sc4j.manifest.test.TestJarUtils).
     testImplementation testFixtures(project(':sc4j-mod-manifest'))
 }
@@ -19,8 +22,7 @@ application {
     mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
 }
 
-// Until the engine owns its libraries, a mod's third-party libraries (LWJGL, FFmpeg, ...) are copied next to the runtime's
-// own jars when an install is assembled; the start scripts therefore put every jar of lib/ on the class path.
+// The start scripts put every jar of lib/ on the class path.
 tasks.named('startScripts') {
     doLast {
         windowsScript.text = windowsScript.text.replaceFirst(/(?m)^set CLASSPATH=.*$/, 'set CLASSPATH=%APP_HOME%\\\\lib\\\\*')
@@ -29,8 +31,7 @@ tasks.named('startScripts') {
 }
 
 // The test of the user package (@RequiresDistribution, tag distribution) unpacks build/distributions/SC4J-<version>.zip, which the root
-// project's distribution task builds with every mod, and starts its runtime: it runs only in its own task, never in test, check or
-// integrationTest (integrationTest includes the tag integration only).
+// project's distribution task builds, and starts its runtime: it runs only in its own task, never in test or check.
 tasks.named('test') {
     options {
         excludeTags 'distribution'

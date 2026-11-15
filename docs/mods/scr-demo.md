@@ -344,7 +344,7 @@ Both mods declare their folder setting `gameFolder` with the same shared name (`
 build\dev-install\launcher\bin\sc4j-launcher.bat
 ```
 
-(or `.\gradlew.bat :mods:scr:runDevLauncher`), choose "SC:R Clone Demo", check the StarCraft: Remastered folder (the folder that holds `.build.info` and `x86_64/StarCraft.exe`) and the text language, and start. The launcher saves the language to `scr-demo.json`, the folder to `shared-settings.json`, and starts the runtime with `scr-demo.jar`, `userdata/settings/scr-demo.json`, `userdata/mods/scr-demo/` and `userdata/logs/scr-demo/`.
+(or `.\gradlew.bat runDevLauncher`), choose "SC:R Clone Demo", check the StarCraft: Remastered folder (the folder that holds `.build.info` and `x86_64/StarCraft.exe`) and the text language, and start. The launcher saves the language to `scr-demo.json`, the folder to `shared-settings.json`, and starts the runtime with `scr-demo.jar`, `userdata/settings/scr-demo.json`, `userdata/mods/scr-demo/` and `userdata/logs/scr-demo/`.
 
 ## 6. Identity: who your clone plays with
 

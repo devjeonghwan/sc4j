@@ -114,16 +114,12 @@ tasks.named('assemble') {
     dependsOn modJar
 }
 
-// The development install (gradlew :mods:demo:devInstall): the SC:R mod's devInstall assembles build/dev-install with the runtime, then
-// demo.jar is copied into its mods/ folder next to scr.jar. Nothing under userdata/ is written here.
-evaluationDependsOn(':mods:scr')
-def scrDevInstall = project(':mods:scr').tasks.named('devInstall')
-tasks.register('devInstall', Copy) {
-    description = 'Copies demo.jar into the mods folder of the development install build/dev-install.'
+// The development install (gradlew :mods:demo:devInstall): the root project's devInstall assembles build/dev-install with demo.jar in its
+// mods/ folder. Nothing under userdata/ is written here.
+tasks.register('devInstall') {
+    description = 'Assembles the development install build/dev-install with demo.jar.'
     group = 'distribution'
-    dependsOn scrDevInstall
-    from(modJar)
-    into scrDevInstall.map { task -> new File(task.destinationDir, 'mods') }
+    dependsOn rootProject.tasks.named('devInstall')
 }
 
 // The runtime tests of the demo start the built jar (org.fogofwarlabs.sc4j.demo.DemoModTest).

@@ -66,10 +66,11 @@ You need JDK 25. The Gradle wrapper downloads Gradle itself. Commands run in Pow
 | Command | What it does |
 |---|---|
 | `.\gradlew.bat build` | compiles everything, runs the unit tests and the checks |
-| `.\gradlew.bat :mods:demo:devInstall` | assembles the development install `build/dev-install/` (launcher, runtime, `mods/scr.jar`, `mods/demo.jar`) |
-| `.\gradlew.bat :mods:scr-demo:devInstall` | adds `mods/scr-demo.jar` to the development install |
-| `.\gradlew.bat :mods:scr:runDevLauncher` | opens the launcher of the development install |
-| `.\gradlew.bat :mods:scr:runDevInstall` | runs the runtime of the development install with the SC:R mod |
+| `.\gradlew.bat :mods:demo:devInstall` | assembles the development install `build/dev-install/` (launcher, runtime, `mods/demo.jar`) |
+| `.\gradlew.bat :mods:scr:devInstall` | adds `mods/scr.jar` to the development install |
+| `.\gradlew.bat :mods:scr-demo:devInstall` | adds `mods/scr.jar` and `mods/scr-demo.jar` to the development install |
+| `.\gradlew.bat runDevLauncher` | opens the launcher of the development install |
+| `.\gradlew.bat runDevInstall -Psc4j.mod=scr` | runs the runtime of the development install with `mods/scr.jar` (default `demo`) |
 | `.\gradlew.bat distribution` | builds the user package `build/distributions/SC4J-<version>.zip` |
 | `.\gradlew.bat :sc4j-beaconlink-node:installDist` | builds the headless Beacon.Link node into `sc4j-beaconlink-node/build/install/` |
 
@@ -77,12 +78,12 @@ A first run:
 
 ```powershell
 .\gradlew.bat :mods:demo:devInstall
-.\gradlew.bat :mods:scr:runDevLauncher
+.\gradlew.bat runDevLauncher
 ```
 
 The launcher lists every jar in `build/dev-install/mods/`. Choose a mod and start it. For the SC:R mod and demo 2 the launcher looks for the StarCraft: Remastered folder where Windows records the game; if it is not found there, set it once in the mod's settings.
 
-The user package holds the launcher, the runtime, the three mods, a Java runtime and the start files `SC4J.bat` and `SC4J`. It holds no user data: a fresh install makes `userdata/` at its first start.
+The user package holds the launcher, the runtime, the demo mod, a Java runtime and the start files `SC4J.bat` and `SC4J`. It holds no user data: a fresh install makes `userdata/` at its first start.
 
 Test tiers, the Gradle property for the game folder and the code style are in [CONTRIBUTING.md](CONTRIBUTING.md).
 

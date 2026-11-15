@@ -344,7 +344,7 @@ READY   scr                  scr.jar
 build\dev-install\launcher\bin\sc4j-launcher.bat
 ```
 
-(또는 `.\gradlew.bat :mods:scr:runDevLauncher`). "SC:R Clone Demo"를 고르고, 스타크래프트: 리마스터 폴더(`.build.info`와 `x86_64/StarCraft.exe`가 있는 폴더)와 텍스트 언어를 확인하고 시작합니다. 런처는 언어를 `scr-demo.json`에, 폴더를 `shared-settings.json`에 저장하고, `scr-demo.jar`, `userdata/settings/scr-demo.json`, `userdata/mods/scr-demo/`, `userdata/logs/scr-demo/`로 런타임을 시작합니다.
+(또는 `.\gradlew.bat runDevLauncher`). "SC:R Clone Demo"를 고르고, 스타크래프트: 리마스터 폴더(`.build.info`와 `x86_64/StarCraft.exe`가 있는 폴더)와 텍스트 언어를 확인하고 시작합니다. 런처는 언어를 `scr-demo.json`에, 폴더를 `shared-settings.json`에 저장하고, `scr-demo.jar`, `userdata/settings/scr-demo.json`, `userdata/mods/scr-demo/`, `userdata/logs/scr-demo/`로 런타임을 시작합니다.
 
 ## 6. 정체성: 복제 모드가 함께 플레이하는 상대
 

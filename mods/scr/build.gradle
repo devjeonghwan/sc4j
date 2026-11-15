@@ -1,11 +1,145 @@
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier
-
 plugins {
     id 'base'
 }
 
 // Packaging of the SC:R mod: mods/scr.jar from the classes and resources of every mods/scr module (the benchmark module,
-// JMH only, is not part of the mod), and the development install that runs it with the runtime.
+// JMH only, is not part of the mod), and its copy into the development install. The build rules of the SC:R side come first: native
+// libraries, test tiers, the internal use check and the native id boundary.
+
+// The renderer and the client stage native libraries (configureNativeLibraries of the root project). Their build files fill the
+// configuration, so it is created before they are evaluated.
+['scr-render', 'scr-client'].each { name ->
+    rootProject.configureNativeLibraries(project(':mods:scr:' + name))
+}
+
+// External test inputs, passed as Gradle properties (-P<name>=<path>, or <name>=<path> in the user's
+// GRADLE_USER_HOME/gradle.properties) and forwarded as system properties. The shared test fixture
+// org.fogofwarlabs.sc4j.scr.core.test.ExternalInput reads them.
+def externalTestProperties = [
+    'sc4j.data',                  // SC:R installation (CASC storage, Maps, x86_64/StarCraft.exe)
+    'sc4j.replays',               // STARDATA replay corpus root (stardata_original_replays)
+    'sc4j.replays.limit',         // corpus file limit of the replay parse test
+    'sc4j.maps',                  // the client's maps folder with the large EUD maps (mods/scr/scr-client/build/install/sc4j/maps)
+    'sc4j.corpus'                 // replay corpus folder that the corpus survey plays (any folder layout)
+]
+
+// The integration tier needs the SC:R installation: fail before any task runs instead of skipping every test.
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { task -> task.name == 'integrationTest' }) {
+        def data = providers.gradleProperty('sc4j.data').getOrElse('')
+
+        if (data.isBlank()) {
+            throw new GradleException("integrationTest needs the SC:R installation: set the Gradle property sc4j.data, either as the line " +
+                                      "'sc4j.data=<installation directory>' in %USERPROFILE%\\.gradle\\gradle.properties (GRADLE_USER_HOME) " +
+                                      "or with -Psc4j.data=<installation directory> (CI: ORG_GRADLE_PROJECT_sc4j.data).")
+        }
+
+        if (!new File(data).isDirectory()) {
+            throw new GradleException("integrationTest needs the SC:R installation, but the Gradle property sc4j.data names no directory: " + data)
+        }
+    }
+}
+
+// The test tiers of every mods/scr module, of demo 2 (mods/scr-demo) and of the recorder (tools/sc-recorder). The unit tier (test) leaves
+// out the tags integration and corpus (root project).
+configure(subprojects + [project(':mods:scr-demo'), project(':tools:sc-recorder')]) { module ->
+    module.plugins.withType(JavaLibraryPlugin).configureEach {
+        // The external properties are forwarded blank to the unit tier so a -P value never turns it into an external run.
+        def unitTest = module.tasks.named('test') {
+            externalTestProperties.each { name -> systemProperty name, '' }
+        }
+
+        // Integration tier: the tests marked @RequiresInstallation (tag integration), with the SC:R installation sc4j.data.
+        // The build fails before it starts when sc4j.data is not set (gradle.taskGraph.whenReady above).
+        def integrationTest = module.tasks.register('integrationTest', Test) {
+            description = 'Runs the integration tier: the tests that need the SC:R installation (sc4j.data).'
+            group = 'verification'
+            testClassesDirs = module.sourceSets.test.output.classesDirs
+            classpath = module.sourceSets.test.runtimeClasspath
+            useJUnitPlatform {
+                includeTags 'integration'
+                excludeTags 'corpus'
+            }
+            shouldRunAfter unitTest
+        }
+
+        // Corpus tier: the tests marked @CorpusTest (tag corpus): long runs and tests over the external folders other than
+        // the installation. A test whose declared folder is not set is skipped.
+        def corpusTest = module.tasks.register('corpusTest', Test) {
+            description = 'Runs the corpus tier over the external replay corpus and the other external folders.'
+            group = 'verification'
+            testClassesDirs = module.sourceSets.test.output.classesDirs
+            classpath = module.sourceSets.test.runtimeClasspath
+            useJUnitPlatform {
+                includeTags 'corpus'
+            }
+            shouldRunAfter integrationTest
+        }
+
+        [integrationTest, corpusTest].each { task ->
+            task.configure {
+                externalTestProperties.each { name -> systemProperty name, providers.gradleProperty(name).getOrElse('') }
+                // Changed external inputs must rerun the tier.
+                outputs.upToDateWhen { false }
+            }
+        }
+
+        // The folder-driven tests (replays/detection, replays/native, maps, captures/lan, ... of the test resources) write one
+        // result table per test task (org.fogofwarlabs.sc4j.scr.core.test.TestResultUtils).
+        [unitTest, integrationTest, corpusTest].each { task ->
+            task.configure {
+                systemProperty 'sc4j.golden.results', module.layout.buildDirectory.dir('golden-results/' + task.name).get().asFile.absolutePath
+            }
+        }
+    }
+}
+
+// The internal use check of the root project over the main sources of every mods/scr module and the demo 2 classes of mods/scr-demo (its
+// clone is the SC:R mod's sources).
+subprojects.each { module ->
+    rootProject.configureApiUse(module, 'src/main/java')
+}
+rootProject.configureApiUse(project(':mods:scr-demo'), 'src/mod/java')
+
+// Native id boundary: the SC:R mod keeps its native ids as the int holders of scr.content (ScrUnitIds ...) and
+// the engine identities of ScrUnits ... mapped by ScrNativeIds; the package scr.data.type.constant declares no enum and no source names
+// a native id enum (UnitType, WeaponType, UpgradeType, TechType, OrderType, Race) in that package. "check" (and so "build")
+// runs it for every module of the SC:R mod and the recorder.
+def nativeIdEnumPattern = ~/org[.\/]fogofwarlabs[.\/]sc4j[.\/]scr[.\/]data[.\/]type[.\/]constant[.\/](UnitType|WeaponType|UpgradeType|TechType|OrderType|Race)\b/
+def constantPackage = 'org/fogofwarlabs/sc4j/scr/data/type/constant/'
+
+configure(subprojects + [project(':tools:sc-recorder')]) { module ->
+    def sourceFiles = module.fileTree(module.file('src')) { include '**/*.java' }
+    def report = module.layout.buildDirectory.file('reports/native-id-boundary.txt')
+    def checkNativeIdBoundary = module.tasks.register('checkNativeIdBoundary') {
+        description = 'Checks that no native id enum of scr.data.type.constant is declared or named; the native ids are the scr.content holders.'
+        group = 'verification'
+        inputs.files(sourceFiles)
+        outputs.file(report)
+        doLast {
+            def problems = []
+            sourceFiles.each { file ->
+                def constant = file.path.replace('\\', '/').contains(constantPackage)
+                file.readLines('UTF-8').eachWithIndex { line, index ->
+                    if (line =~ nativeIdEnumPattern || constant && line =~ /^\s*(public\s+)?enum\s/) {
+                        problems << file.path + ':' + (index + 1) + ': ' + line.trim()
+                    }
+                }
+            }
+            if (!problems.isEmpty()) {
+                throw new GradleException(module.path + ' must not declare or name a native id enum of scr.data.type.constant:\n  ' +
+                        problems.join('\n  '))
+            }
+            report.get().asFile.text = 'No native id enum: ' + sourceFiles.files.size() + ' files checked.\n'
+        }
+    }
+    module.plugins.withId('java') {
+        module.tasks.named('check') {
+            dependsOn checkNativeIdBoundary
+        }
+    }
+}
+
 evaluationDependsOnChildren()
 
 // The module folders of the mod; the clone of demo 2 (mods/scr-demo) copies the same list.
@@ -22,11 +156,9 @@ modModules.each { module ->
         options.compilerArgs += modCompilerArgs
     }
 }
-def clientProject = project(':mods:scr:scr-client')
-def developmentInstall = rootProject.layout.buildDirectory.dir('dev-install')
 
 // The mod jar: sc4j-mod.json and meta/ come from the scr-client resources. The engine, the manifest module and the base are
-// not in it (the runtime provides them); the third-party libraries are installed with the runtime (devInstall).
+// not in it, and neither are the third-party libraries: the runtime provides them.
 def modJar = tasks.register('modJar', Jar) {
     description = 'Builds the SC:R mod jar scr.jar from the mods/scr modules.'
     group = 'build'
@@ -45,118 +177,25 @@ tasks.named('assemble') {
     dependsOn modJar
 }
 
-// The third-party libraries of the client (LWJGL, FFmpeg/JavaCPP, ...): until the engine owns them, they go to the runtime's lib
-// folder of an install, next to the runtime's own jars.
-def clientLibraries = clientProject.configurations.runtimeClasspath.incoming.artifactView {
-    componentFilter { component -> component instanceof ModuleComponentIdentifier }
-}.files
-
-// The programs of an install: launcher/ (the launcher distribution with the shipped seed list), runtime/ (the runtime distribution with the
-// client's libraries and native libraries), mods/scr.jar, LICENSE, NOTICE and licenses/. The development install and the user package
-// (the root project's distribution task) both copy it; the runtime's lib folder holds a few jars twice, so a copy of it excludes duplicates.
-// The launcher and the runtime may be evaluated after this project, so their distributions are named when the copy runs.
-ext.installContents = copySpec {
-    from({ project(':sc4j-launcher').tasks.named('installDist') }) { into 'launcher' }
-    from({ project(':sc4j-runtime').tasks.named('installDist') }) { into 'runtime' }
-    from(clientLibraries) { into 'runtime/lib' }
-    from(clientProject.tasks.named('stageNativeLibraries')) { into 'runtime/lib/natives' }
-    from(modJar) { into 'mods' }
-    from(rootProject.licenseFiles)
-    from(rootProject.licenseTexts) { into 'licenses' }
-}
-
-// The development install build/dev-install of the repository: the programs of an install (installContents) and userdata/ (kept between
-// builds, like other jars in mods/). When the Gradle property sc4j.data names the SC:R installation and no shared settings file exists yet,
+// The development install (gradlew :mods:scr:devInstall): the root project's devInstall assembles build/dev-install, then scr.jar is
+// copied into its mods/ folder. When the Gradle property sc4j.data names the SC:R installation and no shared settings file exists yet,
 // userdata/shared-settings.json is created with it as the value of the shared StarCraft: Remastered folder setting (shared name
 // starcraft-remastered) of the SC:R mod and its clones.
-def devInstall = tasks.register('devInstall', Sync) {
-    description = 'Assembles the development install build/dev-install with the runtime and mods/scr.jar.'
+def engineDevInstall = rootProject.tasks.named('devInstall')
+tasks.register('devInstall', Copy) {
+    description = 'Copies scr.jar into the mods folder of the development install build/dev-install.'
     group = 'distribution'
-    into developmentInstall
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    preserve {
-        include 'userdata/**'
-        include 'runtime/.cache/**'
-        include 'launcher/.cache/**'
-        include 'mods/**'
-    }
-    with installContents
+    dependsOn engineDevInstall
+    into engineDevInstall.map { task -> task.destinationDir }
+    from(modJar) { into 'mods' }
 
     def installation = providers.gradleProperty('sc4j.data').getOrElse('')
     doLast {
-        rootProject.checkDistributionLicenses(developmentInstall.get().asFile)
-        def sharedSettingsFile = developmentInstall.get().file('userdata/shared-settings.json').asFile
+        def sharedSettingsFile = new File(destinationDir, 'userdata/shared-settings.json')
         if (!installation.isBlank() && !sharedSettingsFile.exists()) {
             sharedSettingsFile.parentFile.mkdirs()
             def value = new File(installation).absolutePath.replace('\\', '\\\\').replace('"', '\\"')
             sharedSettingsFile.setText('{\n  "format": 1,\n  "values": {"starcraft-remastered": "' + value + '"}\n}\n', 'UTF-8')
         }
     }
-}
-
-// Runs the runtime of the development install with scr.jar: gradlew :mods:scr:runDevInstall [--args="--headless ..."].
-// It opens the client window unless the arguments end the run first.
-tasks.register('runDevInstall', JavaExec) {
-    description = 'Runs the runtime of the development install with the SC:R mod.'
-    group = 'application'
-    dependsOn devInstall
-    def runtimeDirectory = developmentInstall.map { directory -> directory.dir('runtime').asFile }
-    classpath = files({ fileTree(new File(runtimeDirectory.get(), 'lib')) { include '*.jar' } })
-    mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
-    args '--install', developmentInstall.get().asFile.absolutePath, '--mod', developmentInstall.get().file('mods/scr.jar').asFile.absolutePath
-    doFirst {
-        def nativeDirectory = new File(runtimeDirectory.get(), 'lib/natives').absolutePath
-        jvmArgs '--enable-native-access=ALL-UNNAMED',
-                '-Dorg.lwjgl.librarypath=' + nativeDirectory,
-                '-Djava.library.path=' + nativeDirectory,
-                '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + new File(runtimeDirectory.get(), '.cache/natives').absolutePath,
-                '-Dorg.bytedeco.javacpp.cachedir=' + new File(runtimeDirectory.get(), '.cache/javacpp').absolutePath,
-                '-Dorg.bytedeco.javacpp.platform.linkpath=' + nativeDirectory,
-                '-Dorg.bytedeco.javacpp.platform.preloadpath=' + nativeDirectory,
-                '-Dorg.bytedeco.javacpp.pathsFirst=true',
-                '-Dorg.bytedeco.javacpp.cacheLibraries=false'
-    }
-}
-
-// Opens the launcher of the development install: gradlew :mods:scr:runDevLauncher. It lists the jars of build/dev-install/mods and
-// starts the runtime of the development install.
-tasks.register('runDevLauncher', Exec) {
-    description = 'Opens the launcher of the development install.'
-    group = 'application'
-    dependsOn devInstall
-    def scriptName = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows') ? 'sc4j-launcher.bat' : 'sc4j-launcher'
-    executable = developmentInstall.get().file('launcher/bin/' + scriptName).asFile.absolutePath
-}
-
-// A broken test mod for checking the launcher's error display: gradlew :mods:scr:devInstallBrokenMod copies broken-test.jar (a
-// manifest without "entry" and with an invalid "engine") into build/dev-install/mods. It is never installed by default; delete
-// build/dev-install/mods/broken-test.jar to remove it.
-def brokenModManifest = resources.text.fromString("""{
-  "format": 1,
-  "id": "broken-test",
-  "name": {"en": "Broken Test Mod", "ko": "깨진 테스트 모드"},
-  "version": "0.0.1",
-  "engine": "one",
-  "description": {"en": "A deliberately broken mod for checking the launcher."}
-}
-""")
-
-def brokenModJar = tasks.register('brokenModJar', Jar) {
-    description = 'Builds the broken test mod jar broken-test.jar.'
-    group = 'build'
-    archiveFileName = 'broken-test.jar'
-    destinationDirectory = layout.buildDirectory.dir('broken-mod')
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
-    from(brokenModManifest.asFile('UTF-8')) {
-        rename { name -> 'sc4j-mod.json' }
-    }
-}
-
-tasks.register('devInstallBrokenMod', Copy) {
-    description = 'Copies the broken test mod broken-test.jar into the development install.'
-    group = 'distribution'
-    dependsOn devInstall
-    from(brokenModJar)
-    into developmentInstall.map { directory -> directory.dir('mods') }
 }

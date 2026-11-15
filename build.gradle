@@ -83,37 +83,6 @@ allprojects {
     repositories {
         mavenCentral()
     }
-}
-
-// External test inputs, passed as Gradle properties (-P<name>=<path>, or <name>=<path> in the user's
-// GRADLE_USER_HOME/gradle.properties) and forwarded as system properties. The shared test fixture
-// org.fogofwarlabs.sc4j.scr.core.test.ExternalInput reads them.
-def externalTestProperties = [
-    'sc4j.data',                  // SC:R installation (CASC storage, Maps, x86_64/StarCraft.exe)
-    'sc4j.replays',               // STARDATA replay corpus root (stardata_original_replays)
-    'sc4j.replays.limit',         // corpus file limit of the replay parse test
-    'sc4j.maps',                  // the client's maps folder with the large EUD maps (mods/scr/scr-client/build/install/sc4j/maps)
-    'sc4j.corpus'                 // replay corpus folder that the corpus survey plays (any folder layout)
-]
-
-// The integration tier needs the SC:R installation: fail before any task runs instead of skipping every test.
-gradle.taskGraph.whenReady { graph ->
-    if (graph.allTasks.any { task -> task.name == 'integrationTest' }) {
-        def data = providers.gradleProperty('sc4j.data').getOrElse('')
-
-        if (data.isBlank()) {
-            throw new GradleException("integrationTest needs the SC:R installation: set the Gradle property sc4j.data, either as the line " +
-                                      "'sc4j.data=<installation directory>' in %USERPROFILE%\\.gradle\\gradle.properties (GRADLE_USER_HOME) " +
-                                      "or with -Psc4j.data=<installation directory> (CI: ORG_GRADLE_PROJECT_sc4j.data).")
-        }
-
-        if (!new File(data).isDirectory()) {
-            throw new GradleException("integrationTest needs the SC:R installation, but the Gradle property sc4j.data names no directory: " + data)
-        }
-    }
-}
-
-subprojects {
 
     // These options must precede JVM startup: the JDK caches its default temporary directory during initialization.
     [Test, JavaExec].each { taskType ->
@@ -131,61 +100,77 @@ subprojects {
         }
     }
 
-    if (name in ['sc4j-engine-client', 'scr-render', 'scr-client']) {
-        def nativeLibraries = configurations.create('nativeLibraries') {
-            canBeConsumed = true
-            canBeResolved = true
-        }
-        def nativeDirectory = layout.buildDirectory.dir('native-libraries')
-        def stageNativeLibraries = tasks.register('stageNativeLibraries', Sync) {
-            description = 'Stages the existing native dependencies outside the Java runtime classpath.'
-            from({ nativeLibraries.collect { archive -> zipTree(archive) } }) {
-                include '**/*.dll', '**/*.so', '**/*.so.*'
-                exclude 'META-INF/**', '**/*.sha1', '**/*.git'
-                eachFile { details -> details.path = details.name }
-                includeEmptyDirs = false
-            }
-            into nativeDirectory
-            duplicatesStrategy = DuplicatesStrategy.FAIL
-            doLast {
-                def directory = nativeDirectory.get().asFile
-                def libraries = directory.isDirectory() ? directory.listFiles().findAll { file ->
-                    file.isFile() && file.name != 'libraries.list'
-                }.collect { file -> file.name }.sort() : []
-                if (libraries.isEmpty()) {
-                    throw new GradleException('No native libraries were staged.')
-                }
-                new File(directory, 'libraries.list').setText(libraries.join('\n') + '\n', 'UTF-8')
-            }
-        }
-        [Test, JavaExec].each { taskType ->
-            tasks.withType(taskType).configureEach {
-                dependsOn stageNativeLibraries
-                systemProperty 'org.lwjgl.librarypath', nativeDirectory.get().asFile.absolutePath
-                systemProperty 'java.library.path', nativeDirectory.get().asFile.absolutePath
-                systemProperty 'org.lwjgl.system.SharedLibraryExtractPath', layout.buildDirectory.dir('tmp/native-extract').get().asFile.absolutePath
-                systemProperty 'org.bytedeco.javacpp.cachedir', layout.buildDirectory.dir('tmp/javacpp-cache').get().asFile.absolutePath
-                systemProperty 'org.bytedeco.javacpp.platform.linkpath', nativeDirectory.get().asFile.absolutePath
-                systemProperty 'org.bytedeco.javacpp.platform.preloadpath', nativeDirectory.get().asFile.absolutePath
-                systemProperty 'org.bytedeco.javacpp.pathsFirst', 'true'
-                systemProperty 'org.bytedeco.javacpp.cacheLibraries', 'false'
-                jvmArgs '--enable-native-access=ALL-UNNAMED'
-            }
-        }
-        plugins.withId('application') {
-            distributions.main.contents {
-                from(stageNativeLibraries) { into 'lib/natives' }
-            }
+    // Every jar carries LICENSE and NOTICE in META-INF/. The base jar type org.gradle.jvm.tasks.Jar covers the jars of plugins too (the
+    // javadoc jar of the publishing plugin), which do not extend the Jar type of the build script.
+    tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
+        metaInf {
+            from(rootProject.licenseFiles)
         }
     }
+}
 
-    // The installed client and the runtime load the native libraries from lib/natives. The runtime carries the JavaCPP options
-    // too: the engine's video default decodes with FFmpeg through JavaCPP.
+// Native libraries of a module: the configuration nativeLibraries holds the archives of the native libraries, stageNativeLibraries unpacks
+// them into build/native-libraries for the module's tests and run tasks, and an application distribution gets them in lib/natives.
+ext.configureNativeLibraries = { Project module ->
+    def nativeLibraries = module.configurations.create('nativeLibraries') {
+        canBeConsumed = true
+        canBeResolved = true
+    }
+    def nativeDirectory = module.layout.buildDirectory.dir('native-libraries')
+    def stageNativeLibraries = module.tasks.register('stageNativeLibraries', Sync) {
+        description = 'Stages the existing native dependencies outside the Java runtime classpath.'
+        from({ nativeLibraries.collect { archive -> module.zipTree(archive) } }) {
+            include '**/*.dll', '**/*.so', '**/*.so.*'
+            exclude 'META-INF/**', '**/*.sha1', '**/*.git'
+            eachFile { details -> details.path = details.name }
+            includeEmptyDirs = false
+        }
+        into nativeDirectory
+        duplicatesStrategy = DuplicatesStrategy.FAIL
+        doLast {
+            def directory = nativeDirectory.get().asFile
+            def libraries = directory.isDirectory() ? directory.listFiles().findAll { file ->
+                file.isFile() && file.name != 'libraries.list'
+            }.collect { file -> file.name }.sort() : []
+            if (libraries.isEmpty()) {
+                throw new GradleException('No native libraries were staged.')
+            }
+            new File(directory, 'libraries.list').setText(libraries.join('\n') + '\n', 'UTF-8')
+        }
+    }
+    [Test, JavaExec].each { taskType ->
+        module.tasks.withType(taskType).configureEach {
+            dependsOn stageNativeLibraries
+            systemProperty 'org.lwjgl.librarypath', nativeDirectory.get().asFile.absolutePath
+            systemProperty 'java.library.path', nativeDirectory.get().asFile.absolutePath
+            systemProperty 'org.lwjgl.system.SharedLibraryExtractPath', module.layout.buildDirectory.dir('tmp/native-extract').get().asFile.absolutePath
+            systemProperty 'org.bytedeco.javacpp.cachedir', module.layout.buildDirectory.dir('tmp/javacpp-cache').get().asFile.absolutePath
+            systemProperty 'org.bytedeco.javacpp.platform.linkpath', nativeDirectory.get().asFile.absolutePath
+            systemProperty 'org.bytedeco.javacpp.platform.preloadpath', nativeDirectory.get().asFile.absolutePath
+            systemProperty 'org.bytedeco.javacpp.pathsFirst', 'true'
+            systemProperty 'org.bytedeco.javacpp.cacheLibraries', 'false'
+            jvmArgs '--enable-native-access=ALL-UNNAMED'
+        }
+    }
+    module.plugins.withId('application') {
+        module.distributions.main.contents {
+            from(stageNativeLibraries) { into 'lib/natives' }
+        }
+    }
+}
+
+[':sc4j-engine-client', ':sc4j-runtime'].each { path ->
+    configureNativeLibraries(project(path))
+}
+
+subprojects {
+
+    // An application with native libraries loads them from lib/natives; the JavaCPP options serve FFmpeg, the engine's video default.
     plugins.withId('application') {
         tasks.named('startScripts') {
             defaultJvmOpts = providers.provider {
                 application.applicationDefaultJvmArgs + ['-XX:-UsePerfData', '-Djava.io.tmpdir=APP_HOME_PLACEHOLDER/.cache/tmp'] +
-                        (project.name in ['scr-client', 'sc4j-runtime'] ? [
+                        (project.configurations.findByName('nativeLibraries') != null ? [
                                 '--enable-native-access=ALL-UNNAMED',
                                 '-Dorg.lwjgl.librarypath=APP_HOME_PLACEHOLDER/lib/natives',
                                 '-Djava.library.path=APP_HOME_PLACEHOLDER/lib/natives',
@@ -218,14 +203,8 @@ subprojects {
             }
         }
     }
-    // Every jar carries LICENSE and NOTICE in META-INF/, every application distribution LICENSE, NOTICE and licenses/ at its root; the
-    // install task fails when its folder misses one of them. The base jar type org.gradle.jvm.tasks.Jar covers the jars of plugins too (the
-    // javadoc jar of the publishing plugin), which do not extend the Jar type of the build script.
-    tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
-        metaInf {
-            from(rootProject.licenseFiles)
-        }
-    }
+    // Every application distribution carries LICENSE, NOTICE and licenses/ at its root; the install task fails when its folder misses one of
+    // them.
     plugins.withId('application') {
         distributions.main.contents {
             from(rootProject.licenseFiles)
@@ -259,55 +238,10 @@ subprojects {
             options.tags('apiNote:a:API Note:', 'implSpec:a:Implementation Requirements:')
         }
 
-        // Unit tier: tests without input from outside the repository. The external properties are forwarded blank so a -P
-        // value never turns this tier into an external run.
+        // Unit tier: the tests tagged integration or corpus need input from outside the repository and run in tasks of their own.
         tasks.named("test") {
             useJUnitPlatform {
                 excludeTags 'integration', 'corpus'
-            }
-            externalTestProperties.each { name -> systemProperty name, "" }
-        }
-
-        // Integration tier: the tests marked @RequiresInstallation (tag integration), with the SC:R installation sc4j.data.
-        // The build fails before it starts when sc4j.data is not set (gradle.taskGraph.whenReady above).
-        def integrationTest = tasks.register("integrationTest", Test) {
-            description = "Runs the integration tier: the tests that need the SC:R installation (sc4j.data)."
-            group = "verification"
-            testClassesDirs = sourceSets.test.output.classesDirs
-            classpath = sourceSets.test.runtimeClasspath
-            useJUnitPlatform {
-                includeTags 'integration'
-                excludeTags 'corpus'
-            }
-            shouldRunAfter tasks.named("test")
-        }
-
-        // Corpus tier: the tests marked @CorpusTest (tag corpus): long runs and tests over the external folders other than
-        // the installation. A test whose declared folder is not set is skipped.
-        def corpusTest = tasks.register("corpusTest", Test) {
-            description = "Runs the corpus tier over the external replay corpus and the other external folders."
-            group = "verification"
-            testClassesDirs = sourceSets.test.output.classesDirs
-            classpath = sourceSets.test.runtimeClasspath
-            useJUnitPlatform {
-                includeTags 'corpus'
-            }
-            shouldRunAfter integrationTest
-        }
-
-        [integrationTest, corpusTest].each { task ->
-            task.configure {
-                externalTestProperties.each { name -> systemProperty name, providers.gradleProperty(name).getOrElse("") }
-                // Changed external inputs must rerun the tier.
-                outputs.upToDateWhen { false }
-            }
-        }
-
-        // The folder-driven tests (replays/detection, replays/native, maps, captures/lan, ... of the test resources) write one
-        // result table per test task (org.fogofwarlabs.sc4j.scr.core.test.TestResultUtils).
-        [tasks.named("test"), integrationTest, corpusTest].each { task ->
-            task.configure {
-                systemProperty "sc4j.golden.results", project.layout.buildDirectory.dir("golden-results/" + task.name).get().asFile.absolutePath
             }
         }
     }
@@ -531,16 +465,11 @@ configure((apiModules + publishedTestFixtureModules).unique().collect { name -> 
     }
 }
 
-// Internal use check: the mods' own main sources (mods/demo, every mods/scr module, the demo 2 classes of mods/scr-demo; its
-// clone is the SC:R mod's sources) use no internal element; the check fails on every use. "check" (and so "build") runs it.
-def apiUseModules = subprojects.findAll { candidate ->
-    candidate.path in [':mods:demo', ':mods:scr-demo'] || candidate.path.startsWith(':mods:scr:')
-}
-def apiUseSourceFolders = [':mods:scr-demo': 'src/mod/java']
-
-configure(apiUseModules) { module ->
+// Internal use check: a mod module's own main sources (sourcePath below the module) use no internal element; the check fails on every
+// use. "check" (and so "build") runs it. Each mod build names its modules; the demo's is checked here.
+ext.configureApiUse = { Project module, String sourcePath ->
     def apiTool = createApiToolConfiguration(module)
-    def sourceFolder = module.file(apiUseSourceFolders.getOrDefault(module.path, 'src/main/java'))
+    def sourceFolder = module.file(sourcePath)
     def report = module.layout.buildDirectory.file('reports/api-use.txt')
     def checkApiUse = module.tasks.register('checkApiUse', JavaExec) {
         description = 'Checks that the main sources of this mod module use no internal engine package or class.'
@@ -561,45 +490,7 @@ configure(apiUseModules) { module ->
         }
     }
 }
-
-// Native id boundary: the SC:R mod keeps its native ids as the int holders of scr.content (ScrUnitIds ...) and
-// the engine identities of ScrUnits ... mapped by ScrNativeIds; the package scr.data.type.constant declares no enum and no source names
-// a native id enum (UnitType, WeaponType, UpgradeType, TechType, OrderType, Race) in that package. "check" (and so "build")
-// runs it for every module of the SC:R mod and the recorder.
-def nativeIdEnumPattern = ~/org[.\/]fogofwarlabs[.\/]sc4j[.\/]scr[.\/]data[.\/]type[.\/]constant[.\/](UnitType|WeaponType|UpgradeType|TechType|OrderType|Race)\b/
-def constantPackage = 'org/fogofwarlabs/sc4j/scr/data/type/constant/'
-
-configure(subprojects.findAll { candidate -> candidate.path.startsWith(':mods:scr:') || candidate.path == ':tools:sc-recorder' }) { module ->
-    def sourceFiles = fileTree(module.file('src')) { include '**/*.java' }
-    def report = module.layout.buildDirectory.file('reports/native-id-boundary.txt')
-    def checkNativeIdBoundary = module.tasks.register('checkNativeIdBoundary') {
-        description = 'Checks that no native id enum of scr.data.type.constant is declared or named; the native ids are the scr.content holders.'
-        group = 'verification'
-        inputs.files(sourceFiles)
-        outputs.file(report)
-        doLast {
-            def problems = []
-            sourceFiles.each { file ->
-                def constant = file.path.replace('\\', '/').contains(constantPackage)
-                file.readLines('UTF-8').eachWithIndex { line, index ->
-                    if (line =~ nativeIdEnumPattern || constant && line =~ /^\s*(public\s+)?enum\s/) {
-                        problems << file.path + ':' + (index + 1) + ': ' + line.trim()
-                    }
-                }
-            }
-            if (!problems.isEmpty()) {
-                throw new GradleException(module.path + ' must not declare or name a native id enum of scr.data.type.constant:\n  ' +
-                        problems.join('\n  '))
-            }
-            report.get().asFile.text = 'No native id enum: ' + sourceFiles.files.size() + ' files checked.\n'
-        }
-    }
-    module.plugins.withId('java') {
-        module.tasks.named('check') {
-            dependsOn checkNativeIdBoundary
-        }
-    }
-}
+configureApiUse(project(':mods:demo'), 'src/main/java')
 
 // Private path check: no source, build or documentation file of the repository names a private local path. It reads
 // the files of every leaf module (without build output), the top-level files of the parent modules and of the repository, gradle/ and the
@@ -663,7 +554,7 @@ subprojects { module ->
 
 // The Java runtime of the user package: an image of the JDK that runs this build, made with that JDK's own jlink, with the modules that the
 // launcher, the runtime and the mods use: what jdeps finds in their jars and in the JavaFX modules (which stay in launcher/lib/javafx), and
-// the charsets and locale data they look up by name. The locale data covers the languages of the mods' texts (the SC:R text locales).
+// the charsets and locale data they look up by name. The locale data covers the languages of the mods' texts.
 def javaRuntimeModules = ['java.base', 'java.desktop', 'java.management', 'java.xml', 'jdk.unsupported', 'jdk.charsets', 'jdk.localedata']
 def javaRuntimeLocales = ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'zh']
 def javaRuntimeHome = providers.systemProperty('java.home').get()
@@ -685,24 +576,118 @@ def createJavaRuntime = tasks.register('createJavaRuntime', Exec) {
     }
 }
 
-// The user package build/distributions/SC4J-<version>.zip: one folder SC4J-<version> with the programs of an install (the SC:R mod's
-// installContents: launcher/ with the shipped seed list, runtime/, mods/scr.jar, LICENSE, NOTICE, licenses/), the jars of the clone
-// (mods/scr-demo.jar) and of the demo (mods/demo.jar), the Java runtime that the start scripts use (java/) and the start of the launcher
-// for users (SC4J.bat and SC4J from sc4j-launcher/src/package). It holds no userdata/ and no cache: a fresh install makes them at its first
-// start.
+// The programs of an install: launcher/ (the launcher distribution with the shipped seed list), runtime/ (the runtime distribution with its
+// native libraries), LICENSE, NOTICE and licenses/. The development install and the user package copy it with the jars of the mods below.
+// The launcher, the runtime and the mods are evaluated after this project, so the copies name their tasks only when Gradle configures them.
+def installContents = copySpec {
+    from({ project(':sc4j-launcher').tasks.named('installDist') }) { into 'launcher' }
+    from({ project(':sc4j-runtime').tasks.named('installDist') }) { into 'runtime' }
+    from(licenseFiles)
+    from(licenseTexts) { into 'licenses' }
+}
+def installModProjects = [':mods:demo']
+def installModJars = { installModProjects.collect { path -> project(path).tasks.named('modJar') } }
+
+// The development install build/dev-install of the repository: the programs of an install and the mods above. userdata/, the caches and
+// the other jars of mods/ (those a mod's own devInstall copies in) are kept between builds.
+def developmentInstall = layout.buildDirectory.dir('dev-install')
+def devInstall = tasks.register('devInstall', Sync) {
+    description = 'Assembles the development install build/dev-install with the launcher, the runtime and mods/demo.jar.'
+    group = 'distribution'
+    into developmentInstall
+    preserve {
+        include 'userdata/**'
+        include 'runtime/.cache/**'
+        include 'launcher/.cache/**'
+        include 'mods/**'
+    }
+    with installContents
+    from(installModJars) { into 'mods' }
+    doLast {
+        rootProject.checkDistributionLicenses(developmentInstall.get().asFile)
+    }
+}
+
+// Runs the runtime of the development install with the mod jar mods/<id>.jar, the id from the Gradle property sc4j.mod (default demo):
+// gradlew runDevInstall [-Psc4j.mod=<id>]. It opens the client window unless the arguments end the run first.
+tasks.register('runDevInstall', JavaExec) {
+    description = 'Runs the runtime of the development install with the mod named by the Gradle property sc4j.mod (default demo).'
+    group = 'application'
+    dependsOn devInstall
+    def runtimeDirectory = developmentInstall.map { directory -> directory.dir('runtime').asFile }
+    def modJar = developmentInstall.get().file('mods/' + providers.gradleProperty('sc4j.mod').getOrElse('demo') + '.jar').asFile
+    classpath = files({ fileTree(new File(runtimeDirectory.get(), 'lib')) { include '*.jar' } })
+    mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
+    args '--install', developmentInstall.get().asFile.absolutePath, '--mod', modJar.absolutePath
+    doFirst {
+        def nativeDirectory = new File(runtimeDirectory.get(), 'lib/natives').absolutePath
+        jvmArgs '--enable-native-access=ALL-UNNAMED',
+                '-Dorg.lwjgl.librarypath=' + nativeDirectory,
+                '-Djava.library.path=' + nativeDirectory,
+                '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + new File(runtimeDirectory.get(), '.cache/natives').absolutePath,
+                '-Dorg.bytedeco.javacpp.cachedir=' + new File(runtimeDirectory.get(), '.cache/javacpp').absolutePath,
+                '-Dorg.bytedeco.javacpp.platform.linkpath=' + nativeDirectory,
+                '-Dorg.bytedeco.javacpp.platform.preloadpath=' + nativeDirectory,
+                '-Dorg.bytedeco.javacpp.pathsFirst=true',
+                '-Dorg.bytedeco.javacpp.cacheLibraries=false'
+    }
+}
+
+// Opens the launcher of the development install: gradlew runDevLauncher. It lists the jars of build/dev-install/mods and starts the
+// runtime of the development install.
+tasks.register('runDevLauncher', Exec) {
+    description = 'Opens the launcher of the development install.'
+    group = 'application'
+    dependsOn devInstall
+    def scriptName = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows') ? 'sc4j-launcher.bat' : 'sc4j-launcher'
+    executable = developmentInstall.get().file('launcher/bin/' + scriptName).asFile.absolutePath
+}
+
+// A broken test mod for checking the launcher's error display: gradlew devInstallBrokenMod copies broken-test.jar (a manifest without
+// "entry" and with an invalid "engine") into build/dev-install/mods. It is never installed by default; delete
+// build/dev-install/mods/broken-test.jar to remove it.
+def brokenModManifest = resources.text.fromString("""{
+  "format": 1,
+  "id": "broken-test",
+  "name": {"en": "Broken Test Mod", "ko": "깨진 테스트 모드"},
+  "version": "0.0.1",
+  "engine": "one",
+  "description": {"en": "A deliberately broken mod for checking the launcher."}
+}
+""")
+
+def brokenModJar = tasks.register('brokenModJar', Jar) {
+    description = 'Builds the broken test mod jar broken-test.jar.'
+    group = 'build'
+    archiveFileName = 'broken-test.jar'
+    destinationDirectory = layout.buildDirectory.dir('broken-mod')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    from(brokenModManifest.asFile('UTF-8')) {
+        rename { name -> 'sc4j-mod.json' }
+    }
+}
+
+tasks.register('devInstallBrokenMod', Copy) {
+    description = 'Copies the broken test mod broken-test.jar into the development install.'
+    group = 'distribution'
+    dependsOn devInstall
+    from(brokenModJar)
+    into developmentInstall.map { directory -> directory.dir('mods') }
+}
+
+// The user package build/distributions/SC4J-<version>.zip: one folder SC4J-<version> with the programs of an install and the jars of the
+// mods above in mods/, the Java runtime that the start scripts use (java/) and the start of the launcher for users (SC4J.bat and SC4J from
+// sc4j-launcher/src/package). It holds no userdata/ and no cache: a fresh install makes them at its first start.
 // The package is staged in build/user-package first, where the licence check runs, and zipped without file times in a fixed order, so that
-// the same sources give the same zip. The mod projects are evaluated after this one, so the tasks name them only when Gradle configures them.
+// the same sources give the same zip.
 def userPackageName = 'SC4J-' + version
-def userPackageModProjects = [':mods:demo', ':mods:scr-demo']
 def stageUserPackage = tasks.register('stageUserPackage', Sync) {
     description = 'Stages the user package in build/user-package/' + userPackageName + ' and checks its licence files.'
     group = 'distribution'
     into layout.buildDirectory.dir('user-package/' + userPackageName)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    with project(':mods:scr').installContents
-    userPackageModProjects.each { path ->
-        from(project(path).tasks.named('modJar')) { into 'mods' }
-    }
+    with installContents
+    from(installModJars) { into 'mods' }
     from(createJavaRuntime) { into 'java' }
     from(project(':sc4j-launcher').file('src/package'))
     doLast {

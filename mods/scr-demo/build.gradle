@@ -127,9 +127,7 @@ dependencies {
     scrGameTestResources project(':mods:scr:scr-game')
     testRuntimeOnly files(scrGameTestResourceFiles)
     testImplementation testFixtures(project(':sc4j-beaconlink'))
-    // The launcher's mod list, settings forms and runtime command lines over an install that holds both mod jars, with installation
-    // records that the test lays out.
-    testImplementation project(':sc4j-launcher')
+    // The installation records that the install test lays out.
     testImplementation testFixtures(project(':sc4j-mod-manifest'))
 
     scrModuleNames.each { name -> scrModules project(':mods:scr:' + name) }

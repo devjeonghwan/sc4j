@@ -25,9 +25,6 @@ Fog of War Labs와 SC4J의 로고, 그리고 이 저장소에 있는 모드의 �
 | `sc4j-logo-512.png`, `sc4j-logo-1024.png` | SC4J 로고, 512와 1024픽셀 정사각형(저장소 소셜 미리보기, README) |
 | `sc4j-banner.svg` | SC4J 배너, 원본(950 x 150) |
 | `sc4j-banner-950x150.png`, `sc4j-banner-1900x300.png` | SC4J 배너, 950 x 150과 1900 x 300픽셀(저장소와 소셜 배너) |
-| `scr-mod/icon.svg`, `scr-mod/banner.svg` | 스타크래프트: 리마스터 모드의 런처 아이콘과 배너 |
-| `scr-mod/banner-wide.svg` | 스타크래프트: 리마스터 모드의 넓은 배너, 원본(950 x 150) |
-| `scr-mod/banner-wide-950x150.png`, `scr-mod/banner-wide-1900x300.png` | 스타크래프트: 리마스터 모드의 넓은 배너, 950 x 150과 1900 x 300픽셀 |
 | `demo-mod/icon.svg`, `demo-mod/banner.svg` | 데모 모드(Dawnhold and Cindermaw)의 런처 아이콘과 배너 |
 
 빌드에 있는 복사본:
@@ -35,7 +32,6 @@ Fog of War Labs와 SC4J의 로고, 그리고 이 저장소에 있는 모드의 �
 | 복사본 | 원본 |
 |---|---|
 | `sc4j-launcher/src/main/resources/.../ui/theme/images/sc4j-logo-512.png`와 `fogofwarlabs-logo-512.png` | 여기 있는 512픽셀 PNG 파일과 같은 이미지 |
-| `mods/scr/scr-client/src/main/resources/meta/icon.png`와 `banner.png` | `scr-mod/icon.svg`와 `scr-mod/banner.svg` |
 | `mods/demo/src/main/resources/meta/icon.png`와 `banner.png` | `demo-mod/icon.svg`와 `demo-mod/banner.svg` |
 
 ## 색
@@ -63,7 +59,7 @@ SVG는 마스크와 필터를 씁니다. ImageMagick의 내장 SVG 렌더러가 
 | 로고 | 512 x 512와 1024 x 1024 |
 | 모드 아이콘 | 512 x 512 |
 | 모드 배너 | 1740 x 256 |
-| SC4J 배너, SC:R 모드 넓은 배너 | 950 x 150과 1900 x 300 |
+| SC4J 배너 | 950 x 150과 1900 x 300 |
 
 1. 크기 `W x H`마다, SVG 옆에 그 크기로 보여 주는 페이지를 씁니다.
 

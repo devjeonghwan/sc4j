@@ -19,13 +19,13 @@
 
 SC4J(Simulation Core for Java)는 실시간 전략 게임을 위한 엔진입니다. SC4J용 게임은 **모드**이며, 모드 하나는 jar 파일 하나입니다. 런타임이 jar를 불러오고 런처가 목록에 보여 줍니다. 엔진은 모드에 결정적(deterministic) 시뮬레이션, 클라이언트 프레임워크, 리플레이와 저장 게임, LAN 플레이, 그리고 방, 채팅, 접속 상태를 위한 P2P 네트워크 Beacon.Link를 제공합니다. 중앙 서버는 없습니다. 모든 SC4J가 피어입니다.
 
-이 저장소에는 엔진, 런처, 런타임, Beacon.Link와 세 가지 모드가 들어 있습니다.
+이 저장소에는 엔진, 런처, 런타임, Beacon.Link와 데모 모드가 들어 있습니다.
 
 | 모드 | 폴더 | 모드 id | 설명 |
 |---|---|---|---|
 | 데모 1 | [`mods/demo/`](mods/demo/) | `demo` | "SC4J Demo: Dawnhold and Cindermaw". 엔진만으로 만든 작은 실시간 전략 게임 |
-| SC:R 모드 | [`mods/scr/`](mods/scr/) | `scr` | 스타크래프트: 리마스터 1.23.10을 SC4J 모드로 다시 구현한 것. 게임 데이터는 실행할 때 플레이어 본인의 스타크래프트: 리마스터 설치본에서 읽으며, 저장소와 jar에는 들어 있지 않습니다. |
-| 데모 2 | [`mods/scr-demo/`](mods/scr-demo/) | `scr-demo` | "SC:R Clone Demo". 자체 정체성을 가진 SC:R 모드의 복제본으로, 자체 LAN 참가 버전과 추가 유닛 두 종이 있습니다. |
+
+SC:R 모드와 그 복제 모드인 데모 2는 각자의 README에서 설명합니다: [`mods/scr/`](mods/scr/README.ko.md), [`mods/scr-demo/`](mods/scr-demo/README.ko.md).
 
 새 엔진 모드를 만드는 방법은 [모드 제작 가이드](docs/mod-guide.ko.md)에 있습니다.
 
@@ -54,9 +54,9 @@ SC4J(Simulation Core for Java)는 실시간 전략 게임을 위한 엔진입니
 | `sc4j-runtime` | 모드 jar 하나를 창 모드 또는 헤드리스로 실행 |
 | `sc4j-launcher` | 런처(JavaFX) |
 | `sc4j-beaconlink-protocol`, `sc4j-beaconlink-peer`, `sc4j-beaconlink-node`, `sc4j-beaconlink` | Beacon.Link: 와이어 프로토콜, 피어 라이브러리, 헤드리스 노드, 런타임이 모드에 주는 클라이언트 |
-| [`mods/`](mods/) | 세 모드: `demo`, `scr`(모듈 `scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`, `scr-benchmark`, SC:R 모드 비교용으로 원본 게임의 프레임을 읽기만 하는 기록기), `scr-demo` |
+| [`mods/`](mods/) | 데모 모드 `demo` |
 | [`tools/`](tools/) | `api-check`(API 목록) |
-| [`docs/`](docs/) | 가이드와 참조 문서([목록](docs/README.ko.md)). `docs/branding/`: 로고, 배너, 모드의 런처 그림 |
+| [`docs/`](docs/) | 가이드와 참조 문서([목록](docs/README.ko.md)). `docs/branding/`: 로고, 배너, 데모 모드의 런처 그림 |
 | [`licenses/`](licenses/) | 서드파티 라이브러리의 라이선스 전문 |
 
 ## 빌드와 실행
@@ -85,7 +85,7 @@ JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래
 
 사용자 패키지에는 런처, 런타임, 데모 모드, Java 런타임, 시작 파일 `SC4J.bat`와 `SC4J`가 들어 있습니다. 사용자 데이터는 들어 있지 않으며, 새 설치본은 처음 시작할 때 `userdata/`를 만듭니다.
 
-테스트 단계, 게임 폴더를 지정하는 Gradle 속성, 코드 스타일은 [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md)에 있습니다.
+테스트 단계와 코드 스타일은 [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md)에 있습니다.
 
 ## 문서
 
@@ -94,12 +94,10 @@ JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래
 | 가이드 | 주제 |
 |---|---|
 | [모드 제작 가이드](docs/mod-guide.ko.md) | 첫 모드부터 네트워크 플레이까지, 엔진용 모드 만들기 |
-| [SC:R 복제 모드 가이드](docs/mods/scr-demo.ko.md) | SC:R 모드를 복제해 자신의 모드 만들기(데모 2) |
 | [엔진 API 정책](docs/api-policy.ko.md) | 엔진 API의 범위, 버전, 내부 요소 |
 | [Beacon.Link 프로토콜](docs/beaconlink/protocol.ko.md) | Beacon.Link의 와이어 프로토콜과 파일 |
 | [Beacon.Link 운영 가이드](docs/beaconlink/operator.ko.md) | 다른 플레이어를 위한 피어 운영: 헤드리스 노드와 런처 공개 모드 |
-| [SCRECBIN 형식](mods/scr/docs/sc-recorder-format.ko.md) | 프레임 기록기의 파일 형식 |
-| [브랜딩](docs/branding/README.ko.md) | 로고, 배너, 모드 그림과 PNG 내보내기 |
+| [브랜딩](docs/branding/README.ko.md) | 로고, 배너, 데모 모드 그림과 PNG 내보내기 |
 | [기여 안내](CONTRIBUTING.ko.md) | 개발 환경, 테스트, 코드 스타일, 커밋과 풀 리퀘스트 |
 
 ## 라이선스
@@ -109,9 +107,4 @@ SC4J는 [Apache License 2.0](LICENSE)으로 배포됩니다. 저장소와 배포
 | 자료 | 라이선스 | 자세히 |
 |---|---|---|
 | 데모 1 그림: KayKit 모델과 Poly Haven 텍스처의 렌더 | CC0 1.0 | [`mods/demo/THIRD-PARTY.md`](mods/demo/THIRD-PARTY.md) |
-| 데모 2 유닛 그림: Unity-chan | Unity-chan License 3.0 | [`mods/scr-demo/third-party/unity-chan/`](mods/scr-demo/third-party/unity-chan/) |
-| 데모 2 유닛 그림: Unity-chan이 든 소총(Quaternius) | CC0 1.0 | [`mods/scr-demo/third-party/unity-chan/`](mods/scr-demo/third-party/unity-chan/) |
-| 데모 2 유닛 그림: Myriarch(OSCAR CREATIVO의 DRAGO 3D 모델) | CC BY 4.0 | [`mods/scr-demo/third-party/myriarch/`](mods/scr-demo/third-party/myriarch/) |
 | 배포본의 라이브러리(LWJGL, JavaCPP, FFmpeg, OpenJFX 등) | 각 라이브러리의 라이선스 | [NOTICE](NOTICE), [`licenses/`](licenses/) |
-
-StarCraft는 Blizzard Entertainment, Inc.의 상표입니다. SC4J는 Blizzard Entertainment와 제휴하거나 승인받지 않았습니다. SC:R 모드는 플레이어 본인의 스타크래프트: 리마스터 설치본에서 게임 데이터를 읽으며, 저장소와 배포본에는 그런 데이터가 들어 있지 않습니다.

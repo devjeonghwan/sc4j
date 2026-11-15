@@ -19,13 +19,13 @@
 
 SC4J (Simulation Core for Java) is an engine for real-time strategy games. A game for it is a **mod**: one jar that the runtime loads and the launcher lists. The engine gives a mod a deterministic simulation, a client framework, replays and saved games, LAN play and Beacon.Link, the peer-to-peer network for rooms, chat and presence. Nobody runs a central server: every SC4J is a peer.
 
-This repository holds the engine, the launcher, the runtime, Beacon.Link and three mods:
+This repository holds the engine, the launcher, the runtime, Beacon.Link and the demo mod:
 
 | Mod | Folder | Mod id | What it is |
 |---|---|---|---|
 | Demo 1 | [`mods/demo/`](mods/demo/) | `demo` | "SC4J Demo: Dawnhold and Cindermaw", a small real-time strategy game made only of the engine |
-| SC:R mod | [`mods/scr/`](mods/scr/) | `scr` | StarCraft: Remastered 1.23.10 reimplemented as an SC4J mod. It reads the game data of the player's own StarCraft: Remastered installation at run time; the repository and the jar hold none of it. |
-| Demo 2 | [`mods/scr-demo/`](mods/scr-demo/) | `scr-demo` | "SC:R Clone Demo", a clone of the SC:R mod under its own identity, with its own LAN join version and two added units |
+
+The SC:R mod and its clone, demo 2, are described in their own READMEs: [`mods/scr/`](mods/scr/README.md) and [`mods/scr-demo/`](mods/scr-demo/README.md).
 
 The [mod author guide](docs/mod-guide.md) shows how to make a new mod for the engine.
 
@@ -54,9 +54,9 @@ The [mod author guide](docs/mod-guide.md) shows how to make a new mod for the en
 | `sc4j-runtime` | runs one mod jar, in a window or headless |
 | `sc4j-launcher` | the launcher (JavaFX) |
 | `sc4j-beaconlink-protocol`, `sc4j-beaconlink-peer`, `sc4j-beaconlink-node`, `sc4j-beaconlink` | Beacon.Link: the wire protocol, the peer library, the headless node and the client that the runtime gives a mod |
-| [`mods/`](mods/) | the three mods: `demo`, `scr` (modules `scr-data`, `scr-game`, `scr-render`, `scr-net`, `scr-client`, `scr-benchmark` and a read-only frame recorder of the native game, used to compare the SC:R mod), `scr-demo` |
+| [`mods/`](mods/) | the demo mod `demo` |
 | [`tools/`](tools/) | `api-check` (API listings) |
-| [`docs/`](docs/) | the guides and references ([index](docs/README.md)); `docs/branding/`: logos, banners and the launcher art of the mods |
+| [`docs/`](docs/) | the guides and references ([index](docs/README.md)); `docs/branding/`: logos, banners and the launcher art of the demo mod |
 | [`licenses/`](licenses/) | the licence texts of the third-party libraries |
 
 ## Build and run
@@ -85,7 +85,7 @@ The launcher lists every jar in `build/dev-install/mods/`. Choose a mod and star
 
 The user package holds the launcher, the runtime, the demo mod, a Java runtime and the start files `SC4J.bat` and `SC4J`. It holds no user data: a fresh install makes `userdata/` at its first start.
 
-Test tiers, the Gradle property for the game folder and the code style are in [CONTRIBUTING.md](CONTRIBUTING.md).
+Test tiers and the code style are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
@@ -94,12 +94,10 @@ The guides are in [`docs/`](docs/README.md), each in English and Korean.
 | Guide | Topic |
 |---|---|
 | [Mod author guide](docs/mod-guide.md) | making a mod for the engine, from the first mod to network play |
-| [SC:R clone modder guide](docs/mods/scr-demo.md) | cloning the SC:R mod into your own mod (demo 2) |
 | [Engine API policy](docs/api-policy.md) | what the engine API is, its versions and the internal elements |
 | [Beacon.Link protocol](docs/beaconlink/protocol.md) | the wire protocol and the files of Beacon.Link |
 | [Beacon.Link operator guide](docs/beaconlink/operator.md) | running a peer for other players: the headless node and the launcher's public mode |
-| [SCRECBIN format](mods/scr/docs/sc-recorder-format.md) | the file format of the frame recorder |
-| [Branding](docs/branding/README.md) | the logos, banners and mod art, and how to export them |
+| [Branding](docs/branding/README.md) | the logos, banners and the demo mod's art, and how to export them |
 | [Contributing](CONTRIBUTING.md) | setup, tests, code style, commits and pull requests |
 
 ## Licence
@@ -109,9 +107,4 @@ SC4J is licensed under the [Apache License 2.0](LICENSE). [NOTICE](NOTICE) lists
 | Material | Licence | Details |
 |---|---|---|
 | Demo 1 pictures: renders of KayKit models and Poly Haven textures | CC0 1.0 | [`mods/demo/THIRD-PARTY.md`](mods/demo/THIRD-PARTY.md) |
-| Demo 2 unit art: Unity-chan | Unity-chan License 3.0 | [`mods/scr-demo/third-party/unity-chan/`](mods/scr-demo/third-party/unity-chan/) |
-| Demo 2 unit art: the rifle Unity-chan holds (Quaternius) | CC0 1.0 | [`mods/scr-demo/third-party/unity-chan/`](mods/scr-demo/third-party/unity-chan/) |
-| Demo 2 unit art: the Myriarch (DRAGO 3D model by OSCAR CREATIVO) | CC BY 4.0 | [`mods/scr-demo/third-party/myriarch/`](mods/scr-demo/third-party/myriarch/) |
 | Libraries of the distributions (LWJGL, JavaCPP, FFmpeg, OpenJFX and others) | their own licences | [NOTICE](NOTICE), [`licenses/`](licenses/) |
-
-StarCraft is a trademark of Blizzard Entertainment, Inc. SC4J is not affiliated with or endorsed by Blizzard Entertainment. The SC:R mod reads the game data of the player's own StarCraft: Remastered installation; the repository and its distributions carry no such data.

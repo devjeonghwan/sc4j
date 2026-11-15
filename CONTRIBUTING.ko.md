@@ -6,7 +6,6 @@
 
 - [개발 환경](#개발-환경)
 - [빌드와 테스트](#빌드와-테스트)
-- [게임 폴더 속성](#게임-폴더-속성)
 - [코드 스타일](#코드-스타일)
 - [커밋과 풀 리퀘스트](#커밋과-풀-리퀘스트)
 - [릴리스](#릴리스)
@@ -43,20 +42,6 @@ IntelliJ IDEA: 저장소 루트 폴더를 열고 Gradle 프로젝트로 가져�
 .\gradlew.bat :sc4j-engine-sim:test
 .\gradlew.bat :mods:scr-demo:test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
 ```
-
-## 게임 폴더 속성
-
-Gradle 속성 `sc4j.data`는 스타크래프트: 리마스터 설치 폴더(`.build.info`와 `x86_64/StarCraft.exe`가 있는 폴더)를 가리킵니다. 다음 세 방법 중 하나로 설정합니다.
-
-| 위치 | 방법 |
-|---|---|
-| Gradle 사용자 속성 | `%USERPROFILE%\.gradle\gradle.properties`(`GRADLE_USER_HOME`)에 `sc4j.data=<설치 폴더>` 한 줄 |
-| 명령줄 | `-Psc4j.data=<설치 폴더>` |
-| 환경 변수(CI) | `ORG_GRADLE_PROJECT_sc4j.data=<설치 폴더>` |
-
-`.properties` 파일에서는 Windows 경로의 역슬래시를 두 번 쓰거나 슬래시를 씁니다. `sc4j.data`가 설정되어 있으면 `devInstall`은 개발용 설치본에 공유 게임 폴더 설정이 아직 없을 때 이 값을 써 넣습니다.
-
-게임 데이터는 절대 저장소에 넣지 않습니다. 설치본의 파일도, 그 파일에서 뽑아내거나 변환한 것(그림, 소리, 데이터 파일, 맵)도 안 됩니다. SC:R 모드와 테스트는 실행할 때 설치본에서 직접 읽습니다.
 
 ## 코드 스타일
 

@@ -6,7 +6,6 @@ Thank you for helping. This page covers the developer setup, the test tiers, the
 
 - [Setup](#setup)
 - [Build and test](#build-and-test)
-- [The game folder property](#the-game-folder-property)
 - [Code style](#code-style)
 - [Commits and pull requests](#commits-and-pull-requests)
 - [Releases](#releases)
@@ -43,20 +42,6 @@ A single module or test:
 .\gradlew.bat :sc4j-engine-sim:test
 .\gradlew.bat :mods:scr-demo:test --tests org.fogofwarlabs.sc4j.scrdemo.convert.ArtConverterTest
 ```
-
-## The game folder property
-
-The Gradle property `sc4j.data` names the StarCraft: Remastered installation folder (the folder that holds `.build.info` and `x86_64/StarCraft.exe`). Set it in one of three ways:
-
-| Where | How |
-|---|---|
-| Your Gradle user properties | the line `sc4j.data=<installation folder>` in `%USERPROFILE%\.gradle\gradle.properties` (`GRADLE_USER_HOME`) |
-| The command line | `-Psc4j.data=<installation folder>` |
-| An environment variable (CI) | `ORG_GRADLE_PROJECT_sc4j.data=<installation folder>` |
-
-In a `.properties` file write the backslashes of a Windows path twice, or use forward slashes. With `sc4j.data` set, `devInstall` also writes it as the shared game folder setting of the development install when that install has none yet.
-
-Game data never goes into the repository: no file of the installation, and nothing extracted or converted from it (graphics, sounds, data files, maps). The SC:R mod reads it from the installation at run time, and so do the tests.
 
 ## Code style
 

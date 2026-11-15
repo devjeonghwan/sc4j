@@ -4,7 +4,7 @@
 
 This guide shows how to make your own mod from the SC:R mod of SC4J: you clone it, change a few files, build one mod jar, put it into `mods/` and start it from the launcher. Demo 2 (`mods/scr-demo/`, mod id `scr-demo`, "SC:R Clone Demo") is made this way and is the example for every step; the repository build runs the same steps as the guide.
 
-This guide is the clone chapter of the [mod author guide](../mod-guide.md#18-clone-an-existing-mod), which covers mods made from nothing, the mod API, determinism, network play and the [API policy](../api-policy.md).
+This guide is the clone chapter of the [mod author guide](../../../docs/mod-guide.md#18-clone-an-existing-mod), which covers mods made from nothing, the mod API, determinism, network play and the [API policy](../../../docs/api-policy.md).
 
 **What a clone is**
 

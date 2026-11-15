@@ -476,7 +476,7 @@ Everything in your jar is given to every player who gets the jar.
 
 ## 18. Clone an existing mod
 
-To change an existing mod instead of starting from nothing, clone it: copy its sources at build time and put your own versions of a few files over them (an overlay of normal, editable files), under your own mod id; a lock stops the build when the cloned mod changes a file you replaced. The clone of this repository, demo 2, has its own guide, the [SC:R clone modder guide](mods/scr-demo.md): the clone step, the overlay and its lock, the identity, the content extension, changed values, an added unit with its own graphics, the art licences, building, installing and the launcher.
+To change an existing mod instead of starting from nothing, clone it: copy its sources at build time and put your own versions of a few files over them (an overlay of normal, editable files), under your own mod id; a lock stops the build when the cloned mod changes a file you replaced. Demo 2, the clone of the SC:R mod, has its own guide, the [SC:R clone modder guide](../mods/scr-demo/docs/scr-demo.md): the clone step, the overlay and its lock, the identity, the content extension, changed values, an added unit with its own graphics, the art licences, building, installing and the launcher.
 
 - A clone is another mod: its own id, settings, storage and log folders. Its storage starts empty too: put the maps your players need into it (chapter 8).
 - A clone plays only with players of the same identity (chapter 1). A network protocol of its own that carries no mod id needs a value of the clone's own, such as a version that the host checks on a join.

@@ -25,9 +25,6 @@ The logos of Fog of War Labs and SC4J, and the launcher art (icon and banner) of
 | `sc4j-logo-512.png`, `sc4j-logo-1024.png` | SC4J logo, 512 and 1024 pixels square (repository social preview, README) |
 | `sc4j-banner.svg` | SC4J banner, source (950 x 150) |
 | `sc4j-banner-950x150.png`, `sc4j-banner-1900x300.png` | SC4J banner, 950 x 150 and 1900 x 300 pixels (repository and social banner) |
-| `scr-mod/icon.svg`, `scr-mod/banner.svg` | launcher icon and banner of the StarCraft: Remastered mod |
-| `scr-mod/banner-wide.svg` | wide banner of the StarCraft: Remastered mod, source (950 x 150) |
-| `scr-mod/banner-wide-950x150.png`, `scr-mod/banner-wide-1900x300.png` | wide banner of the StarCraft: Remastered mod, 950 x 150 and 1900 x 300 pixels |
 | `demo-mod/icon.svg`, `demo-mod/banner.svg` | launcher icon and banner of the demo mod (Dawnhold and Cindermaw) |
 
 Copies in the build:
@@ -35,7 +32,6 @@ Copies in the build:
 | Copy | Exported from |
 |---|---|
 | `sc4j-launcher/src/main/resources/.../ui/theme/images/sc4j-logo-512.png` and `fogofwarlabs-logo-512.png` | the same images as the 512 pixel PNG files here |
-| `mods/scr/scr-client/src/main/resources/meta/icon.png` and `banner.png` | `scr-mod/icon.svg` and `scr-mod/banner.svg` |
 | `mods/demo/src/main/resources/meta/icon.png` and `banner.png` | `demo-mod/icon.svg` and `demo-mod/banner.svg` |
 
 ## Colours
@@ -63,7 +59,7 @@ The SVGs use masks and filters: render them with a browser engine, not ImageMagi
 | logo | 512 x 512 and 1024 x 1024 |
 | mod icon | 512 x 512 |
 | mod banner | 1740 x 256 |
-| SC4J banner, SC:R mod wide banner | 950 x 150 and 1900 x 300 |
+| SC4J banner | 950 x 150 and 1900 x 300 |
 
 1. For a size `W x H`, write a page next to the SVG that shows it at that size:
 

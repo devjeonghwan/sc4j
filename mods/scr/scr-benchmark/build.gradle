@@ -1,10 +1,10 @@
 plugins {
     id 'java'
-    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.scr.java'
 }
 
 // JMH benchmarks of the engine (src/jmh/java). They read the SC:R installation and replay files from outside the
-// repository: gradlew.bat --no-daemon :mods:scr:scr-benchmark:jmh -Psc4j.data=<installation> -Psc4j.benchmark.replays=<a.rep>,<b.rep>
+// repository: gradlew.bat --no-daemon :scr-benchmark:jmh -Psc4j.data=<installation> -Psc4j.benchmark.replays=<a.rep>,<b.rep>
 // -Psc4j.benchmark.args passes further JMH options, for example "-wi 0 -i 1 -r 1s" for a smoke run.
 sourceSets {
     jmh {
@@ -15,7 +15,7 @@ sourceSets {
 }
 
 dependencies {
-    jmhImplementation project(':mods:scr:scr-game')
+    jmhImplementation project(':scr-game')
 
     jmhImplementation 'org.openjdk.jmh:jmh-core:1.37'
     jmhAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'

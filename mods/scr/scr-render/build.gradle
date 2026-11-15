@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
-    id 'org.fogofwarlabs.sc4j.java'
-    id 'org.fogofwarlabs.sc4j.natives'
+    id 'org.fogofwarlabs.sc4j.scr.java'
+    id 'org.fogofwarlabs.sc4j.scr.natives'
 }
 
 tasks.withType(Test).configureEach {
@@ -11,11 +11,11 @@ tasks.withType(Test).configureEach {
 }
 
 dependencies {
-    api project(':sc4j-base')
-    api project(':mods:scr:scr-data')
+    api "org.fogofwarlabs.sc4j:sc4j-base:$sc4jVersion"
+    api project(':scr-data')
 
     // Shared test fixtures: the external inputs and the tier annotations (org.fogofwarlabs.sc4j.scr.core.test).
-    testImplementation testFixtures(project(':mods:scr:scr-data'))
+    testImplementation testFixtures(project(':scr-data'))
 
     implementation platform("org.lwjgl:lwjgl-bom:$LWJGL_VERSION")
     implementation 'org.lwjgl:lwjgl'

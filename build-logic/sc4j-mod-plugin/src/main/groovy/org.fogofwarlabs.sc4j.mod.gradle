@@ -9,6 +9,13 @@ plugins {
     id 'java-library'
 }
 
+// The engine's Java version: its jars and its runtime need it.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
 def engineProperties = new Properties()
 ModExtension.getResourceAsStream('engine.properties').withReader('UTF-8') { reader -> engineProperties.load(reader) }
 def engineGroup = engineProperties.getProperty('group')

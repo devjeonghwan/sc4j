@@ -2,11 +2,11 @@ import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
 plugins {
     id 'org.fogofwarlabs.sc4j.mod'
-    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.scr.java'
 }
 
 // Demo 2: a clone of the SC:R mod with its own mod identity, built the way the modder guide describes. The repository holds no
-// copy of the SC:R mod's sources: cloneScrMod copies the main sources and resources of every mods/scr module into build/clone (one folder per
+// copy of the SC:R mod's sources: cloneScrMod copies the main sources and resources of every SC:R mod module into build/clone (one folder per
 // module, as a modder's copy has them) and copies the overlay (overlay/, the same folder layout) over them, after checking against
 // overlay.lock that no SC:R mod file under an overlay file changed; the source set "mod" compiles that clone with the demo's own classes
 // and resources (src/mod), and modJar packages it as scr-demo.jar. Like scr.jar, the jar holds no StarCraft: Remastered asset or data file: the mod reads them from
@@ -16,13 +16,18 @@ plugins {
 // wireframe strips and command icon into the unit's frame files and interface art at build time, and modJar packs those with each set's
 // NOTICE and license files.
 
-// The SC:R mod's folder, and its module folders and their compiler arguments (mod.properties there).
+// The SC:R build's folder (settings.gradle includes it), and its module folders and their compiler arguments (mod.properties there).
 def scrFolder = file('../scr')
 def scrModProperties = new File(scrFolder, 'mod.properties')
 def scrProperties = new Properties()
 scrModProperties.withReader('UTF-8') { reader -> scrProperties.load(reader) }
 def scrModuleNames = scrProperties.getProperty('modules').split(',').toList()
 def scrCompilerArgs = scrProperties.getProperty('compilerArgs').split(' ').toList()
+// The engine modules of the engine version that the SC:R build names, and the projects of the SC:R build.
+def scrBuildProperties = new Properties()
+new File(scrFolder, 'gradle.properties').withReader('UTF-8') { reader -> scrBuildProperties.load(reader) }
+def engineModule = { String name -> 'org.fogofwarlabs.sc4j:' + name + ':' + scrBuildProperties.getProperty('sc4jVersion') }
+def scrModule = { String name -> 'org.fogofwarlabs.sc4j:' + name }
 def overlay = file('overlay')
 def overlayLock = file('overlay.lock')
 def overlayBase = file('overlay-base')
@@ -64,7 +69,7 @@ sc4jMod {
 }
 
 // The third-party libraries of the SC:R mod modules (LWJGL, FFmpeg/JavaCPP, ...), resolved from the modules themselves so that the clone
-// compiles against what the SC:R mod uses.
+// compiles against what the SC:R mod uses. The engine modules come from the mod plugin and the dependencies below.
 def scrModuleDependencies = configurations.dependencyScope('scrModules')
 def scrModuleClasspath = configurations.resolvable('scrModuleClasspath') {
     extendsFrom scrModuleDependencies.get()
@@ -76,7 +81,7 @@ def scrModuleClasspath = configurations.resolvable('scrModuleClasspath') {
 }
 def scrLibraries = files(scrModuleClasspath.map { configuration ->
     configuration.incoming.artifactView {
-        componentFilter { component -> component instanceof ModuleComponentIdentifier }
+        componentFilter { component -> component instanceof ModuleComponentIdentifier && component.group != 'org.fogofwarlabs.sc4j' }
     }.files
 })
 
@@ -110,34 +115,33 @@ def stageTestNativeLibraries = tasks.register('stageTestNativeLibraries', Sync) 
 }
 
 dependencies {
-    cloneImplementation project(':sc4j-base')
+    cloneImplementation engineModule('sc4j-base')
 
     // The mod API and the base: at run time the runtime provides them, scr-demo.jar does not hold them (like scr.jar).
-    modImplementation project(':sc4j-base')
-    modImplementation project(':sc4j-engine')
+    modImplementation engineModule('sc4j-base')
     modImplementation scrLibraries
 
     testImplementation sourceSets.clone.output
-    testImplementation project(':sc4j-runtime')
+    testImplementation engineModule('sc4j-runtime')
     // The SC:R mod itself (its entry and its Beacon.Link provider) hosts the room the clone must not join.
-    testImplementation project(':mods:scr:scr-client')
-    testImplementation project(':mods:scr:scr-net')
+    testImplementation scrModule('scr-client')
+    testImplementation scrModule('scr-net')
     // The in-memory LAN scenario (InMemoryLanScenario) of the scr-net test fixtures, which the clone's LAN morph test plays over.
-    testImplementation testFixtures(project(':mods:scr:scr-net'))
+    testImplementation testFixtures(scrModule('scr-net'))
     // The GPU sample check of the added unit draws through the SC:R renderers and LWJGL (as the clone's classes, see CloneRenderScenario).
-    testImplementation project(':mods:scr:scr-render')
+    testImplementation scrModule('scr-render')
     testImplementation scrLibraries
-    testImplementation testFixtures(project(':mods:scr:scr-data'))
+    testImplementation testFixtures(scrModule('scr-data'))
     // The game tests' fixtures and replays: the value test creates a replay's game with each mod.
-    testImplementation testFixtures(project(':mods:scr:scr-game'))
-    scrGameTestResources project(':mods:scr:scr-game')
+    testImplementation testFixtures(scrModule('scr-game'))
+    scrGameTestResources scrModule('scr-game')
     testRuntimeOnly files(scrGameTestResourceFiles)
-    testImplementation testFixtures(project(':sc4j-beaconlink'))
+    testImplementation testFixtures(engineModule('sc4j-beaconlink'))
     // The installation records that the install test lays out.
-    testImplementation testFixtures(project(':sc4j-mod-manifest'))
+    testImplementation testFixtures(engineModule('sc4j-mod-manifest'))
 
-    scrModuleNames.each { name -> scrModules project(':mods:scr:' + name) }
-    scrModJar project(':mods:scr')
+    scrModuleNames.each { name -> scrModules scrModule(name) }
+    scrModJar scrModule('scr')
     testNativeLibraries "org.lwjgl:lwjgl:$LWJGL_VERSION:$LWJGL_NATIVES"
     testNativeLibraries "org.lwjgl:lwjgl-glfw:$LWJGL_VERSION:$LWJGL_NATIVES"
     testNativeLibraries "org.lwjgl:lwjgl-opengl:$LWJGL_VERSION:$LWJGL_NATIVES"
@@ -154,7 +158,7 @@ def configureCloneTool = { JavaExec task, String mode ->
     task.errorOutput = errors
     task.ignoreExitValue = true
     task.argumentProviders.add({
-        [mode, scrFolder.absolutePath, overlay.absolutePath, overlayLock.absolutePath, overlayBase.absolutePath, project.path + ':']
+        [mode, scrFolder.absolutePath, overlay.absolutePath, overlayLock.absolutePath, overlayBase.absolutePath, ':']
     } as CommandLineArgumentProvider)
     task.doFirst {
         errors.reset()
@@ -229,10 +233,14 @@ def modJar = tasks.named('modJar') {
     }
 }
 
-// The development install (gradlew :mods:scr-demo:devInstall) gets scr-demo.jar next to scr.jar. Nothing under userdata/ is written here;
-// the launcher saves the clone's own settings (userdata/settings/scr-demo.json) when the player sets them.
+// devInstall copies scr-demo.jar next to scr.jar: with the engine build included, into its development install build/dev-install. Nothing
+// under userdata/ is written here; the launcher saves the clone's own settings (userdata/settings/scr-demo.json) when the player sets them.
+def engineBuild = gradle.includedBuilds.find { build -> build.name == 'sc4j' }
+if (engineBuild != null) {
+    sc4jMod.install = new File(engineBuild.projectDir, 'build/dev-install')
+}
 tasks.named('devInstall') {
-    dependsOn ':mods:scr:devInstall'
+    dependsOn gradle.includedBuild('scr').task(':devInstall')
 }
 
 // The tests read scr-demo.jar and scr.jar as a user's mods/ folder has them.

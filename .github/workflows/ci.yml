@@ -41,8 +41,15 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: Test
+      - name: Test the engine
         run: ./gradlew test -Psc4j.render.smoke=false
+
+      # The SC:R builds test against the engine of this checkout (included build).
+      - name: Test the SC:R mod
+        run: ./gradlew -p mods/scr test -Psc4j.render.smoke=false
+
+      - name: Test demo 2
+        run: ./gradlew -p mods/scr-demo test -Psc4j.render.smoke=false
 
       - name: Upload the reports
         if: failure()

@@ -18,8 +18,8 @@ import org.jetbrains.annotations.NotNull;
  *     id = 'my-mod'
  * }
  *}
- * The plugin compiles the source sets against the engine API of its own version ({@code org.fogofwarlabs.sc4j:sc4j-engine}) and adds these
- * tasks:
+ * The plugin compiles the source sets with the engine's Java version (a Java 25 toolchain) against the engine API of its own version
+ * ({@code org.fogofwarlabs.sc4j:sc4j-engine}) and adds these tasks:
  * <ul>
  *     <li>{@code modJar}: packs the classes and resources of the source sets into {@code build/mods/<id>.jar} without file times in a fixed
  *     order, with the licence files in {@code META-INF/}, and checks that its manifest {@code sc4j-mod.json} names the mod id and an entry

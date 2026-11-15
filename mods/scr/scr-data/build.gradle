@@ -3,13 +3,13 @@ plugins {
     // The run values and digests (org.fogofwarlabs.sc4j.scr.core.test.golden), the external inputs, the tier annotations, the test
     // resource lookup and the result tables (org.fogofwarlabs.sc4j.scr.core.test) are shared with the test source sets of the other modules.
     id 'java-test-fixtures'
-    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.scr.java'
 }
 
 dependencies {
-    api project(':sc4j-base')
+    api "org.fogofwarlabs.sc4j:sc4j-base:$sc4jVersion"
     // The deterministic random contract and the state hash that the SC:R generator implements.
-    api project(':sc4j-engine')
+    api "org.fogofwarlabs.sc4j:sc4j-engine:$sc4jVersion"
 
     testFixturesApi platform("org.junit:junit-bom:5.11.4")
     testFixturesApi "org.junit.jupiter:junit-jupiter-api"

@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'application'
-    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.scr.java'
 }
 
 group = 'org.fogofwarlabs'

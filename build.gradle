@@ -49,9 +49,8 @@ allprojects {
     }
 }
 
-// Engine boundary check: the engine-side root modules never depend on a project of the
-// SC:R mod (mods/scr) and none of their source, resource or build files names the SC:R mod's packages or an Scr* type. It is a small own check
-// (no ArchUnit); "check" (and so "build") runs it for every engine-side module.
+// Engine boundary check: no source, resource or build file of the engine-side root modules names the SC:R mod's packages or an Scr* type.
+// It is a small own check (no ArchUnit); "check" (and so "build") runs it for every engine-side module.
 def engineSideModules = ['sc4j-base', 'sc4j-mod-manifest', 'sc4j-engine-core', 'sc4j-engine-sim', 'sc4j-engine-net', 'sc4j-engine-client', 'sc4j-engine', 'sc4j-runtime', 'sc4j-launcher', 'sc4j-beaconlink-protocol',
                          'sc4j-beaconlink-peer', 'sc4j-beaconlink-node', 'sc4j-beaconlink']
 def modPackagePattern = ~/org[.\/]fogofwarlabs[.\/]sc4j[.\/]scr\b/
@@ -69,27 +68,17 @@ configure(modBoundaryModules.collect { name -> project(':' + name) }) { module -
     def checkedFiles = files(module.buildFile, fileTree(module.file('src')) {
         include '**/*.java', '**/*.gradle', '**/*.json', '**/*.properties', '**/*.css', '**/*.txt', '**/*.md'
     })
-    def projectDependencies = providers.provider {
-        module.configurations.collectMany { configuration ->
-            configuration.dependencies.withType(ProjectDependency).collect { dependency -> configuration.name + ' -> ' + dependency.path }
-        }.sort()
-    }
     def report = module.layout.buildDirectory.file('reports/mod-boundary.txt')
     def checkModBoundary = module.tasks.register('checkModBoundary') {
-        description = 'Checks that this module neither depends on nor names the SC:R mod (mods/scr, org.fogofwarlabs.sc4j.scr, Scr* types, ' +
-                'EUD, native SC:R addresses).'
+        description = 'Checks that this module names no part of the SC:R mod (org.fogofwarlabs.sc4j.scr, Scr* types, EUD, native SC:R ' +
+                'addresses).'
         group = 'verification'
         inputs.files(checkedFiles)
-        inputs.property('projectDependencies', projectDependencies)
         inputs.property('namePatterns', [modPackagePattern.toString(), scrTypeNamePattern.toString(), eudNamePattern.toString(),
                                          nativeAddressPattern.toString()])
         outputs.file(report)
         doLast {
-            def problems = projectDependencies.get().findAll { dependency ->
-                dependency.contains(':mods:scr:') || dependency.endsWith(':mods:scr')
-            }.collect { dependency ->
-                'project dependency ' + dependency
-            }
+            def problems = []
             checkedFiles.each { file ->
                 file.readLines('UTF-8').eachWithIndex { line, index ->
                     if (line =~ modPackagePattern || line =~ scrTypeNamePattern || line =~ eudNamePattern || line =~ nativeAddressPattern) {
@@ -98,10 +87,9 @@ configure(modBoundaryModules.collect { name -> project(':' + name) }) { module -
                 }
             }
             if (!problems.isEmpty()) {
-                throw new GradleException(module.path + ' must not depend on or name the SC:R mod:\n  ' + problems.join('\n  '))
+                throw new GradleException(module.path + ' must not name the SC:R mod:\n  ' + problems.join('\n  '))
             }
-            report.get().asFile.text = 'No dependency on the SC:R mod: ' + checkedFiles.files.size() + ' files, ' +
-                    projectDependencies.get().size() + ' project dependencies checked.\n'
+            report.get().asFile.text = 'No name of the SC:R mod: ' + checkedFiles.files.size() + ' files checked.\n'
         }
     }
     module.plugins.withId('java-library') {
@@ -186,7 +174,7 @@ def createApiToolConfiguration = { module ->
         canBeConsumed = false
         canBeResolved = true
     }
-    module.dependencies.add('apiTool', module.dependencies.project(path: ':tools:api-check'))
+    module.dependencies.add('apiTool', module.dependencies.project(path: ':sc4j-api-check'))
     return configuration
 }
 
@@ -439,16 +427,12 @@ def publishedModules = [
     'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.',
     'sc4j-api-check'          : 'API tools of SC4J: the public API listing of the engine modules and the internal API use check of mods.'
 ]
-// The project of each module whose path is not :<module>.
-def publishedModulePaths = ['sc4j-api-check': ':tools:api-check']
-def publishedModulePath = { String artifactId -> publishedModulePaths.getOrDefault(artifactId, ':' + artifactId) }
-
 // Inside this build the coordinates of the published modules (as the mod plugin names them) resolve to their projects.
 allprojects {
     configurations.configureEach {
         resolutionStrategy.dependencySubstitution {
             publishedModules.keySet().each { artifactId ->
-                substitute(module('org.fogofwarlabs.sc4j:' + artifactId)).using(project(publishedModulePath(artifactId)))
+                substitute(module('org.fogofwarlabs.sc4j:' + artifactId)).using(project(':' + artifactId))
             }
         }
     }
@@ -476,7 +460,7 @@ def signingKey = providers.gradleProperty('signingInMemoryKey').filter { key -> 
 def testFixtureVariants = ['testFixturesApiElements', 'testFixturesRuntimeElements', 'testFixturesSourcesElements', 'testFixturesJavadocElements']
 
 publishedModules.each { artifactId, moduleDescription ->
-    project(publishedModulePath(artifactId)) { module ->
+    project(':' + artifactId) { module ->
         module.apply plugin: 'com.vanniktech.maven.publish'
         module.plugins.withId('java-library') {
             module.mavenPublishing {

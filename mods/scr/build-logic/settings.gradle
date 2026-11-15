@@ -1,0 +1,8 @@
+// The conventions of the SC:R builds (the SC:R mod and demo 2).
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'scr-build-logic'

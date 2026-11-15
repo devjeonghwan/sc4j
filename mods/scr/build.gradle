@@ -1,93 +1,14 @@
 plugins {
     id 'org.fogofwarlabs.sc4j.mod'
-    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.scr.java'
 }
 
-// Packaging of the SC:R mod: mods/scr.jar from the classes and resources of every mods/scr module (the benchmark module,
-// JMH only, is not part of the mod), and its copy into the development install. The build rules of the SC:R side come first: test tiers
-// and the native id boundary.
-
-// External test inputs, passed as Gradle properties (-P<name>=<path>, or <name>=<path> in the user's
-// GRADLE_USER_HOME/gradle.properties) and forwarded as system properties. The shared test fixture
-// org.fogofwarlabs.sc4j.scr.core.test.ExternalInput reads them.
-def externalTestProperties = [
-    'sc4j.data',                  // SC:R installation (CASC storage, Maps, x86_64/StarCraft.exe)
-    'sc4j.replays',               // STARDATA replay corpus root (stardata_original_replays)
-    'sc4j.replays.limit',         // corpus file limit of the replay parse test
-    'sc4j.maps',                  // the client's maps folder with the large EUD maps (mods/scr/scr-client/build/install/sc4j/maps)
-    'sc4j.corpus'                 // replay corpus folder that the corpus survey plays (any folder layout)
-]
-
-// The integration tier needs the SC:R installation: fail before any task runs instead of skipping every test.
-gradle.taskGraph.whenReady { graph ->
-    if (graph.allTasks.any { task -> task.name == 'integrationTest' }) {
-        def data = providers.gradleProperty('sc4j.data').getOrElse('')
-
-        if (data.isBlank()) {
-            throw new GradleException("integrationTest needs the SC:R installation: set the Gradle property sc4j.data, either as the line " +
-                                      "'sc4j.data=<installation directory>' in %USERPROFILE%\\.gradle\\gradle.properties (GRADLE_USER_HOME) " +
-                                      "or with -Psc4j.data=<installation directory> (CI: ORG_GRADLE_PROJECT_sc4j.data).")
-        }
-
-        if (!new File(data).isDirectory()) {
-            throw new GradleException("integrationTest needs the SC:R installation, but the Gradle property sc4j.data names no directory: " + data)
-        }
-    }
+allprojects {
+    group = 'org.fogofwarlabs.sc4j'
 }
 
-// The test tiers of every mods/scr module (the recorder mods/scr/sc-recorder included) and of demo 2 (mods/scr-demo). The unit tier (test)
-// leaves out the tags integration and corpus (root project).
-configure(subprojects + [project(':mods:scr-demo')]) { module ->
-    module.plugins.withType(JavaLibraryPlugin).configureEach {
-        // The external properties are forwarded blank to the unit tier so a -P value never turns it into an external run.
-        def unitTest = module.tasks.named('test') {
-            externalTestProperties.each { name -> systemProperty name, '' }
-        }
-
-        // Integration tier: the tests marked @RequiresInstallation (tag integration), with the SC:R installation sc4j.data.
-        // The build fails before it starts when sc4j.data is not set (gradle.taskGraph.whenReady above).
-        def integrationTest = module.tasks.register('integrationTest', Test) {
-            description = 'Runs the integration tier: the tests that need the SC:R installation (sc4j.data).'
-            group = 'verification'
-            testClassesDirs = module.sourceSets.test.output.classesDirs
-            classpath = module.sourceSets.test.runtimeClasspath
-            useJUnitPlatform {
-                includeTags 'integration'
-                excludeTags 'corpus'
-            }
-            shouldRunAfter unitTest
-        }
-
-        // Corpus tier: the tests marked @CorpusTest (tag corpus): long runs and tests over the external folders other than
-        // the installation. A test whose declared folder is not set is skipped.
-        def corpusTest = module.tasks.register('corpusTest', Test) {
-            description = 'Runs the corpus tier over the external replay corpus and the other external folders.'
-            group = 'verification'
-            testClassesDirs = module.sourceSets.test.output.classesDirs
-            classpath = module.sourceSets.test.runtimeClasspath
-            useJUnitPlatform {
-                includeTags 'corpus'
-            }
-            shouldRunAfter integrationTest
-        }
-
-        [integrationTest, corpusTest].each { task ->
-            task.configure {
-                externalTestProperties.each { name -> systemProperty name, providers.gradleProperty(name).getOrElse('') }
-                // Changed external inputs must rerun the tier.
-                outputs.upToDateWhen { false }
-            }
-        }
-
-        // The folder-driven tests (replays/detection, replays/native, maps, captures/lan, ... of the test resources) write one
-        // result table per test task (org.fogofwarlabs.sc4j.scr.core.test.TestResultUtils).
-        [unitTest, integrationTest, corpusTest].each { task ->
-            task.configure {
-                systemProperty 'sc4j.golden.results', module.layout.buildDirectory.dir('golden-results/' + task.name).get().asFile.absolutePath
-            }
-        }
-    }
-}
+// The SC:R mod: the native id boundary of its modules, then scr.jar from the classes and resources of every mod module (the benchmark
+// module, JMH only, is not part of the mod) and its copy into an install.
 
 // Native id boundary: the SC:R mod keeps its native ids as the int holders of scr.content (ScrUnitIds ...) and
 // the engine identities of ScrUnits ... mapped by ScrNativeIds; the package scr.data.type.constant declares no enum and no source names
@@ -130,11 +51,11 @@ configure(subprojects) { module ->
 
 evaluationDependsOnChildren()
 
-// The module folders of the mod and their compiler arguments (mod.properties); the clone of demo 2 (mods/scr-demo) reads the same file.
+// The module folders of the mod and their compiler arguments (mod.properties); the clone of demo 2 reads the same file.
 def modProperties = new Properties()
 file('mod.properties').withReader('UTF-8') { reader -> modProperties.load(reader) }
 def modModuleNames = modProperties.getProperty('modules').split(',').toList()
-def modModules = modModuleNames.collect { name -> project(':mods:scr:' + name) }
+def modModules = modModuleNames.collect { name -> project(':' + name) }
 
 // -parameters records the parameter names in the class files: javac names the constructor parameters of an anonymous class after those of
 // its superclass's constructor, which it knows from a class file only when they are recorded there. Without it a class compiled against the
@@ -152,10 +73,18 @@ sc4jMod {
     sourceSets = modModules.collect { module -> module.sourceSets.main }
 }
 
-// The development install (gradlew :mods:scr:devInstall) gets scr.jar in its mods/ folder. When the Gradle property sc4j.data names the
-// SC:R installation and no shared settings file exists yet, userdata/shared-settings.json is created with it as the value of the shared
-// StarCraft: Remastered folder setting (shared name starcraft-remastered) of the SC:R mod and its clones.
+// devInstall copies scr.jar into mods/ of the install: with the engine build included, its development install build/dev-install, which
+// it assembles first. When the Gradle property sc4j.data names the SC:R installation and no shared settings file exists yet,
+// userdata/shared-settings.json is created with it as the value of the shared StarCraft: Remastered folder setting (shared name
+// starcraft-remastered) of the SC:R mod and its clones.
+def engineBuild = gradle.includedBuilds.find { build -> build.name == 'sc4j' }
+if (engineBuild != null) {
+    sc4jMod.install = new File(engineBuild.projectDir, 'build/dev-install')
+}
 tasks.named('devInstall') {
+    if (engineBuild != null) {
+        dependsOn engineBuild.task(':devInstall')
+    }
     def installation = providers.gradleProperty('sc4j.data').getOrElse('')
     doLast {
         def sharedSettingsFile = new File(destinationDir, 'userdata/shared-settings.json')

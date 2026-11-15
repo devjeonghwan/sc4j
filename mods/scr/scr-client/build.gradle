@@ -1,8 +1,8 @@
 plugins {
     id 'java-library'
     id 'application'
-    id 'org.fogofwarlabs.sc4j.java'
-    id 'org.fogofwarlabs.sc4j.natives'
+    id 'org.fogofwarlabs.sc4j.scr.java'
+    id 'org.fogofwarlabs.sc4j.scr.natives'
 }
 
 tasks.withType(Test).configureEach {
@@ -12,30 +12,30 @@ tasks.withType(Test).configureEach {
 }
 
 dependencies {
-    implementation project(':sc4j-base')
+    implementation "org.fogofwarlabs.sc4j:sc4j-base:$sc4jVersion"
     // The mod API of the entry org.fogofwarlabs.sc4j.scr.ScrMod; at run time the runtime provides it, scr.jar does not hold it.
-    implementation project(':sc4j-engine')
-    implementation project(':mods:scr:scr-data')
-    implementation project(':mods:scr:scr-game')
-    implementation project(':mods:scr:scr-render')
-    implementation project(':mods:scr:scr-net')
+    implementation "org.fogofwarlabs.sc4j:sc4j-engine:$sc4jVersion"
+    implementation project(':scr-data')
+    implementation project(':scr-game')
+    implementation project(':scr-render')
+    implementation project(':scr-net')
 
     // Shared test fixtures: the external inputs and the tier annotations (org.fogofwarlabs.sc4j.scr.core.test).
-    testImplementation testFixtures(project(':mods:scr:scr-data'))
+    testImplementation testFixtures(project(':scr-data'))
     // Shared game test fixtures (InstallationTestResources, GameTestResources) and the replays, saves and maps of the scr-game test
     // resources, read as files from their source directory.
-    testImplementation testFixtures(project(':mods:scr:scr-game'))
+    testImplementation testFixtures(project(':scr-game'))
     testRuntimeOnly files('../scr-game/src/test/resources')
     // The engine's Beacon.Link session and community part played by hand (RecordingBeaconLink, RecordingCommunitySession) of the
     // community screen tests.
-    testImplementation testFixtures(project(':sc4j-engine'))
+    testImplementation testFixtures("org.fogofwarlabs.sc4j:sc4j-engine:$sc4jVersion")
 
     implementation platform("org.lwjgl:lwjgl-bom:$LWJGL_VERSION")
     implementation 'org.lwjgl:lwjgl'
     implementation 'org.lwjgl:lwjgl-opengl'
     // Ogg Vorbis decoding of remastered sounds (stb_vorbis).
     implementation 'org.lwjgl:lwjgl-stb'
-    nativeLibraries project(path: ':mods:scr:scr-render', configuration: 'nativeLibraries')
+    nativeLibraries project(path: ':scr-render', configuration: 'nativeLibraries')
     nativeLibraries "org.lwjgl:lwjgl-openal:$LWJGL_VERSION:$LWJGL_NATIVES"
 
     // The native libraries of the engine's video default (FFmpeg through JavaCPP; the jars come with sc4j-engine), staged with the

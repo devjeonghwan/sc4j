@@ -3,20 +3,20 @@ plugins {
     // Shared game test fixtures (org.fogofwarlabs.sc4j.scr.game.test): InstallationTestResources, GameTestResources, ReplayRunScenario,
     // SharedReplayRunScenario, StateDigestCheck, CommandAcceptanceCheck, CommandValidityCheck, ReplaySurveyCheck.
     id 'java-test-fixtures'
-    id 'org.fogofwarlabs.sc4j.java'
+    id 'org.fogofwarlabs.sc4j.scr.java'
 }
 
 dependencies {
-    api project(':sc4j-base')
-    api project(':mods:scr:scr-data')
+    api "org.fogofwarlabs.sc4j:sc4j-base:$sc4jVersion"
+    api project(':scr-data')
 
-    testFixturesApi testFixtures(project(':mods:scr:scr-data'))
+    testFixturesApi testFixtures(project(':scr-data'))
     testFixturesApi platform("org.junit:junit-bom:5.11.4")
     testFixturesApi "org.junit.jupiter:junit-jupiter-api"
 
-    testImplementation testFixtures(project(':mods:scr:scr-data'))
+    testImplementation testFixtures(project(':scr-data'))
     // SCRECBIN recording reader (org.fogofwarlabs.screcorder.format.recording) of the native recording pairs (replays/native).
-    testImplementation project(':mods:scr:sc-recorder')
+    testImplementation project(':sc-recorder')
 }
 
 tasks.withType(Test).configureEach {

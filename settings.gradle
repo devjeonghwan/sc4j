@@ -25,28 +25,9 @@ include 'sc4j-beaconlink-node'
 // The Beacon.Link client that the runtime gives a mod, with the loopback NAT emulator of the network tests (test fixtures).
 include 'sc4j-beaconlink'
 
-// The mods: each lives in mods/<mod> (project :mods:<mod>).
-// The SC:R mod: every module lives in mods/scr/scr-<part> (project :mods:scr:scr-<part>).
-List<String> scrModules = [
-    'data',
-    'game',
-    'render',
-    'net',
-    'client',
-    // JMH benchmarks (the frame benchmark of the replay simulation).
-    'benchmark'
-]
-
-for (item in scrModules) {
-    include(":mods:scr:scr-" + item)
-}
-// The read-only frame recorder of the native game (SCRECBIN recordings) that the scr-game tests read: mods/scr/sc-recorder.
-include ':mods:scr:sc-recorder'
-
-// Demo 1, a mod made only of the engine: one module in mods/demo/.
+// Demo 1, a mod made only of the engine: one module in mods/demo/ (project :mods:demo).
 include ':mods:demo'
-// Demo 2, a clone of the SC:R mod with its own identity: one module in mods/scr-demo/ that builds the clone from mods/scr.
-include ':mods:scr-demo'
 
-// The API tools of the engine (apiDump, apiCheck, checkApiUse; docs/api-policy.md).
-include ':tools:api-check'
+// The API tools of the engine (apiDump, apiCheck, checkApiUse; docs/api-policy.md), published as sc4j-api-check.
+include ':sc4j-api-check'
+project(':sc4j-api-check').projectDir = file('tools/api-check')

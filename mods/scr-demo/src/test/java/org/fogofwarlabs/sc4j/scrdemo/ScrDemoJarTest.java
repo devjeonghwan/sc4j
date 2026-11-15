@@ -26,8 +26,8 @@ import java.util.jar.JarFile;
  * Tests the built jar of demo 2 against the built SC:R mod jar: it holds every entry of the SC:R mod jar plus only the demo's own classes
  * (package {@code org.fogofwarlabs.sc4j.scrdemo}), the service file that names its content extension, the art sets' folders
  * ({@code third-party/<set>/}) and the files the overlay adds, and of the shared entries exactly the files the overlay replaces differ
- * (a replaced source as its class and nested classes); its manifest has its own mod id with the SC:R mod's entry, engine version and
- * settings; and its mod identity differs from the SC:R mod's first in the mod id.
+ * (a replaced source as its class and nested classes) besides the notice of each build ({@code META-INF/NOTICE}); its manifest has its
+ * own mod id with the SC:R mod's entry, engine version and settings; and its mod identity differs from the SC:R mod's first in the mod id.
  */
 final class ScrDemoJarTest {
     private static final @NotNull String MOD_ID = "scr-demo";
@@ -40,6 +40,7 @@ final class ScrDemoJarTest {
     private static final @NotNull String ART_FOLDER = "third-party/";
     private static final @NotNull String EXTENSION_SERVICE = "META-INF/services/org.fogofwarlabs.sc4j.scr.game.extension.ScrContentExtension";
     private static final @NotNull String EXTENSION_CLASS = "org.fogofwarlabs.sc4j.scrdemo.ScrDemoContentExtension";
+    private static final @NotNull String NOTICE_ENTRY = "META-INF/NOTICE";
 
     /**
      * Creates the identity the runtime computes for a jar of the SC:R mod or its clone with the supported installation, whose build is the
@@ -122,7 +123,7 @@ final class ScrDemoJarTest {
         }
 
         for (Map.Entry<String, byte[]> entry : scr.entrySet()) {
-            if (!Arrays.equals(entry.getValue(), demo.get(entry.getKey()))) {
+            if (!entry.getKey().equals(NOTICE_ENTRY) && !Arrays.equals(entry.getValue(), demo.get(entry.getKey()))) {
                 changed.add(entry.getKey());
             }
         }

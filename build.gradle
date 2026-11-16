@@ -582,7 +582,8 @@ tasks.register('distribution', Zip) {
     reproducibleFileOrder = true
     from(stageUserPackage) {
         into userPackageName
-        filesMatching(['**/bin/*', 'SC4J']) { details ->
+        // The start file, the start scripts and the programs of the Java runtime, with the helpers its process start runs.
+        filesMatching(['**/bin/*', 'SC4J', 'java/lib/jspawnhelper', 'java/lib/jexec']) { details ->
             details.permissions {
                 unix('rwxr-xr-x')
             }

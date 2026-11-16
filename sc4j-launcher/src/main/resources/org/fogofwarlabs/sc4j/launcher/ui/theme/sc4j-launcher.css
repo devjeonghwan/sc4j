@@ -200,17 +200,57 @@
  *    Use these classes instead of setSpacing / setPadding in code, so the scale stays in one place.
  * =================================================================================================================== */
 
-.spacing-xs { -fx-spacing: 4; -fx-hgap: 4; -fx-vgap: 4; }
-.spacing-s { -fx-spacing: 8; -fx-hgap: 8; -fx-vgap: 8; }
-.spacing-m { -fx-spacing: 12; -fx-hgap: 12; -fx-vgap: 12; }
-.spacing-l { -fx-spacing: 16; -fx-hgap: 16; -fx-vgap: 16; }
-.spacing-xl { -fx-spacing: 24; -fx-hgap: 24; -fx-vgap: 24; }
-.spacing-xxl { -fx-spacing: 32; -fx-hgap: 32; -fx-vgap: 32; }
+.spacing-xs {
+    -fx-spacing: 4;
+    -fx-hgap: 4;
+    -fx-vgap: 4;
+}
 
-.padding-s { -fx-padding: 8; }
-.padding-m { -fx-padding: 12; }
-.padding-l { -fx-padding: 16; }
-.padding-xl { -fx-padding: 24; }
+.spacing-s {
+    -fx-spacing: 8;
+    -fx-hgap: 8;
+    -fx-vgap: 8;
+}
+
+.spacing-m {
+    -fx-spacing: 12;
+    -fx-hgap: 12;
+    -fx-vgap: 12;
+}
+
+.spacing-l {
+    -fx-spacing: 16;
+    -fx-hgap: 16;
+    -fx-vgap: 16;
+}
+
+.spacing-xl {
+    -fx-spacing: 24;
+    -fx-hgap: 24;
+    -fx-vgap: 24;
+}
+
+.spacing-xxl {
+    -fx-spacing: 32;
+    -fx-hgap: 32;
+    -fx-vgap: 32;
+}
+
+.padding-s {
+    -fx-padding: 8;
+}
+
+.padding-m {
+    -fx-padding: 12;
+}
+
+.padding-l {
+    -fx-padding: 16;
+}
+
+.padding-xl {
+    -fx-padding: 24;
+}
 
 /* ===================================================================================================================
  * 4. Application chrome

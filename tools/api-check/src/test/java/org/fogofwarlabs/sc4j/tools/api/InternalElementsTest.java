@@ -18,12 +18,12 @@ final class InternalElementsTest {
             "org.example.loading.package-info", """
                                                 @ApiStatus.Internal
                                                 package org.example.loading;
-
+                                                
                                                 import org.jetbrains.annotations.ApiStatus;
                                                 """,
             "org.example.loading.ModLoader", """
                                              package org.example.loading;
-
+                                             
                                              public final class ModLoader {
                                                  public static final class Entry {
                                                  }
@@ -31,15 +31,15 @@ final class InternalElementsTest {
                                              """,
             "org.example.loading.detail.Part", """
                                                package org.example.loading.detail;
-
+                                               
                                                public final class Part {
                                                }
                                                """,
             "org.example.host.GlfwInput", """
                                           package org.example.host;
-
+                                          
                                           import org.jetbrains.annotations.ApiStatus;
-
+                                          
                                           @ApiStatus.Internal
                                           public final class GlfwInput {
                                               public interface Listener {
@@ -48,15 +48,15 @@ final class InternalElementsTest {
                                           """,
             "org.example.host.GlfwInputs", """
                                            package org.example.host;
-
+                                           
                                            public final class GlfwInputs {
                                            }
                                            """,
             "org.example.host.WindowSettings", """
                                                package org.example.host;
-
+                                               
                                                import org.jetbrains.annotations.ApiStatus;
-
+                                               
                                                public final class WindowSettings {
                                                    @ApiStatus.Internal
                                                    public static final class Defaults {

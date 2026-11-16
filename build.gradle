@@ -70,7 +70,7 @@ configure(modBoundaryModules.collect { name -> project(':' + name) }) { module -
     def report = module.layout.buildDirectory.file('reports/mod-boundary.txt')
     def checkModBoundary = module.tasks.register('checkModBoundary') {
         description = 'Checks that this module names no part of the SC:R mod (org.fogofwarlabs.sc4j.scr, Scr* types, EUD, native SC:R ' +
-                'addresses).'
+                      'addresses).'
         group = 'verification'
         inputs.files(checkedFiles)
         inputs.property('namePatterns', [modPackagePattern.toString(), scrTypeNamePattern.toString(), eudNamePattern.toString(),
@@ -121,7 +121,7 @@ configure([project(':sc4j-engine-core'), project(':sc4j-engine-sim')]) { module 
     def report = module.layout.buildDirectory.file('reports/simulation-determinism.txt')
     def checkSimulationDeterminism = module.tasks.register('checkSimulationDeterminism') {
         description = 'Checks that the engine simulation packages use no Math.random, clock, java.util random generator, hash-ordered ' +
-                'collection, identity hash code or floating point.'
+                      'collection, identity hash code or floating point.'
         group = 'verification'
         inputs.files(simulationFiles)
         outputs.file(report)
@@ -198,7 +198,7 @@ def registerApiTasks = { module, apiTool, String sourceSetName ->
     }
     def apiCheck = module.tasks.register(listing.check, JavaExec) {
         description = 'Checks that the public API of the ' + sourceSetName + ' classes of this module equals ' + apiFileName + ' (' + listing.dump +
-                ' updates the file).'
+                      ' updates the file).'
         group = 'verification'
         classpath = apiTool
         mainClass = apiToolMainClass
@@ -208,7 +208,7 @@ def registerApiTasks = { module, apiTool, String sourceSetName ->
         outputs.file(report)
         argumentProviders.add({
             ['check', '--api-file', apiFile.absolutePath] + classArguments() +
-                    ['--update-task', module.path + ':' + listing.dump, '--report', report.get().asFile.absolutePath]
+            ['--update-task', module.path + ':' + listing.dump, '--report', report.get().asFile.absolutePath]
         } as CommandLineArgumentProvider)
     }
     module.tasks.named('check') {
@@ -250,7 +250,7 @@ def createJavaRuntime = tasks.register('createJavaRuntime', Exec) {
     def imageDirectory = javaRuntimeImage.get().asFile
     executable = new File(javaRuntimeHome, 'bin/' + (platformOperatingSystem == 'windows' ? 'jlink.exe' : 'jlink')).absolutePath
     args '--add-modules', javaRuntimeModules.join(','), '--include-locales=' + javaRuntimeLocales.join(','), '--strip-debug',
-         '--no-header-files', '--no-man-pages', '--compress=zip-6', '--output', imageDirectory.absolutePath
+        '--no-header-files', '--no-man-pages', '--compress=zip-6', '--output', imageDirectory.absolutePath
     // jlink writes only into a folder that does not exist.
     doFirst {
         imageDirectory.deleteDir()
@@ -313,14 +313,14 @@ tasks.register('runDevInstall', JavaExec) {
     doFirst {
         def nativeDirectory = new File(runtimeDirectory.get(), 'lib/natives').absolutePath
         jvmArgs '--enable-native-access=ALL-UNNAMED',
-                '-Dorg.lwjgl.librarypath=' + nativeDirectory,
-                '-Djava.library.path=' + nativeDirectory,
-                '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + new File(runtimeDirectory.get(), '.cache/natives').absolutePath,
-                '-Dorg.bytedeco.javacpp.cachedir=' + new File(runtimeDirectory.get(), '.cache/javacpp').absolutePath,
-                '-Dorg.bytedeco.javacpp.platform.linkpath=' + nativeDirectory,
-                '-Dorg.bytedeco.javacpp.platform.preloadpath=' + nativeDirectory,
-                '-Dorg.bytedeco.javacpp.pathsFirst=true',
-                '-Dorg.bytedeco.javacpp.cacheLibraries=false'
+            '-Dorg.lwjgl.librarypath=' + nativeDirectory,
+            '-Djava.library.path=' + nativeDirectory,
+            '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + new File(runtimeDirectory.get(), '.cache/natives').absolutePath,
+            '-Dorg.bytedeco.javacpp.cachedir=' + new File(runtimeDirectory.get(), '.cache/javacpp').absolutePath,
+            '-Dorg.bytedeco.javacpp.platform.linkpath=' + nativeDirectory,
+            '-Dorg.bytedeco.javacpp.platform.preloadpath=' + nativeDirectory,
+            '-Dorg.bytedeco.javacpp.pathsFirst=true',
+            '-Dorg.bytedeco.javacpp.cacheLibraries=false'
     }
 }
 

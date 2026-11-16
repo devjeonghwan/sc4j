@@ -69,9 +69,9 @@ final class ApiListingTest {
                                   """,
             "org.example.Hidden", """
                                   package org.example;
-
+                                  
                                   import org.jetbrains.annotations.ApiStatus;
-
+                                  
                                   @ApiStatus.Internal
                                   public final class Hidden {
                                       public void hide() {
@@ -81,7 +81,7 @@ final class ApiListingTest {
             "org.example.loading.package-info", """
                                                 @ApiStatus.Internal
                                                 package org.example.loading;
-
+                                                
                                                 import org.jetbrains.annotations.ApiStatus;
                                                 """,
             "org.example.loading.Loader", """

@@ -21,7 +21,7 @@ final class ApiToolTest {
     private static final @NotNull String UNIT_CLASS = "org.example.Unit";
     private static final @NotNull String UNIT_SOURCE = """
                                                        package org.example;
-
+                                                       
                                                        public final class Unit {
                                                            public int getHealth() {
                                                                return 1;

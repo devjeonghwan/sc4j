@@ -68,23 +68,23 @@ plugins.withId('application') {
     tasks.named('startScripts') {
         defaultJvmOpts = providers.provider {
             application.applicationDefaultJvmArgs + ['-XX:-UsePerfData', '-Djava.io.tmpdir=APP_HOME_PLACEHOLDER/.cache/tmp'] +
-                    (project.configurations.findByName('nativeLibraries') != null ? [
-                            '--enable-native-access=ALL-UNNAMED',
-                            '-Dorg.lwjgl.librarypath=APP_HOME_PLACEHOLDER/lib/natives',
-                            '-Djava.library.path=APP_HOME_PLACEHOLDER/lib/natives',
-                            '-Dorg.lwjgl.system.SharedLibraryExtractPath=APP_HOME_PLACEHOLDER/.cache/natives',
-                            '-Dorg.bytedeco.javacpp.cachedir=APP_HOME_PLACEHOLDER/.cache/javacpp',
-                            '-Dorg.bytedeco.javacpp.platform.linkpath=APP_HOME_PLACEHOLDER/lib/natives',
-                            '-Dorg.bytedeco.javacpp.platform.preloadpath=APP_HOME_PLACEHOLDER/lib/natives',
-                            '-Dorg.bytedeco.javacpp.pathsFirst=true',
-                            '-Dorg.bytedeco.javacpp.cacheLibraries=false'
-                    ] : [])
+            (project.configurations.findByName('nativeLibraries') != null ? [
+                '--enable-native-access=ALL-UNNAMED',
+                '-Dorg.lwjgl.librarypath=APP_HOME_PLACEHOLDER/lib/natives',
+                '-Djava.library.path=APP_HOME_PLACEHOLDER/lib/natives',
+                '-Dorg.lwjgl.system.SharedLibraryExtractPath=APP_HOME_PLACEHOLDER/.cache/natives',
+                '-Dorg.bytedeco.javacpp.cachedir=APP_HOME_PLACEHOLDER/.cache/javacpp',
+                '-Dorg.bytedeco.javacpp.platform.linkpath=APP_HOME_PLACEHOLDER/lib/natives',
+                '-Dorg.bytedeco.javacpp.platform.preloadpath=APP_HOME_PLACEHOLDER/lib/natives',
+                '-Dorg.bytedeco.javacpp.pathsFirst=true',
+                '-Dorg.bytedeco.javacpp.cacheLibraries=false'
+            ] : [])
         }.get()
         doLast {
             def windowsText = windowsScript.text.replace('APP_HOME_PLACEHOLDER', '%APP_HOME%')
             def windowsPreparation = 'if not exist "%APP_HOME%\\.cache\\tmp\\" mkdir "%APP_HOME%\\.cache\\tmp"\r\n' +
-                    'if not exist "%APP_HOME%\\.cache\\tmp\\" (\r\n' +
-                    '    echo ERROR: Cannot create the JVM temporary directory. 1>&2\r\n    exit /b 1\r\n)\r\n\r\n'
+                                     'if not exist "%APP_HOME%\\.cache\\tmp\\" (\r\n' +
+                                     '    echo ERROR: Cannot create the JVM temporary directory. 1>&2\r\n    exit /b 1\r\n)\r\n\r\n'
             windowsText = windowsText.replace('@rem Add default JVM options here.', windowsPreparation + '@rem Add default JVM options here.')
             windowsText = windowsText.replace('%JAVA_EXE% -version', '%JAVA_EXE% %DEFAULT_JVM_OPTS% -version')
             // The Java runtime of the user package (<install>/java, beside launcher/ and runtime/) comes before JAVA_HOME and PATH.
@@ -93,11 +93,11 @@ plugins.withId('application') {
             windowsScript.text = windowsText
             def unixText = unixScript.text.replace('APP_HOME_PLACEHOLDER', '\'"$APP_HOME"\'')
             def unixPreparation = 'mkdir -p "$APP_HOME/.cache/tmp" || die "Cannot create the JVM temporary directory"\n' +
-                    '[ -d "$APP_HOME/.cache/tmp" ] || die "The JVM temporary path is not a directory"\n\n'
+                                  '[ -d "$APP_HOME/.cache/tmp" ] || die "The JVM temporary path is not a directory"\n\n'
             unixText = unixText.replace('# Add default JVM options here.', unixPreparation + '# Add default JVM options here.')
             def unixJava = 'if [ -x "$APP_HOME/../java/bin/java" ] ; then\n    JAVA_HOME=$APP_HOME/../java\nfi\n\n'
             unixScript.text = unixText.replace('# Determine the Java command to use to start the JVM.',
-                                               unixJava + '# Determine the Java command to use to start the JVM.')
+                unixJava + '# Determine the Java command to use to start the JVM.')
         }
     }
     // Every application distribution carries LICENSE, NOTICE and licenses/ at its root; the install task fails when its folder misses one of
@@ -153,28 +153,28 @@ if (project == rootProject) {
                                 '**/*.md', '**/*.xml', '**/*.fxml', '**/*.html', '**/*.py', '**/*.sh', '**/*.bat', '**/*.cmd', '**/*.yml',
                                 '**/*.toml', '**/LICENSE', '**/NOTICE', '**/gradlew']
     def privatePathFiles = files(
-            fileTree(rootDir) {
-                include privatePathFileTypes.collect { type -> type.substring(3) }
-                exclude '*/**', '.gitignore'
-                exclude localTopLevelFiles
-            },
-            fileTree(file('gradle')) { include privatePathFileTypes },
-            fileTree(file('build-logic')) {
+        fileTree(rootDir) {
+            include privatePathFileTypes.collect { type -> type.substring(3) }
+            exclude '*/**', '.gitignore'
+            exclude localTopLevelFiles
+        },
+        fileTree(file('gradle')) { include privatePathFileTypes },
+        fileTree(file('build-logic')) {
+            include privatePathFileTypes
+            exclude '**/build/**', '**/.gradle/**'
+        },
+        fileTree(file('docs')) { include privatePathFileTypes },
+        subprojects.collect { module ->
+            module.childProjects.isEmpty()
+                ? fileTree(module.projectDir) {
                 include privatePathFileTypes
-                exclude '**/build/**', '**/.gradle/**'
-            },
-            fileTree(file('docs')) { include privatePathFileTypes },
-            subprojects.collect { module ->
-                module.childProjects.isEmpty()
-                        ? fileTree(module.projectDir) {
-                            include privatePathFileTypes
-                            exclude 'build/**', '.gradle/**'
-                        }
-                        : fileTree(module.projectDir) {
-                            include privatePathFileTypes.collect { type -> type.substring(3) }
-                            exclude '*/**'
-                        }
-            })
+                exclude 'build/**', '.gradle/**'
+            }
+                : fileTree(module.projectDir) {
+                include privatePathFileTypes.collect { type -> type.substring(3) }
+                exclude '*/**'
+            }
+        })
     def privatePathReport = layout.buildDirectory.file('reports/private-paths.txt')
     tasks.register('checkPrivatePaths') {
         description = 'Checks that no source, build or documentation file names a private local path.'

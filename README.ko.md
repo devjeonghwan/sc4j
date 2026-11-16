@@ -45,7 +45,7 @@ SC4J(Simulation Core for Java)는 실시간 전략 게임 엔진입니다. 게�
 | `sc4j-launcher` | 런처(JavaFX) |
 | `sc4j-beaconlink-protocol`, `-peer`, `-node`, `sc4j-beaconlink` | Beacon.Link 와이어 프로토콜, 피어 라이브러리, 헤드리스 노드, 클라이언트 |
 | [`mods/`](mods/) | 데모 모드 |
-| [`tools/`](tools/) | `api-check`(API 목록) |
+| [`tools/`](tools/) | `api-check`(API 목록), `windows-manifest`(Windows 프로그램의 UTF-8 코드 페이지) |
 | [`docs/`](docs/README.ko.md) | 가이드. [`docs/branding/`](docs/branding/README.ko.md): 로고와 데모의 런처 그림 |
 | [`licenses/`](licenses/) | 서드파티 라이선스 전문 |
 
@@ -66,7 +66,7 @@ JDK 25가 필요하며, Gradle은 Gradle 래퍼가 내려받습니다. 명령은
 
 사용자 패키지에는 런처, 런타임, 데모, Java 런타임이 있으며 Windows에서는 `SC4J.exe`(또는 `SC4J.bat`), Linux에서는 `SC4J`로 시작합니다. `userdata/`는 처음 시작할 때 만들어집니다.
 
-런처는 SC4J의 GitHub 릴리스로 스스로 업데이트하고, GitHub 저장소(`owner/name`, 직접 입력하거나 [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods) 목록에서 선택)의 최신 릴리스에서 모드를 설치합니다. `userdata/`와 `mods/`는 그대로 남습니다.
+런처는 SC4J의 GitHub 릴리스로 스스로 업데이트하고, GitHub 저장소(`owner/name`, 직접 입력하거나 [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods) 목록에서 선택)의 최신 릴리스에서 모드를 설치합니다. 업데이트는 패키지에 포함된 모드 jar(`launcher/package-mods.txt`에 기록)도 바꾸며, `userdata/`와 `mods/`의 다른 jar는 그대로 남고 플레이어가 지운 포함 jar는 다시 추가하지 않습니다.
 
 ## 문서
 

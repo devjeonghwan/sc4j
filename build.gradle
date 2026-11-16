@@ -191,6 +191,30 @@ def javaRuntimeModules = ['java.base', 'java.desktop', 'java.management', 'java.
 def javaRuntimeLocales = ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'zh']
 def javaRuntimeHome = providers.systemProperty('java.home').get()
 def javaRuntimeImage = layout.buildDirectory.dir('java-runtime')
+
+// Runs the tools of the build from task actions.
+interface ExecOperationsHolder {
+    @javax.inject.Inject
+    org.gradle.process.ExecOperations getExecOperations()
+}
+def execOperations = objects.newInstance(ExecOperationsHolder).execOperations
+
+// On Windows the programs of the user package, SC4J.exe and the java.exe and javaw.exe of its Java runtime, get the UTF-8 active code page in
+// their manifest (tools/windows-manifest), so that they start from an install folder whose name has characters outside the ANSI code page.
+def windowsManifestTool = configurations.create('windowsManifestTool') {
+    canBeConsumed = false
+    canBeResolved = true
+}
+dependencies.add('windowsManifestTool', dependencies.project(path: ':tools:windows-manifest'))
+def setUtf8CodePage = { List<File> programs ->
+    execOperations.javaexec { spec ->
+        spec.classpath = windowsManifestTool
+        spec.mainClass = 'org.fogofwarlabs.sc4j.tools.windows.WindowsManifestTool'
+        spec.jvmArgs '-XX:-UsePerfData', '--enable-native-access=ALL-UNNAMED'
+        spec.args programs.collect { program -> program.absolutePath }
+    }
+}
+
 def createJavaRuntime = tasks.register('createJavaRuntime', Exec) {
     description = 'Creates the Java runtime image of the user package in build/java-runtime with jlink.'
     group = 'distribution'
@@ -205,6 +229,12 @@ def createJavaRuntime = tasks.register('createJavaRuntime', Exec) {
     // jlink writes only into a folder that does not exist.
     doFirst {
         imageDirectory.deleteDir()
+    }
+    if (platformOperatingSystem == 'windows') {
+        inputs.files(windowsManifestTool)
+        doLast {
+            setUtf8CodePage(['java.exe', 'javaw.exe'].collect { name -> new File(imageDirectory, 'bin/' + name) })
+        }
     }
 }
 
@@ -255,7 +285,7 @@ def checkJavaRuntimeModules = tasks.register('checkJavaRuntimeModules') {
 
 // The programs of an install: launcher/ (the launcher distribution with the shipped seed list), runtime/ (the runtime distribution with its
 // native libraries), LICENSE, NOTICE, licenses/ and the start files SC4J.bat and SC4J. The development install and the user package copy it
-// with the jars of the mods below.
+// with the jars of the mods below and their list.
 // The launcher, the runtime and the mods are evaluated after this project, so the copies name their tasks only when Gradle configures them.
 def installContents = copySpec {
     from({ project(':sc4j-launcher').tasks.named('installDist') }) { into 'launcher' }
@@ -266,6 +296,18 @@ def installContents = copySpec {
 }
 def installModProjects = [':mods:demo']
 def installModJars = { installModProjects.collect { path -> project(path).tasks.named('jar') } }
+// The list launcher/package-mods.txt of the mod jars above, one file name per line: a launcher update replaces, adds and removes only these.
+def packageModNames = providers.provider { installModProjects.collect { path -> project(path).tasks.named('jar', Jar).get().archiveFileName.get() } }
+def packageModList = tasks.register('writePackageModList') {
+    description = 'Writes the list of the mod jars an install ships, build/package-mods/package-mods.txt.'
+    group = 'distribution'
+    def listFile = layout.buildDirectory.file('package-mods/package-mods.txt')
+    inputs.property('jars', packageModNames)
+    outputs.file(listFile)
+    doLast {
+        listFile.get().asFile.setText(packageModNames.get().collect { name -> name + '\n' }.join(''), 'UTF-8')
+    }
+}
 
 // The development install build/dev-install of the repository: the programs of an install and the mods above. userdata/, the caches and
 // the other jars of mods/ (those a mod's installMod copies in) are kept between builds.
@@ -282,6 +324,7 @@ def devInstall = tasks.register('devInstall', Sync) {
     }
     with installContents
     from(installModJars) { into 'mods' }
+    from(packageModList) { into 'launcher' }
     doLast {
         checkDistributionLicenses(developmentInstall.get().asFile)
     }
@@ -457,6 +500,7 @@ def createWindowsProgram = tasks.register('createWindowsProgram', Exec) {
     def imageDirectory = windowsProgramImage.get().asFile
     inputs.files(createWindowsIcon)
     inputs.files(createJavaRuntime)
+    inputs.files(windowsManifestTool)
     inputs.files(launcherJarTask)
     inputs.property('jvmOptions', launcherJvmOptions)
     inputs.property('mainClass', launcherMainClass)
@@ -481,6 +525,7 @@ def createWindowsProgram = tasks.register('createWindowsProgram', Exec) {
         new File(imageDirectory, 'app').deleteDir()
         // jpackage leaves the program read-only, which would stop an update from deleting the replaced one.
         new File(imageDirectory, windowsProgramName + '.exe').setWritable(true)
+        setUtf8CodePage([new File(imageDirectory, windowsProgramName + '.exe')])
         def lines = ['[Application]', 'app.runtime=$ROOTDIR\\java', 'app.classpath=$ROOTDIR\\launcher\\lib\\*',
                      'app.mainclass=' + launcherMainClass.get(), '', '[JavaOptions]'] +
                     launcherJvmOptions.get().collect { option -> 'java-options=' + option }
@@ -513,6 +558,7 @@ def stageUserPackage = tasks.register('stageUserPackage', Sync) {
     into layout.buildDirectory.dir('user-package/' + userPackageName)
     with installContents
     from(installModJars) { into 'mods' }
+    from(packageModList) { into 'launcher' }
     from(createJavaRuntime) { into 'java' }
     if (platformOperatingSystem == 'windows') {
         from(createWindowsProgram)

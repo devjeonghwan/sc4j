@@ -1,0 +1,200 @@
+package org.fogofwarlabs.sc4j.launcher.release;
+
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import org.fogofwarlabs.sc4j.base.exception.Exceptions;
+import org.fogofwarlabs.sc4j.base.json.JsonWriterUtils;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Stands in for GitHub on 127.0.0.1: the REST API's latest release of a repository ({@code /api/repos/<owner>/<name>/releases/latest}), the
+ * release files, which are served through a redirect as GitHub serves them, and other files such as a mod catalog.
+ */
+public final class ReleaseServerScenario implements AutoCloseable {
+    /**
+     * The checksum file extension of a release file.
+     */
+    public static final @NotNull String CHECKSUM_EXTENSION = ".sha256";
+
+    private static final @NotNull String API_PATH = "/api/";
+    private static final @NotNull String LATEST_RELEASE_PATH = API_PATH + "repos/{0}/releases/latest";
+    private static final @NotNull String DOWNLOAD_PATH = "/download/{0}/{1}/{2}";
+    private static final @NotNull String FILE_PATH = "/files/";
+    private static final @NotNull String LOCATION_HEADER = "Location";
+    private static final int OK_STATUS = 200;
+    private static final int FOUND_STATUS = 302;
+    private static final int NOT_FOUND_STATUS = 404;
+    private static final int NO_BODY = -1;
+
+    /**
+     * Starts a server on a free port of 127.0.0.1.
+     *
+     * @return the created {@link ReleaseServerScenario} instance
+     * @throws IOException if the server cannot be started
+     */
+    public static @NotNull ReleaseServerScenario start() throws IOException {
+        return new ReleaseServerScenario(HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0));
+    }
+
+    /**
+     * Gives the SHA-256 checksum of contents the way {@code sha256sum} prints it.
+     *
+     * @param contents the contents
+     * @param fileName the file name printed after the checksum
+     * @return the checksum line
+     */
+    public static byte @NotNull [] createChecksum(byte @NotNull [] contents, @NotNull String fileName) {
+        try {
+            String checksum = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(contents));
+
+            return (checksum + "  " + fileName + "\n").getBytes(StandardCharsets.US_ASCII);
+        } catch (NoSuchAlgorithmException exception) {
+            throw Exceptions.newIllegalStateException(exception, "The Java runtime has no SHA-256.");
+        }
+    }
+
+
+    private final @NotNull HttpServer server;
+    private final @NotNull Map<@NotNull String, byte @NotNull []> files;
+    private final @NotNull Map<@NotNull String, @NotNull String> redirects;
+
+    /**
+     * Creates a {@link ReleaseServerScenario} instance and starts the server.
+     *
+     * @param server the bound server
+     */
+    private ReleaseServerScenario(@NotNull HttpServer server) {
+        this.server    = server;
+        this.files     = new ConcurrentHashMap<>();
+        this.redirects = new ConcurrentHashMap<>();
+
+        this.server.createContext("/", this::answer);
+        this.server.start();
+    }
+
+    /**
+     * @return the address of the REST API, to create a {@link ReleaseClient} with
+     */
+    public @NotNull URI getApi() {
+        return this.resolve(API_PATH);
+    }
+
+    /**
+     * Publishes a file at {@code /files/<name>}.
+     *
+     * @param name     the file's name
+     * @param contents the contents
+     * @return the file's address
+     */
+    public @NotNull URI addFile(@NotNull String name, byte @NotNull [] contents) {
+        this.files.put(FILE_PATH + name, contents);
+
+        return this.resolve(FILE_PATH + name);
+    }
+
+    /**
+     * Publishes a release as the latest release of a repository; each release file is served through a redirect.
+     *
+     * @param repository the repository {@code owner/name}
+     * @param tag        the release tag
+     * @param assets     the release files by name, in the order the release lists them
+     */
+    public void addRelease(@NotNull String repository, @NotNull String tag, @NotNull Map<@NotNull String, byte @NotNull []> assets) {
+        List<Object> listed = new ArrayList<>();
+        Map<String, Object> release = new LinkedHashMap<>();
+
+        for (Map.Entry<String, byte[]> asset : assets.entrySet()) {
+            String download = Exceptions.format(DOWNLOAD_PATH, repository, tag, asset.getKey());
+            String file = FILE_PATH + repository + "/" + tag + "/" + asset.getKey();
+            Map<String, Object> entry = new LinkedHashMap<>();
+
+            this.files.put(file, asset.getValue());
+            this.redirects.put(download, file);
+            entry.put("name", asset.getKey());
+            entry.put("size", (long) asset.getValue().length);
+            entry.put("browser_download_url", this.resolve(download).toString());
+            listed.add(entry);
+        }
+
+        release.put("tag_name", tag);
+        release.put("draft", false);
+        release.put("assets", listed);
+        this.setLatestRelease(repository, JsonWriterUtils.write(release).getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Sets the REST API's answer for the latest release of a repository.
+     *
+     * @param repository the repository {@code owner/name}
+     * @param contents   the answer
+     */
+    public void setLatestRelease(@NotNull String repository, byte @NotNull [] contents) {
+        this.files.put(Exceptions.format(LATEST_RELEASE_PATH, repository), contents);
+    }
+
+    /**
+     * Publishes a release with each file and its checksum file {@code <file>.sha256}.
+     *
+     * @param repository the repository {@code owner/name}
+     * @param tag        the release tag
+     * @param files      the release files by name
+     */
+    public void addCheckedRelease(@NotNull String repository, @NotNull String tag, @NotNull Map<@NotNull String, byte @NotNull []> files) {
+        Map<String, byte[]> assets = new LinkedHashMap<>();
+
+        for (Map.Entry<String, byte[]> file : files.entrySet()) {
+            assets.put(file.getKey(), file.getValue());
+            assets.put(file.getKey() + CHECKSUM_EXTENSION, createChecksum(file.getValue(), file.getKey()));
+        }
+
+        this.addRelease(repository, tag, assets);
+    }
+
+    private @NotNull URI resolve(@NotNull String path) {
+        return URI.create("http://" + this.server.getAddress().getHostString() + ":" + this.server.getAddress().getPort() + path);
+    }
+
+    private void answer(@NotNull HttpExchange exchange) throws IOException {
+        String path = exchange.getRequestURI().getPath();
+        String target = this.redirects.get(path);
+        byte[] contents = this.files.get(path);
+
+        try (exchange) {
+            if (target != null) {
+                exchange.getResponseHeaders().add(LOCATION_HEADER, this.resolve(target).toString());
+                exchange.sendResponseHeaders(FOUND_STATUS, NO_BODY);
+            } else if (contents == null) {
+                exchange.sendResponseHeaders(NOT_FOUND_STATUS, NO_BODY);
+            } else {
+                exchange.sendResponseHeaders(OK_STATUS, contents.length == 0 ? NO_BODY : contents.length);
+
+                try (OutputStream output = exchange.getResponseBody()) {
+                    output.write(contents);
+                }
+            }
+        }
+    }
+
+    /**
+     * Closes this resource, relinquishing any underlying resources: stops the server.
+     */
+    @Override
+    public void close() {
+        this.server.stop(0);
+    }
+}

@@ -1,6 +1,5 @@
 package org.fogofwarlabs.sc4j.launcher.ui.accounts;
 
-import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
@@ -33,9 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.DoubleConsumer;
 
 /**
  * Shows the login step, the launcher's first view and the only place to manage accounts: the accounts of the install on the left
@@ -54,7 +51,6 @@ public final class LoginScreen {
     private static final double CONTENT_WIDTH = 960;
     private static final double CONTENT_HEIGHT = 520;
     private static final int DOUBLE_CLICK = 2;
-    private static final @NotNull String WORK_THREAD_NAME = "launcher-account-work";
     private static final @NotNull String FILE_NAME_SEPARATOR = "-";
     private static final @NotNull String TAG_PREFIX = "#";
 
@@ -83,39 +79,6 @@ public final class LoginScreen {
          * @return the chosen file, or {@code null} if the user cancelled
          */
         @Nullable Path chooseExportFile(@NotNull String fileName);
-    }
-
-    /**
-     * Carries out the slow part of a dialog's work away from the user interface thread, without changing any file.
-     *
-     * @param <T> the type of the work's result
-     */
-    @FunctionalInterface
-    private interface AccountWork<T> {
-        /**
-         * Carries out the work.
-         *
-         * @param progress receives the share of the work done, from any thread
-         * @return the work's result, or {@code null} if it was cancelled
-         * @throws IOException if the work failed
-         */
-        @Nullable T run(@NotNull DoubleConsumer progress) throws IOException;
-    }
-
-    /**
-     * Saves the result of a dialog's work on the user interface thread, where Cancel runs too, so that a cancelled dialog saves nothing.
-     *
-     * @param <T> the type of the work's result
-     */
-    @FunctionalInterface
-    private interface AccountWorkResult<T> {
-        /**
-         * Saves the result and goes on with it.
-         *
-         * @param result the work's result
-         * @throws IOException if the result cannot be saved
-         */
-        void accept(@NotNull T result) throws IOException;
     }
 
     /**
@@ -293,7 +256,7 @@ public final class LoginScreen {
             }
 
             IdentityKeyPair keyPair = IdentityKeyPair.generate(this.random);
-            AccountWork<PlayerStamp> search = progress -> PlayerStamp.solve(keyPair.getPublicKey(), checked, PlayerStamp.DEFAULT_DIFFICULTY, share -> {
+            ModalDialog.Work<PlayerStamp> search = progress -> PlayerStamp.solve(keyPair.getPublicKey(), checked, PlayerStamp.DEFAULT_DIFFICULTY, share -> {
                 progress.accept(share);
 
                 return !cancelled.get();
@@ -301,9 +264,10 @@ public final class LoginScreen {
 
             name.setDisable(true);
             create.setDisable(true);
-            this.runWork(shown, this.texts.get("accounts.creating"), cancelled, search, stamp -> {
+            shown.runWork(this.texts.get("accounts.creating"), cancelled, search, stamp -> {
                 this.select(this.store.create(keyPair, stamp, PlayerStamp.DEFAULT_DIFFICULTY, System.currentTimeMillis()).getId());
-            }, () -> {
+                this.closeDialog(shown);
+            }, this::describe, () -> {
                 name.setDisable(false);
                 create.setDisable(false);
             });
@@ -371,7 +335,7 @@ public final class LoginScreen {
 
             password.setDisable(true);
             importButton.setDisable(true);
-            this.runWork(shown, this.texts.get("accounts.importing"), cancelled, progress -> {
+            shown.runWork(this.texts.get("accounts.importing"), cancelled, progress -> {
                 try {
                     return plain != null ? plain : AccountBackup.read(contents, typed);
                 } finally {
@@ -386,7 +350,8 @@ public final class LoginScreen {
 
                 this.select(imported.getId());
                 this.showNotice(ComponentUtils.Tone.SUCCESS, this.texts.format("accounts.imported", imported.getTaggedName()));
-            }, () -> {
+                this.closeDialog(shown);
+            }, this::describe, () -> {
                 password.setDisable(false);
                 importButton.setDisable(false);
             });
@@ -436,7 +401,7 @@ public final class LoginScreen {
             password.setDisable(true);
             repeated.setDisable(true);
             export.setDisable(true);
-            this.runWork(shown, this.texts.get("accounts.exporting"), cancelled, progress -> {
+            shown.runWork(this.texts.get("accounts.exporting"), cancelled, progress -> {
                 try {
                     return AccountBackup.create(account, typed, this.random);
                 } finally {
@@ -447,7 +412,8 @@ public final class LoginScreen {
             }, backup -> {
                 AtomicFileUtils.write(file, backup);
                 this.showNotice(ComponentUtils.Tone.SUCCESS, this.texts.format("accounts.exported", file));
-            }, () -> {
+                this.closeDialog(shown);
+            }, this::describe, () -> {
                 password.setDisable(false);
                 repeated.setDisable(false);
                 export.setDisable(false);
@@ -619,62 +585,5 @@ public final class LoginScreen {
     private @NotNull String describe(@NotNull Exception exception) {
         return exception instanceof AccountException problem ? this.texts.describeAccountProblem(problem.getProblem())
                                                              : this.texts.format("accounts.failed", exception.getMessage());
-    }
-
-    /**
-     * Runs a dialog's work on a thread of its own and shows its progress in the dialog. The result is saved on the user interface thread, and
-     * only while the dialog was not cancelled: Cancel, which runs on that thread too, either comes first and nothing is saved, or the dialog
-     * is closed already. A saved result closes the dialog; a failure of the work or of the saving shows its reason in the dialog and enables
-     * its inputs again.
-     */
-    private <T> void runWork(@NotNull ModalDialog shown, @NotNull String progressText, @NotNull AtomicBoolean cancelled,
-                             @NotNull AccountWork<T> work, @NotNull AccountWorkResult<T> done, @NotNull Runnable failed) {
-        AtomicReference<Double> latest = new AtomicReference<>(null);
-        Consumer<Exception> fail = exception -> {
-            shown.showProgress(null, 0);
-            shown.showMessage(this.describe(exception));
-            failed.run();
-        };
-
-        shown.showMessage(null);
-        shown.showProgress(progressText, ProgressBar.INDETERMINATE_PROGRESS);
-
-        DoubleConsumer progress = share -> {
-            if (latest.getAndSet(share) == null) {
-                Platform.runLater(() -> {
-                    Double value = latest.getAndSet(null);
-
-                    if (value != null && !cancelled.get()) {
-                        shown.showProgress(progressText, value);
-                    }
-                });
-            }
-        };
-        Thread thread = new Thread(() -> {
-            try {
-                T result = work.run(progress);
-
-                Platform.runLater(() -> {
-                    if (result == null || cancelled.get()) {
-                        return;
-                    }
-
-                    try {
-                        done.accept(result);
-                    } catch (IOException | RuntimeException exception) {
-                        fail.accept(exception);
-
-                        return;
-                    }
-
-                    this.closeDialog(shown);
-                });
-            } catch (IOException | RuntimeException exception) {
-                Platform.runLater(() -> fail.accept(exception));
-            }
-        }, WORK_THREAD_NAME);
-
-        thread.setDaemon(true);
-        thread.start();
     }
 }

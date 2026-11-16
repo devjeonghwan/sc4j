@@ -193,6 +193,10 @@ READY   my-mod               my-mod.jar
 
 `<install>\launcher\bin\sc4j-launcher.bat` opens the launcher window; choose "My Mod" and start it. The runtime opens a window with `FirstScene` in one colour; Escape ends the run.
 
+Players install a released mod with Install mod on the Mods screen: the latest GitHub release of the mod's repository carries `<id>.jar` and its checksum file `<id>.jar.sha256`, and the launcher installs the jar only when its checks pass. The catalog `mods.json` of [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods) lists mods by name.
+
+The launcher offers a newer release of a mod installed this way as an update in the mod's details.
+
 From here on, turn the mod into your game. Section 2.6 lists the parts of a small game in the usual order; the rest of this guide explains each part.
 
 ### 2.6 Make it a game

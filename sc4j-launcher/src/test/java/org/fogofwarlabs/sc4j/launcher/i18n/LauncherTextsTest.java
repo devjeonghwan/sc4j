@@ -7,6 +7,7 @@ import org.fogofwarlabs.sc4j.beaconlink.protocol.file.NodeListProblem;
 import org.fogofwarlabs.sc4j.beaconlink.protocol.file.NodeListProblemKind;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodeEntryProblem;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodePingStatus;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseProblem;
 import org.fogofwarlabs.sc4j.launcher.session.FriendState;
 import org.fogofwarlabs.sc4j.launcher.session.SessionFailure;
 import org.fogofwarlabs.sc4j.manifest.validation.ProblemCode;
@@ -61,6 +62,17 @@ final class LauncherTextsTest {
 
             for (AccountProblem problem : AccountProblem.values()) {
                 Assertions.assertFalse(texts.describeAccountProblem(problem).isBlank(), problem.name());
+            }
+        }
+    }
+
+    @Test
+    void every_release_problem_has_a_text_in_every_language() {
+        for (UiLanguage language : UiLanguage.values()) {
+            LauncherTexts texts = LauncherTexts.of(language);
+
+            for (ReleaseProblem problem : ReleaseProblem.values()) {
+                Assertions.assertFalse(texts.describeReleaseProblem(problem).isBlank(), problem.name());
             }
         }
     }

@@ -98,6 +98,18 @@ final class LauncherShellTest {
         @Override
         public void onOpenWebsite(@NotNull String address) {
         }
+
+        @Override
+        public void onUpdate(@NotNull ModEntry entry) {
+        }
+
+        @Override
+        public void onRemove(@NotNull ModEntry entry) {
+        }
+
+        @Override
+        public void onInstall() {
+        }
     }
 
     @BeforeAll

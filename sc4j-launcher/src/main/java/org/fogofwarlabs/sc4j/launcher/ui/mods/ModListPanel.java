@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 
 /**
  * Shows the mod list: one cell per jar of {@code mods/} with its icon, name, id, version, authors, the first reason of a
- * warning or error, and the status badge. The footer opens the folder and scans it again.
+ * warning or error, and the status badge. The footer opens the folder, scans it again and installs a mod.
  */
 public final class ModListPanel {
     private static final double PANEL_WIDTH = 360;
@@ -95,11 +95,13 @@ public final class ModListPanel {
      * @param onSelect     called with the entry the user selects
      * @param onOpenFolder called when the user opens the mods folder
      * @param onRefresh    called when the user asks to scan the folder again
+     * @param onInstall    called when the user installs a mod
      */
-    public ModListPanel(@NotNull ModCatalog catalog, @NotNull LauncherTexts texts, @NotNull ModArt art,
-                        @NotNull Consumer<@NotNull ModEntry> onSelect, @NotNull Runnable onOpenFolder, @NotNull Runnable onRefresh) {
+    public ModListPanel(@NotNull ModCatalog catalog, @NotNull LauncherTexts texts, @NotNull ModArt art, @NotNull Consumer<@NotNull ModEntry> onSelect,
+                        @NotNull Runnable onOpenFolder, @NotNull Runnable onRefresh, @NotNull Runnable onInstall) {
         Button openFolder = ComponentUtils.smallButton(texts.get("mods.open.folder"), ComponentUtils.ButtonRole.SECONDARY);
         Button refresh = ComponentUtils.smallButton(texts.get("mods.refresh"), ComponentUtils.ButtonRole.SECONDARY);
+        Button install = ComponentUtils.smallButton(texts.get("mods.install"), ComponentUtils.ButtonRole.SECONDARY);
         VBox body;
 
         this.texts = texts;
@@ -118,10 +120,11 @@ public final class ModListPanel {
 
         openFolder.setOnAction(event -> onOpenFolder.run());
         refresh.setOnAction(event -> onRefresh.run());
+        install.setOnAction(event -> onInstall.run());
 
         body      = ComponentUtils.flushPanelBody(this.list);
         this.root = ComponentUtils.panel(texts.get("mods.title"), body);
-        this.root.getChildren().add(ComponentUtils.panelFooter(openFolder, ComponentUtils.growingSpacer(), refresh));
+        this.root.getChildren().add(ComponentUtils.panelFooter(openFolder, ComponentUtils.growingSpacer(), refresh, install));
         this.root.setPrefWidth(PANEL_WIDTH);
         this.root.setMinWidth(PANEL_WIDTH);
         this.root.setMaxHeight(Double.MAX_VALUE);

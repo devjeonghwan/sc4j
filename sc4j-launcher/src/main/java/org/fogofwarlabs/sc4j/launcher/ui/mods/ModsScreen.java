@@ -26,7 +26,8 @@ import java.util.Map;
 /**
  * Shows the Mods screen: the mod list on the left and the selected mod's details on the right. The settings form of each
  * mod is created once from its saved values and kept while the screen lives, so edits survive switching between mods. The field of a
- * shared setting is created once per shared name and used by the forms of every mod that declares it.
+ * shared setting is created once per shared name and used by the forms of every mod that declares it. The details show the newer release
+ * of a mod when the launcher has found one ({@link #setUpdates}).
  */
 public final class ModsScreen {
     /**
@@ -49,6 +50,11 @@ public final class ModsScreen {
          * Called when the user asks to scan the mods folder again.
          */
         void onRefresh();
+
+        /**
+         * Called when the user installs a mod.
+         */
+        void onInstall();
     }
 
 
@@ -62,6 +68,9 @@ public final class ModsScreen {
     private final @NotNull ModListPanel listPanel;
     private final @NotNull StackPane detailArea;
     private final @NotNull HBox root;
+
+    private @NotNull Map<@NotNull String, @NotNull String> updates;
+    private @Nullable ModEntry shown;
 
     /**
      * Creates a {@link ModsScreen} instance.
@@ -84,9 +93,13 @@ public final class ModsScreen {
         this.art          = new ModArt(imageScale);
         this.forms        = new HashMap<>();
         this.sharedFields = new HashMap<>();
-        this.listPanel    = new ModListPanel(catalog, texts, this.art, this::showDetail, actions::onOpenModsFolder, actions::onRefresh);
+        this.listPanel    = new ModListPanel(catalog, texts, this.art, this::showDetail, actions::onOpenModsFolder, actions::onRefresh,
+                                             actions::onInstall);
         this.detailArea   = new StackPane(prompt);
         this.root         = ComponentUtils.row(ComponentUtils.Spacing.L, this.listPanel.getRoot(), this.detailArea);
+
+        this.updates = Map.of();
+        this.shown   = null;
 
         this.detailArea.setAlignment(Pos.TOP_LEFT);
         HBox.setHgrow(this.detailArea, Priority.ALWAYS);
@@ -107,6 +120,21 @@ public final class ModsScreen {
      */
     public void select(@NotNull ModEntry entry) {
         this.listPanel.select(entry);
+    }
+
+    /**
+     * Sets the newer releases of the listed mods and shows the selected mod's details again with them.
+     *
+     * @param updates the tag of the newer release of each such mod by its jar file name
+     */
+    public void setUpdates(@NotNull Map<@NotNull String, @NotNull String> updates) {
+        ModEntry selected = this.shown;
+
+        this.updates = Map.copyOf(updates);
+
+        if (selected != null) {
+            this.showDetail(selected);
+        }
     }
 
     /**
@@ -137,8 +165,9 @@ public final class ModsScreen {
 
     private void showDetail(@NotNull ModEntry entry) {
         SettingsForm form = this.getForm(entry);
-        ModDetailView view = new ModDetailView(entry, form, this.texts, this.art, this.running, this.actions);
+        ModDetailView view = new ModDetailView(entry, this.updates.get(entry.getJarName()), form, this.texts, this.art, this.running, this.actions);
 
+        this.shown = entry;
         this.detailArea.getChildren().setAll(view.getRoot());
         this.actions.onSelect(entry);
     }

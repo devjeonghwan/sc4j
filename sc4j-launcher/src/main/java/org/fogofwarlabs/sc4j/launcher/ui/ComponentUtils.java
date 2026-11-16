@@ -254,16 +254,18 @@ public final class ComponentUtils {
     }
 
     /**
-     * Creates an inline notice: a coloured bar and a wrapping text.
+     * Creates an inline notice: a coloured bar, a wrapping text and the notice's actions after the text, such as a small button.
      *
-     * @param tone the colour role
-     * @param text the text
+     * @param tone     the colour role
+     * @param text     the text
+     * @param trailing the nodes after the text
      * @return the created notice
      */
-    public static @NotNull HBox notice(@NotNull Tone tone, @NotNull String text) {
+    public static @NotNull HBox notice(@NotNull Tone tone, @NotNull String text, @NotNull Node @NotNull ... trailing) {
         Label label = paragraph(text);
         HBox notice = new HBox(label);
 
+        notice.getChildren().addAll(trailing);
         HBox.setHgrow(label, Priority.ALWAYS);
         notice.getStyleClass().add("notice");
 

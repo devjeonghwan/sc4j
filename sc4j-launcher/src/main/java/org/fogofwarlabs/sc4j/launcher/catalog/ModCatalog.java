@@ -255,6 +255,38 @@ public final class ModCatalog {
     }
 
     /**
+     * Checks a jar that is to join {@code mods/} the way {@link #scan} checks the listed jars: a jar that cannot be read, a broken or invalid
+     * manifest, a missing image and an engine version this release does not support are errors, and so is an id that a listed jar other than
+     * the replaced one declares. Saved settings are not checked.
+     *
+     * @param jar             the jar to check
+     * @param replacedJarName the file name of the listed jar the checked jar replaces, or {@code null} when it is added
+     * @return the entry of the checked jar with the issues found; an {@link ModStatus#ERROR} entry must not join {@code mods/}
+     */
+    public @NotNull ModEntry checkNewJar(@NotNull Path jar, @Nullable String replacedJarName) {
+        JarScan scan = readJar(jar);
+
+        if (scan.archive != null) {
+            String id = scan.archive.getManifest().getId();
+            List<String> otherJarNames = new ArrayList<>();
+
+            for (ModEntry entry : this.entries) {
+                ModManifest manifest = entry.getManifest();
+
+                if (manifest != null && manifest.getId().equals(id) && !entry.getJarName().equals(replacedJarName)) {
+                    otherJarNames.add(entry.getJarName());
+                }
+            }
+
+            if (!otherJarNames.isEmpty()) {
+                scan.issues.add(new IdConflictIssue(id, scan.getJarName(), otherJarNames));
+            }
+        }
+
+        return new ModEntry(scan.jar, scan.archive, scan.issues);
+    }
+
+    /**
      * Counts the entries with a status.
      *
      * @param status the status

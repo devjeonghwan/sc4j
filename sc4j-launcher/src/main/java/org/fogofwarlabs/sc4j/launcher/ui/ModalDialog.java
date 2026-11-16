@@ -1,5 +1,6 @@
 package org.fogofwarlabs.sc4j.launcher.ui;
 
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -9,15 +10,56 @@ import javafx.scene.layout.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
+import java.util.function.Function;
 
 /**
  * Builds a dialog shown inside the launcher window over a dimmed screen: a panel with a title, a body, a message line for a problem, a progress
  * bar for long work and the action buttons in its footer. A screen shows it with {@link #getRoot()} on top of its content and removes it to
- * close it. Its primary button is the default button (Enter) and its first other button the cancel button (Escape).
+ * close it. Its primary button is the default button (Enter) and its first other button the cancel button (Escape). Slow work runs on a
+ * thread of its own with its progress shown ({@link #runWork}).
  */
 public final class ModalDialog {
     private static final double PANEL_WIDTH = 460;
+    private static final @NotNull String WORK_THREAD_NAME = "launcher-dialog-work";
+
+    /**
+     * Carries out the slow part of a dialog's work away from the user interface thread, without changing the files the dialog is about.
+     *
+     * @param <T> the type of the work's result
+     */
+    @FunctionalInterface
+    public interface Work<T> {
+        /**
+         * Carries out the work.
+         *
+         * @param progress receives the share of the work done, from {@code 0} to {@code 1}, from any thread
+         * @return the work's result, or {@code null} if it was cancelled
+         * @throws IOException if the work failed
+         */
+        @Nullable T run(@NotNull DoubleConsumer progress) throws IOException;
+    }
+
+    /**
+     * Takes the result of a dialog's work on the user interface thread, where Cancel runs too, so that a cancelled dialog saves nothing.
+     *
+     * @param <T> the type of the work's result
+     */
+    @FunctionalInterface
+    public interface WorkResult<T> {
+        /**
+         * Saves the result and goes on with it, such as by closing the dialog.
+         *
+         * @param result the work's result
+         * @throws IOException if the result cannot be saved
+         */
+        void accept(@NotNull T result) throws IOException;
+    }
 
     private static void setShown(@NotNull Node node, boolean shown) {
         node.setVisible(shown);
@@ -137,5 +179,66 @@ public final class ModalDialog {
         this.progressText.setText(text == null ? "" : text);
         this.progress.setProgress(share);
         setShown(this.progressRow, text != null);
+    }
+
+    /**
+     * Runs the dialog's work on a thread of its own and shows its progress. The result is passed on on the user interface thread, and only
+     * while the work was not cancelled: Cancel, which runs on that thread too, either comes first and the result is dropped, or the result
+     * was taken already. A failure of the work or of taking its result hides the progress and shows the reason in the message line.
+     *
+     * @param progressText the text over the progress bar
+     * @param cancelled    set by the dialog's Cancel
+     * @param work         the work
+     * @param done         takes the result
+     * @param describe     gives the message of a failure
+     * @param failed       called after a failure, such as to enable the dialog's inputs again
+     * @param <T>          the type of the work's result
+     */
+    public <T> void runWork(@NotNull String progressText, @NotNull AtomicBoolean cancelled, @NotNull Work<T> work, @NotNull WorkResult<T> done,
+                            @NotNull Function<@NotNull Exception, @NotNull String> describe, @NotNull Runnable failed) {
+        AtomicReference<Double> latest = new AtomicReference<>(null);
+        Consumer<Exception> fail = exception -> {
+            this.showProgress(null, 0);
+            this.showMessage(describe.apply(exception));
+            failed.run();
+        };
+
+        this.showMessage(null);
+        this.showProgress(progressText, ProgressBar.INDETERMINATE_PROGRESS);
+
+        DoubleConsumer progress = share -> {
+            if (latest.getAndSet(share) == null) {
+                Platform.runLater(() -> {
+                    Double value = latest.getAndSet(null);
+
+                    if (value != null && !cancelled.get()) {
+                        this.showProgress(progressText, value);
+                    }
+                });
+            }
+        };
+        Thread thread = new Thread(() -> {
+            try {
+                T result = work.run(progress);
+
+                Platform.runLater(() -> {
+                    if (result == null || cancelled.get()) {
+                        return;
+                    }
+
+                    try {
+                        this.showProgress(null, 0);
+                        done.accept(result);
+                    } catch (IOException | RuntimeException exception) {
+                        fail.accept(exception);
+                    }
+                });
+            } catch (IOException | RuntimeException exception) {
+                Platform.runLater(() -> fail.accept(exception));
+            }
+        }, WORK_THREAD_NAME);
+
+        thread.setDaemon(true);
+        thread.start();
     }
 }

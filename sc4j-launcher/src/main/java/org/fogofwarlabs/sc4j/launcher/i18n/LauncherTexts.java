@@ -9,6 +9,7 @@ import org.fogofwarlabs.sc4j.beaconlink.protocol.file.NodeListProblem;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodeEntryProblem;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodeListEditor;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodePingResult;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseProblem;
 import org.fogofwarlabs.sc4j.manifest.settings.*;
 import org.fogofwarlabs.sc4j.manifest.text.LocalizedText;
 import org.fogofwarlabs.sc4j.manifest.validation.ValidationProblem;
@@ -25,8 +26,8 @@ import java.util.regex.Pattern;
 /**
  * Provides the launcher's texts in one {@link UiLanguage}: the resource bundle {@code messages} of this package (English
  * in the base bundle, other languages in their own bundles), the texts of a mod manifest in the same language, and the
- * localized messages of validation problems, node list problems, node entry problems, node ping results, the launcher peer's status and
- * account problems.
+ * localized messages of validation problems, node list problems, node entry problems, node ping results, the launcher peer's status,
+ * account problems and release problems.
  * <p>
  * Messages use {@code {index}} placeholders ({@link Exceptions#format(String, Object...)}).
  */
@@ -39,6 +40,7 @@ public final class LauncherTexts {
     private static final @NotNull String REACHABILITY_KEY_PREFIX = "beaconlink.reachability.";
     private static final @NotNull String BOOTSTRAP_KEY_PREFIX = "beaconlink.bootstrap.";
     private static final @NotNull String ACCOUNT_PROBLEM_KEY_PREFIX = "accounts.problem.";
+    private static final @NotNull String RELEASE_PROBLEM_KEY_PREFIX = "release.problem.";
     private static final char PORT_SEPARATOR = ':';
     private static final char IPV6_OPEN = '[';
     private static final char IPV6_CLOSE = ']';
@@ -260,6 +262,16 @@ public final class LauncherTexts {
      */
     public @NotNull String describeAccountProblem(@NotNull AccountProblem problem) {
         return this.get(ACCOUNT_PROBLEM_KEY_PREFIX + problem.name().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Describes why reading a release or one of its files failed, in one short line.
+     *
+     * @param problem the reason
+     * @return the localized message
+     */
+    public @NotNull String describeReleaseProblem(@NotNull ReleaseProblem problem) {
+        return this.get(RELEASE_PROBLEM_KEY_PREFIX + problem.name().toLowerCase(Locale.ROOT));
     }
 
     /**

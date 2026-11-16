@@ -193,6 +193,10 @@ READY   my-mod               my-mod.jar
 
 `<install>\launcher\bin\sc4j-launcher.bat`은 런처 창을 엽니다. "My Mod"를 골라 시작합니다. 런타임이 한 가지 색의 `FirstScene`이 있는 창을 엽니다. Escape로 실행을 끝냅니다.
 
+플레이어는 모드 화면의 모드 설치로 릴리스된 모드를 설치합니다. 모드 저장소의 최신 GitHub 릴리스에는 `<id>.jar`와 체크섬 파일 `<id>.jar.sha256`이 있어야 하며, 런처는 검사를 통과한 jar만 설치합니다. [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods)의 목록 `mods.json`은 모드를 이름으로 보여 줍니다.
+
+런처는 이렇게 설치한 모드의 새 릴리스를 모드 정보에서 업데이트로 제안합니다.
+
 이제부터 모드를 자신의 게임으로 만듭니다. 2.6절은 작은 게임의 부분을 흔히 만드는 순서로 보여 주고, 이 가이드의 나머지는 각 부분을 설명합니다.
 
 ### 2.6 게임으로 만들기

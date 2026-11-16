@@ -1,0 +1,285 @@
+package org.fogofwarlabs.sc4j.launcher.ui.mods;
+
+import javafx.application.Platform;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
+import javafx.scene.layout.VBox;
+import org.fogofwarlabs.sc4j.launcher.catalog.ModCatalog;
+import org.fogofwarlabs.sc4j.launcher.catalog.ModEntry;
+import org.fogofwarlabs.sc4j.launcher.catalog.ModIssue;
+import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
+import org.fogofwarlabs.sc4j.launcher.install.ModIndex;
+import org.fogofwarlabs.sc4j.launcher.install.ModIndexEntry;
+import org.fogofwarlabs.sc4j.launcher.install.ModInstallResult;
+import org.fogofwarlabs.sc4j.launcher.install.ModInstaller;
+import org.fogofwarlabs.sc4j.launcher.install.ModRelease;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseException;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseProblem;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseRepository;
+import org.fogofwarlabs.sc4j.launcher.ui.ComponentUtils;
+import org.fogofwarlabs.sc4j.launcher.ui.LauncherShell;
+import org.fogofwarlabs.sc4j.launcher.ui.ModalDialog;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+/**
+ * Opens the dialogs of the Mods screen that change {@code mods/}: Install mod, Update and Remove.
+ * <p>
+ * Install mod asks for a GitHub repository: typed as {@code owner/name} or the repository's address, or chosen from the mod catalog
+ * ({@link ModIndex}), which is read when the dialog opens and lists each mod by its name; without the catalog the list is empty. The
+ * latest release of the repository is read next, and a confirmation names the jar, the repository and the release and says that the mod
+ * runs code on this computer. Install and Update download the jar with the dialog's progress and hand it to {@link ModInstaller}, which
+ * puts it into {@code mods/} only when it passes the launcher's checks; a refused jar is not installed and the reasons are shown.
+ */
+public final class ModReleaseDialogs {
+    private static final double REPOSITORY_WIDTH = 380;
+    private static final @NotNull String CATALOG_THREAD_NAME = "launcher-mod-catalog";
+    private static final @NotNull String ISSUE_SEPARATOR = " ";
+
+    /**
+     * Shows one catalog entry of the repository choice: the mod's name over its repository.
+     */
+    private final class RepositoryCell extends ListCell<String> {
+        /**
+         * Updates the item associated with this cell.
+         *
+         * @param repository the new item for the cell
+         * @param empty      whether or not this cell represents data from the list
+         */
+        @Override
+        protected void updateItem(@Nullable String repository, boolean empty) {
+            super.updateItem(repository, empty);
+
+            if (empty || repository == null) {
+                this.setText(null);
+                this.setGraphic(null);
+
+                return;
+            }
+
+            ModIndexEntry entry = ModReleaseDialogs.this.indexEntries.get(repository);
+            VBox text = ComponentUtils.column(ComponentUtils.Spacing.XS,
+                                              ComponentUtils.label(entry == null ? repository : entry.getName(), "list-title"),
+                                              ComponentUtils.label(repository, "text-caption"));
+
+            ComponentUtils.setCellGraphic(this, text);
+        }
+    }
+
+
+    private final @NotNull LauncherShell shell;
+    private final @NotNull LauncherTexts texts;
+    private final @NotNull ModInstaller installer;
+    private final @NotNull ModIndex index;
+    private final @NotNull Supplier<@NotNull ModCatalog> catalog;
+    private final @NotNull Consumer<@NotNull String> changed;
+    private final @NotNull Map<@NotNull String, @NotNull ModIndexEntry> indexEntries;
+
+    /**
+     * Creates a {@link ModReleaseDialogs} instance.
+     *
+     * @param shell     shows the dialogs
+     * @param texts     the launcher texts of the display language
+     * @param installer installs, updates and removes the mods
+     * @param index     reads the mod catalog
+     * @param catalog   gives the mods of the install as currently listed
+     * @param changed   called with the jar file name of the mod that was installed, updated or removed
+     */
+    public ModReleaseDialogs(@NotNull LauncherShell shell, @NotNull LauncherTexts texts, @NotNull ModInstaller installer, @NotNull ModIndex index,
+                             @NotNull Supplier<@NotNull ModCatalog> catalog, @NotNull Consumer<@NotNull String> changed) {
+        this.shell        = shell;
+        this.texts        = texts;
+        this.installer    = installer;
+        this.index        = index;
+        this.catalog      = catalog;
+        this.changed      = changed;
+        this.indexEntries = new HashMap<>();
+    }
+
+    /**
+     * Opens the Install mod dialog.
+     */
+    public void openInstall() {
+        ModalDialog shown = new ModalDialog(this.texts.get("mods.install.title"));
+        ComboBox<String> repository = new ComboBox<>();
+        Button cancel = ComponentUtils.button(this.texts.get("mods.cancel"), ComponentUtils.ButtonRole.SECONDARY);
+        Button next = ComponentUtils.button(this.texts.get("mods.install.next"), ComponentUtils.ButtonRole.PRIMARY);
+        AtomicBoolean cancelled = new AtomicBoolean(false);
+
+        repository.setEditable(true);
+        repository.setPromptText(this.texts.get("mods.install.prompt"));
+        repository.setPrefWidth(REPOSITORY_WIDTH);
+        repository.setMaxWidth(Double.MAX_VALUE);
+        repository.setCellFactory(view -> new RepositoryCell());
+        this.readIndex(repository);
+
+        shown.addContent(ComponentUtils.field(this.texts.get("mods.install.repository"), repository));
+        shown.setButtons(cancel, next);
+        cancel.setOnAction(event -> {
+            cancelled.set(true);
+            this.shell.closeDialog(shown);
+        });
+        next.setOnAction(event -> {
+            ReleaseRepository parsed = ReleaseRepository.parse(repository.getEditor().getText());
+
+            if (parsed == null) {
+                shown.showMessage(this.texts.describeReleaseProblem(ReleaseProblem.INVALID_REPOSITORY));
+
+                return;
+            }
+
+            repository.setDisable(true);
+            next.setDisable(true);
+            shown.runWork(this.texts.get("mods.install.finding"), cancelled, progress -> this.installer.findRelease(parsed, null), release -> {
+                this.shell.closeDialog(shown);
+                this.openConfirmation(this.texts.get("mods.install.title"),
+                                      this.texts.format("mods.install.confirm", release.getJarFile().getName(), release.getRepository(), release.getTag()),
+                                      this.texts.get("mods.install.start"), release, null);
+            }, this::describe, () -> {
+                repository.setDisable(false);
+                next.setDisable(false);
+            });
+        });
+
+        this.shell.showDialog(shown);
+        repository.requestFocus();
+    }
+
+    /**
+     * Opens the Update dialog of an installed mod.
+     *
+     * @param entry   the mod
+     * @param release the newer release of the mod
+     */
+    public void openUpdate(@NotNull ModEntry entry, @NotNull ModRelease release) {
+        this.openConfirmation(this.texts.get("mods.update.title"),
+                              this.texts.format("mods.update.confirm", ModArt.getName(entry, this.texts), release.getRepository(), release.getTag()),
+                              this.texts.get("mods.update.start"), release, entry);
+    }
+
+    /**
+     * Opens the Remove dialog of an installed mod.
+     *
+     * @param entry the mod
+     */
+    public void openRemove(@NotNull ModEntry entry) {
+        ModalDialog shown = new ModalDialog(this.texts.get("mods.remove.title"));
+        Button cancel = ComponentUtils.button(this.texts.get("mods.cancel"), ComponentUtils.ButtonRole.SECONDARY);
+        Button remove = ComponentUtils.button(this.texts.get("mods.remove"), ComponentUtils.ButtonRole.DANGER);
+
+        shown.addContent(ComponentUtils.paragraph(this.texts.format("mods.remove.text", ModArt.getName(entry, this.texts)), "text-body"));
+        shown.setButtons(cancel, remove);
+        cancel.setOnAction(event -> this.shell.closeDialog(shown));
+        remove.setOnAction(event -> {
+            try {
+                this.installer.remove(entry);
+            } catch (IOException exception) {
+                shown.showMessage(this.describe(exception));
+
+                return;
+            }
+
+            this.shell.closeDialog(shown);
+            this.changed.accept(entry.getJarName());
+        });
+
+        this.shell.showDialog(shown);
+        cancel.requestFocus();
+    }
+
+    /**
+     * Opens the confirmation of an install or an update, whose action downloads the jar and installs it.
+     */
+    private void openConfirmation(@NotNull String title, @NotNull String text, @NotNull String actionText, @NotNull ModRelease release,
+                                  @Nullable ModEntry replaced) {
+        ModalDialog shown = new ModalDialog(title);
+        Button cancel = ComponentUtils.button(this.texts.get("mods.cancel"), ComponentUtils.ButtonRole.SECONDARY);
+        Button action = ComponentUtils.button(actionText, ComponentUtils.ButtonRole.PRIMARY);
+        AtomicBoolean cancelled = new AtomicBoolean(false);
+
+        shown.addContent(ComponentUtils.paragraph(text, "text-body"),
+                         ComponentUtils.notice(ComponentUtils.Tone.WARNING, this.texts.get("mods.install.code")));
+        shown.setButtons(cancel, action);
+        cancel.setOnAction(event -> {
+            cancelled.set(true);
+            this.shell.closeDialog(shown);
+        });
+        action.setOnAction(event -> {
+            action.setDisable(true);
+            shown.runWork(this.texts.get("mods.install.downloading"), cancelled, progress -> this.installer.download(release, progress), jar -> {
+                ModInstallResult result = this.installer.install(release, jar, this.catalog.get(), replaced);
+                String jarName = result.getJarName();
+
+                if (jarName == null) {
+                    shown.showMessage(this.texts.format("mods.install.refused", this.describe(result.getIssues())));
+
+                    return;
+                }
+
+                this.shell.closeDialog(shown);
+                this.changed.accept(jarName);
+            }, this::describe, () -> action.setDisable(false));
+        });
+
+        this.shell.showDialog(shown);
+        action.requestFocus();
+    }
+
+    /**
+     * Reads the mod catalog on a thread of its own and lists its entries in the repository choice; a catalog that cannot be read leaves
+     * the list empty.
+     */
+    private void readIndex(@NotNull ComboBox<String> repository) {
+        Thread thread = new Thread(() -> {
+            List<ModIndexEntry> entries;
+
+            try {
+                entries = this.index.read();
+            } catch (IOException exception) {
+                return;
+            }
+
+            Platform.runLater(() -> {
+                List<String> repositories = new ArrayList<>(entries.size());
+
+                for (ModIndexEntry entry : entries) {
+                    String name = entry.getRepository().toString();
+
+                    if (this.indexEntries.putIfAbsent(name, entry) == null) {
+                        repositories.add(name);
+                    }
+                }
+
+                repository.getItems().setAll(repositories);
+            });
+        }, CATALOG_THREAD_NAME);
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private @NotNull String describe(@NotNull Exception exception) {
+        return exception instanceof ReleaseException problem ? this.texts.describeReleaseProblem(problem.getProblem())
+                                                             : this.texts.format("mods.failed", exception.getMessage());
+    }
+
+    private @NotNull String describe(@NotNull List<@NotNull ModIssue> issues) {
+        List<String> reasons = new ArrayList<>(issues.size());
+
+        for (ModIssue issue : issues) {
+            reasons.add(issue.describe(this.texts));
+        }
+
+        return String.join(ISSUE_SEPARATOR, reasons);
+    }
+}

@@ -5,6 +5,7 @@ import org.fogofwarlabs.sc4j.base.io.AtomicFileUtils;
 import org.fogofwarlabs.sc4j.base.json.JsonReader;
 import org.fogofwarlabs.sc4j.base.json.JsonWriterUtils;
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseRepository;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,10 +24,12 @@ import java.util.Map;
  *   "format": 1,
  *   "language": "ko",
  *   "lastMod": "my-mod.jar",
- *   "window": {"x": 120, "y": 80, "width": 1280, "height": 800, "maximized": false}
+ *   "window": {"x": 120, "y": 80, "width": 1280, "height": 800, "maximized": false},
+ *   "updateRepository": "owner/name"
  * }
  *}
- * Every field but {@code format} is optional: without {@code language} the launcher follows the operating system's language.
+ * Every field but {@code format} is optional: without {@code language} the launcher follows the operating system's language, without
+ * {@code updateRepository} it updates from {@link LauncherSettings#DEFAULT_UPDATE_REPOSITORY}.
  */
 public final class LauncherSettingsFile {
     /**
@@ -43,6 +46,7 @@ public final class LauncherSettingsFile {
     private static final @NotNull String WIDTH_FIELD = "width";
     private static final @NotNull String HEIGHT_FIELD = "height";
     private static final @NotNull String MAXIMIZED_FIELD = "maximized";
+    private static final @NotNull String UPDATE_REPOSITORY_FIELD = "updateRepository";
 
     private static @Nullable UiLanguage readLanguage(@NotNull Path path, @Nullable Object value) throws IOException {
         if (value == null) {
@@ -120,8 +124,14 @@ public final class LauncherSettingsFile {
             throw Exceptions.newIOException("Invalid launcher settings file {0}: lastMod must be a jar file name", this.path);
         }
 
+        Object updateRepository = object.get(UPDATE_REPOSITORY_FIELD);
+
+        if (updateRepository != null && (!(updateRepository instanceof String text) || ReleaseRepository.parse(text) == null)) {
+            throw Exceptions.newIOException("Invalid launcher settings file {0}: updateRepository must be owner/name", this.path);
+        }
+
         return new LauncherSettings(readLanguage(this.path, object.get(LANGUAGE_FIELD)), (String) lastMod,
-                                    readWindow(this.path, object.get(WINDOW_FIELD)));
+                                    readWindow(this.path, object.get(WINDOW_FIELD)), (String) updateRepository);
     }
 
     /**
@@ -154,6 +164,10 @@ public final class LauncherSettingsFile {
             windowObject.put(HEIGHT_FIELD, (long) window.getHeight());
             windowObject.put(MAXIMIZED_FIELD, window.isMaximized());
             object.put(WINDOW_FIELD, windowObject);
+        }
+
+        if (settings.getSavedUpdateRepository() != null) {
+            object.put(UPDATE_REPOSITORY_FIELD, settings.getSavedUpdateRepository());
         }
 
         AtomicFileUtils.write(this.path, JsonWriterUtils.write(object).getBytes(StandardCharsets.UTF_8));

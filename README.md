@@ -36,7 +36,7 @@ The [mod author guide](docs/mod-guide.md) shows how to make a new mod for the en
 - **Client**: scenes, input, an OpenGL renderer, square and isometric projections, a default in-game screen with HUD, audio and video.
 - **Replays and saved games**: they load only with the same mod identity as the run that wrote them.
 - **Network play**: LAN rooms and lockstep games; Beacon.Link rooms, chat channels, whispers, friends and presence over the Internet.
-- **Launcher**: lists the mods of an install, asks for their settings, starts the runtime and runs the computer's Beacon.Link node.
+- **Launcher**: lists the mods of an install, asks for their settings, starts the runtime and runs the computer's Beacon.Link node; installs mods from GitHub releases and updates itself.
 - **Mod runtime**: one mod per session in its own class loader; a mod identity from the engine version, the mod and the jar's content.
 - **API listings**: the engine API is listed per module and checked by the build ([API policy](docs/api-policy.md)).
 
@@ -82,6 +82,10 @@ A first run:
 The launcher lists every jar in `build/dev-install/mods/`. Choose a mod and start it. A mod of another repository gets in with its own `installMod -Psc4j.install=<this repository>\build\dev-install`; `devInstall` keeps it.
 
 The user package holds the launcher, the runtime, the demo mod, a Java runtime and the start files `SC4J.bat` and `SC4J`. It holds no user data: a fresh install makes `userdata/` at its first start.
+
+The launcher checks the GitHub releases of SC4J at its start and on the Settings screen, and updates the install in place; `userdata/` and `mods/` stay as they are.
+
+Install mod on the Mods screen installs a mod from the latest GitHub release of a repository (`owner/name`), typed or chosen from the mod catalog.
 
 Tests and the code style are in [CONTRIBUTING.md](CONTRIBUTING.md).
 

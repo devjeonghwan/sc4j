@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  * install's node settings, unless another launcher of the install runs it; a node that cannot start is logged and shown on the Settings
  * screen, and the launcher runs without it. A logged-in account's Beacon.Link session is a {@link LauncherSession} with the install's seeds
  * and shared peers file, publishing its views on the JavaFX thread. Folders open in the system file manager ({@link FolderOpener}), web
- * addresses through the JavaFX host services.
+ * addresses through the JavaFX host services. Once the window is shown, the launcher runs its start checks ({@link LauncherWindow#startChecks}).
  */
 public final class LauncherApplication extends Application {
     private static final @NotNull String DEVELOPMENT_VERSION = "development";
@@ -55,11 +55,15 @@ public final class LauncherApplication extends Application {
         String launcherVersion = version == null ? DEVELOPMENT_VERSION : version;
         Consumer<String> showDocument = document -> this.getHostServices().showDocument(document);
         FolderOpener folderOpener = new FolderOpener(showDocument);
+        LauncherWindow window;
 
         this.nodeRunner = runner;
         runner.start();
-        new LauncherWindow(primaryStage, install, launcherVersion, showDocument, folderOpener::open, runner,
-                           account -> LauncherSession.open(install, account, launcherVersion, Platform::runLater)).show();
+        window = new LauncherWindow(primaryStage, install, launcherVersion, showDocument, folderOpener::open, runner,
+                                    account -> LauncherSession.open(install, account, launcherVersion, Platform::runLater));
+
+        window.show();
+        window.startChecks();
     }
 
     /**

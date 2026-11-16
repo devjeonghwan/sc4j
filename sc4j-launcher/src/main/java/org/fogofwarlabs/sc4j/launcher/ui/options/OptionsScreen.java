@@ -23,7 +23,8 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * Shows the launcher's Settings screen: the UI language (the system language or an explicit choice), the Beacon.Link panel
+ * Shows the launcher's Settings screen: the UI language (the system language or an explicit choice) and the update ({@link UpdateView}),
+ * the Beacon.Link panel
  * ({@link BeaconLinkPanel}: the node setting and the launcher node's status; keys are automatic and not shown) and, behind its Seeds button,
  * the seed list editor (the node list). The editor lists the seeds in the order the client contacts them and has the host and port fields
  * under the list: Add, Update and Remove change entries, Move up and Move down change the order. Field problems are shown with their
@@ -171,13 +172,15 @@ public final class OptionsScreen {
      * @param texts            the launcher texts of the display language
      * @param language         the language chosen in the launcher settings, or {@code null} when the launcher follows the
      *                         operating system
+     * @param updateView       the update part of the launcher panel
      * @param nodes            the saved node list, or the shipped seed list while the user has saved none
      * @param nodesLoadProblem why that list could not be read, or {@code null}
      * @param nodeRunner       the launcher's Beacon.Link node
      * @param actions          receives the changes
      */
-    public OptionsScreen(@NotNull LauncherTexts texts, @Nullable UiLanguage language, @NotNull List<@NotNull ConfiguredNode> nodes,
-                         @Nullable NodeListProblem nodesLoadProblem, @NotNull LauncherNodeRunner nodeRunner, @NotNull Actions actions) {
+    public OptionsScreen(@NotNull LauncherTexts texts, @Nullable UiLanguage language, @NotNull UpdateView updateView,
+                         @NotNull List<@NotNull ConfiguredNode> nodes, @Nullable NodeListProblem nodesLoadProblem, @NotNull LauncherNodeRunner nodeRunner,
+                         @NotNull Actions actions) {
         VBox nodesPanel;
 
         this.texts     = texts;
@@ -204,7 +207,7 @@ public final class OptionsScreen {
         nodesPanel = this.createNodesPanel(nodesLoadProblem);
         VBox.setVgrow(nodesPanel, Priority.ALWAYS);
 
-        this.root = ComponentUtils.column(ComponentUtils.Spacing.L, this.createLanguagePanel(language),
+        this.root = ComponentUtils.column(ComponentUtils.Spacing.L, this.createLauncherPanel(language, updateView),
                                           new BeaconLinkPanel(texts, nodeRunner, nodesPanel).getRoot(), nodesPanel);
 
         this.pingResults = new HashMap<>();
@@ -234,10 +237,11 @@ public final class OptionsScreen {
         this.nodeList.refresh();
     }
 
-    private @NotNull VBox createLanguagePanel(@Nullable UiLanguage language) {
+    private @NotNull VBox createLauncherPanel(@Nullable UiLanguage language, @NotNull UpdateView updateView) {
         ComboBox<LanguageOption> choice = new ComboBox<>();
         UiLanguage system = UiLanguage.select(null, Locale.getDefault());
         LanguageOption systemOption = new LanguageOption(null, this.texts.format("language.system", this.getLanguageName(system)));
+        HBox row;
 
         choice.getItems().add(systemOption);
         choice.setValue(systemOption);
@@ -259,8 +263,10 @@ public final class OptionsScreen {
             }
         });
 
-        return ComponentUtils.panel(this.texts.get("settings.launcher"),
-                                    ComponentUtils.panelBody(ComponentUtils.field(this.texts.get("settings.language"), choice)));
+        row = ComponentUtils.row(ComponentUtils.Spacing.XL, ComponentUtils.field(this.texts.get("settings.language"), choice), updateView.getRoot());
+        row.setAlignment(Pos.BOTTOM_LEFT);
+
+        return ComponentUtils.panel(this.texts.get("settings.launcher"), ComponentUtils.panelBody(row));
     }
 
     private @NotNull String getLanguageName(@NotNull UiLanguage language) {

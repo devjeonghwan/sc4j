@@ -701,6 +701,15 @@
     -fx-padding: 7 10;
 }
 
+/* The text field of an editable combo box draws no frame of its own; the combo box draws it. */
+.combo-box-base:editable > .text-field,
+.combo-box-base:editable > .text-field:hover,
+.combo-box-base:editable > .text-field:focused {
+    -fx-background-color: transparent;
+    -fx-effect: null;
+    -fx-cursor: text;
+}
+
 .combo-box-base > .arrow-button {
     -fx-background-color: transparent;
     -fx-padding: 0 12 0 8;

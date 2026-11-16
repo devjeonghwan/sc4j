@@ -18,7 +18,7 @@ final class LauncherSettingsFileTest {
     @Test
     void write_and_read_should_keep_every_setting(@TempDir @NotNull Path directory) throws IOException {
         LauncherSettingsFile file = new LauncherSettingsFile(directory.resolve("userdata").resolve("launcher.json"));
-        LauncherSettings settings = new LauncherSettings(UiLanguage.KOREAN, "my-mod.jar", new WindowState(-8, 40, 1280, 800, true));
+        LauncherSettings settings = new LauncherSettings(UiLanguage.KOREAN, "my-mod.jar", new WindowState(-8, 40, 1280, 800, true), "owner/fork");
 
         file.write(settings);
 
@@ -33,6 +33,7 @@ final class LauncherSettingsFileTest {
         Assertions.assertEquals(1280, window.getWidth());
         Assertions.assertEquals(800, window.getHeight());
         Assertions.assertTrue(window.isMaximized());
+        Assertions.assertEquals("owner/fork", read.getUpdateRepository());
     }
 
     @Test
@@ -44,6 +45,15 @@ final class LauncherSettingsFileTest {
         Assertions.assertEquals("{\"format\": 1, \"lastMod\": \"demo.jar\"}\n", Files.readString(file.getPath(), StandardCharsets.UTF_8));
         Assertions.assertNull(file.read().getLanguage());
         Assertions.assertNull(file.read().getWindow());
+        Assertions.assertEquals(LauncherSettings.DEFAULT_UPDATE_REPOSITORY, file.read().getUpdateRepository());
+    }
+
+    @Test
+    void with_update_repository_should_save_the_default_repository_as_none() {
+        LauncherSettings settings = LauncherSettings.DEFAULT.withUpdateRepository("owner/fork");
+
+        Assertions.assertEquals("owner/fork", settings.getSavedUpdateRepository());
+        Assertions.assertNull(settings.withUpdateRepository(LauncherSettings.DEFAULT_UPDATE_REPOSITORY).getSavedUpdateRepository());
     }
 
     @Test
@@ -56,6 +66,10 @@ final class LauncherSettingsFileTest {
         Path path = directory.resolve("launcher.json");
 
         Files.writeString(path, "{\"format\": 1, \"language\": \"xx\"}", StandardCharsets.UTF_8);
+
+        Assertions.assertThrows(IOException.class, () -> new LauncherSettingsFile(path).read());
+
+        Files.writeString(path, "{\"format\": 1, \"updateRepository\": \"not a repository\"}", StandardCharsets.UTF_8);
 
         Assertions.assertThrows(IOException.class, () -> new LauncherSettingsFile(path).read());
     }

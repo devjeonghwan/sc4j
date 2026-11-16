@@ -29,7 +29,8 @@ import java.util.List;
 /**
  * Shows the selected mod. A mod that can be started shows its banner, the details of its manifest, its screenshots and
  * the generated settings form with the Run button; a mod with an error shows the reasons and cannot be started. The
- * reasons of a warning are shown above the form.
+ * reasons of a warning are shown above the form. Either view offers Remove, and a newer release of a mod installed from a release is shown
+ * with its Update button.
  */
 public final class ModDetailView {
     private static final double ICON_SIZE = 72;
@@ -66,10 +67,25 @@ public final class ModDetailView {
          * @param address the website address of the manifest
          */
         void onOpenWebsite(@NotNull String address);
+
+        /**
+         * Called when the user updates the mod to its newer release.
+         *
+         * @param entry the mod
+         */
+        void onUpdate(@NotNull ModEntry entry);
+
+        /**
+         * Called when the user removes the mod.
+         *
+         * @param entry the mod
+         */
+        void onRemove(@NotNull ModEntry entry);
     }
 
 
     private final @NotNull ModEntry entry;
+    private final @Nullable String updateRelease;
     private final @NotNull LauncherTexts texts;
     private final @NotNull ModArt art;
     private final @NotNull Actions actions;
@@ -78,20 +94,22 @@ public final class ModDetailView {
     /**
      * Creates a {@link ModDetailView} instance.
      *
-     * @param entry   the mod
-     * @param form    the mod's settings form, or {@code null} for a mod with an error
-     * @param texts   the launcher texts of the display language
-     * @param art     the decoded mod images
-     * @param running {@code true} while a run is in progress, which keeps Run disabled
-     * @param actions receives the actions
+     * @param entry         the mod
+     * @param updateRelease the tag of the mod's newer release, or {@code null} when none is known
+     * @param form          the mod's settings form, or {@code null} for a mod with an error
+     * @param texts         the launcher texts of the display language
+     * @param art           the decoded mod images
+     * @param running       {@code true} while a run is in progress, which keeps Run disabled
+     * @param actions       receives the actions
      */
-    public ModDetailView(@NotNull ModEntry entry, @Nullable SettingsForm form, @NotNull LauncherTexts texts, @NotNull ModArt art,
-                         @NotNull ObservableBooleanValue running, @NotNull Actions actions) {
-        this.entry   = entry;
-        this.texts   = texts;
-        this.art     = art;
-        this.actions = actions;
-        this.root    = form != null && entry.getStatus().isStartable() ? this.createUsableView(form, running) : this.createUnusableView();
+    public ModDetailView(@NotNull ModEntry entry, @Nullable String updateRelease, @Nullable SettingsForm form, @NotNull LauncherTexts texts,
+                         @NotNull ModArt art, @NotNull ObservableBooleanValue running, @NotNull Actions actions) {
+        this.entry         = entry;
+        this.updateRelease = updateRelease;
+        this.texts         = texts;
+        this.art           = art;
+        this.actions       = actions;
+        this.root          = form != null && entry.getStatus().isStartable() ? this.createUsableView(form, running) : this.createUnusableView();
     }
 
     /**
@@ -113,10 +131,32 @@ public final class ModDetailView {
         lower.setAlignment(Pos.TOP_LEFT);
         VBox.setVgrow(lower, Priority.ALWAYS);
 
-        detail = ComponentUtils.column(ComponentUtils.Spacing.L, this.createBanner(), lower);
+        detail = ComponentUtils.column(ComponentUtils.Spacing.L, this.createBanner());
+
+        if (this.updateRelease != null) {
+            detail.getChildren().add(this.createUpdateNotice(this.updateRelease));
+        }
+
+        detail.getChildren().add(lower);
         HBox.setHgrow(detail, Priority.ALWAYS);
 
         return detail;
+    }
+
+    private @NotNull HBox createUpdateNotice(@NotNull String release) {
+        Button update = ComponentUtils.smallButton(this.texts.get("mods.update.start"), ComponentUtils.ButtonRole.PRIMARY);
+
+        update.setOnAction(event -> this.actions.onUpdate(this.entry));
+
+        return ComponentUtils.notice(ComponentUtils.Tone.ACCENT, this.texts.format("mods.update.available", release), update);
+    }
+
+    private @NotNull Button createRemoveButton() {
+        Button remove = ComponentUtils.button(this.texts.get("mods.remove"), ComponentUtils.ButtonRole.DANGER);
+
+        remove.setOnAction(event -> this.actions.onRemove(this.entry));
+
+        return remove;
     }
 
     private @NotNull StackPane createBanner() {
@@ -218,6 +258,7 @@ public final class ModDetailView {
         }
 
         panel = ComponentUtils.panel(this.texts.get("detail.about"), body);
+        panel.getChildren().add(ComponentUtils.panelFooter(ComponentUtils.growingSpacer(), this.createRemoveButton()));
         panel.setMaxHeight(Double.MAX_VALUE);
 
         return panel;
@@ -281,6 +322,7 @@ public final class ModDetailView {
         List<String> details = new ArrayList<>();
         Button copy = ComponentUtils.button(this.texts.get("detail.copy.problems"), ComponentUtils.ButtonRole.SECONDARY);
         Button run = ComponentUtils.button(this.texts.get("detail.run"), ComponentUtils.ButtonRole.PRIMARY);
+        VBox body;
         VBox panel;
 
         if (manifest != null) {
@@ -305,8 +347,15 @@ public final class ModDetailView {
         copy.setOnAction(event -> this.actions.onCopy(String.join(LINE_SEPARATOR, details)));
         run.setDisable(true);
 
-        panel = ComponentUtils.panel(this.texts.get("detail.title"), ComponentUtils.panelBody(identity, report));
-        panel.getChildren().add(ComponentUtils.panelFooter(copy, ComponentUtils.growingSpacer(), run));
+        body = ComponentUtils.panelBody(identity);
+
+        if (this.updateRelease != null) {
+            body.getChildren().add(this.createUpdateNotice(this.updateRelease));
+        }
+
+        body.getChildren().add(report);
+        panel = ComponentUtils.panel(this.texts.get("detail.title"), body);
+        panel.getChildren().add(ComponentUtils.panelFooter(copy, this.createRemoveButton(), ComponentUtils.growingSpacer(), run));
         HBox.setHgrow(panel, Priority.ALWAYS);
         panel.setMaxHeight(Double.MAX_VALUE);
 

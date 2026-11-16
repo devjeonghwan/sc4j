@@ -93,6 +93,14 @@ final class ModDetailViewTest {
         @Override
         public void onOpenWebsite(@NotNull String address) {
         }
+
+        @Override
+        public void onUpdate(@NotNull ModEntry entry) {
+        }
+
+        @Override
+        public void onRemove(@NotNull ModEntry entry) {
+        }
     }
 
     /**
@@ -163,8 +171,8 @@ final class ModDetailViewTest {
 
         LauncherFxScenario.run(() -> {
             SimpleBooleanProperty running = new SimpleBooleanProperty(true);
-            ModDetailView view = new ModDetailView(entry, SettingsForm.create(manifest.getSettings(), Map.of()), texts, new ModArt(scale), running,
-                                                   new NoActions());
+            ModDetailView view = new ModDetailView(entry, null, SettingsForm.create(manifest.getSettings(), Map.of()), texts, new ModArt(scale),
+                                                   running, new NoActions());
             Region root = view.getRoot();
             Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
 
@@ -196,7 +204,7 @@ final class ModDetailViewTest {
                 Assertions.assertNotNull(manifest);
 
                 SettingsForm form = SettingsForm.create(manifest.getSettings(), Map.of());
-                ModDetailView view = new ModDetailView(entry, form, LauncherTexts.of(UiLanguage.ENGLISH), new ModArt(1),
+                ModDetailView view = new ModDetailView(entry, null, form, LauncherTexts.of(UiLanguage.ENGLISH), new ModArt(1),
                                                        new SimpleBooleanProperty(false), new NoActions());
                 Region root = view.getRoot();
                 Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);

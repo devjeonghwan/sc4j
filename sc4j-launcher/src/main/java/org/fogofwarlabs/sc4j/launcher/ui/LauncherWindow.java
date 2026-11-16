@@ -6,6 +6,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.Priority;
@@ -27,6 +28,9 @@ import org.fogofwarlabs.sc4j.launcher.catalog.ModStatus;
 import org.fogofwarlabs.sc4j.launcher.form.SettingsForm;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
+import org.fogofwarlabs.sc4j.launcher.install.ModIndex;
+import org.fogofwarlabs.sc4j.launcher.install.ModInstaller;
+import org.fogofwarlabs.sc4j.launcher.install.ModRelease;
 import org.fogofwarlabs.sc4j.launcher.launch.RuntimeCommandLine;
 import org.fogofwarlabs.sc4j.launcher.launch.RuntimeListener;
 import org.fogofwarlabs.sc4j.launcher.launch.RuntimeProcess;
@@ -34,15 +38,23 @@ import org.fogofwarlabs.sc4j.launcher.launch.RuntimeRun;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodePingResult;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodePinger;
 import org.fogofwarlabs.sc4j.launcher.peer.LauncherNodeRunner;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseClient;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseException;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseProblem;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseRepository;
 import org.fogofwarlabs.sc4j.launcher.session.LauncherSessionView;
 import org.fogofwarlabs.sc4j.launcher.settings.LauncherSettings;
 import org.fogofwarlabs.sc4j.launcher.settings.LauncherSettingsFile;
 import org.fogofwarlabs.sc4j.launcher.settings.WindowState;
 import org.fogofwarlabs.sc4j.launcher.ui.accounts.LoginScreen;
 import org.fogofwarlabs.sc4j.launcher.ui.mods.ModArt;
+import org.fogofwarlabs.sc4j.launcher.ui.mods.ModReleaseDialogs;
 import org.fogofwarlabs.sc4j.launcher.ui.mods.ModsScreen;
 import org.fogofwarlabs.sc4j.launcher.ui.options.OptionsScreen;
+import org.fogofwarlabs.sc4j.launcher.ui.options.UpdateView;
 import org.fogofwarlabs.sc4j.launcher.ui.run.RunScreen;
+import org.fogofwarlabs.sc4j.launcher.update.LauncherRelease;
+import org.fogofwarlabs.sc4j.launcher.update.LauncherUpdater;
 import org.fogofwarlabs.sc4j.launcher.ui.session.AccountMenu;
 import org.fogofwarlabs.sc4j.manifest.ModManifest;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
@@ -60,8 +72,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -82,6 +96,11 @@ import java.util.function.Function;
  * While the runtime runs, the window is minimized; it comes back when the runtime ends and shows the run's report. Closing
  * the launcher does not stop a running runtime.
  * <p>
+ * Updates come from GitHub releases ({@link #startChecks}): a newer launcher version is shown in a notice above every screen and on the
+ * Settings screen, which also checks on demand; its Update dialog ({@link LauncherUpdateDialog}) replaces the programs and starts the
+ * launcher again. Mods are installed, updated and removed from the Mods screen ({@link ModReleaseDialogs}); a newer release of a mod
+ * installed from a release is shown in its details.
+ * <p>
  * Sizes are JavaFX logical units, which grow with the display scale. The window opens at its saved bounds when they are on a screen, else
  * centred on the primary screen; its size and smallest size are cut to the free area of that screen, so that it fits at any display scale.
  * Images are decoded for the largest display scale of the screens ({@link ThemeUtils#getImageScale}). When the display changes while the
@@ -100,6 +119,7 @@ public final class LauncherWindow {
     private static final double TITLE_BAR_HEIGHT = 32;
     private static final double HALF = 2;
     private static final @NotNull String PING_THREAD_NAME = "launcher-node-ping";
+    private static final @NotNull String UPDATE_CHECK_THREAD_NAME = "launcher-update-check";
     private static final @NotNull String BACKUP_FILE_PATTERN = "*" + AccountBackup.FILE_EXTENSION;
     private static final @NotNull String KEY_FILE_PATTERN = "*.key";
     private static final @NotNull String ALL_FILES_PATTERN = "*.*";
@@ -222,7 +242,11 @@ public final class LauncherWindow {
     private final @NotNull NodeListFile nodesFile;
     private final @NotNull NodeListFile seedsFile;
     private final @NotNull AccountStore accountStore;
+    private final @NotNull LauncherUpdater launcherUpdater;
+    private final @NotNull ModInstaller modInstaller;
+    private final @NotNull ModIndex modIndex;
     private final @NotNull Scene scene;
+    private final @NotNull VBox notices;
     private final @NotNull SimpleBooleanProperty running;
 
     private double imageScale;
@@ -236,12 +260,20 @@ public final class LauncherWindow {
     private @Nullable Account account;
     private @Nullable LauncherSessionView session;
 
+    private @Nullable LauncherRelease launcherUpdate;
+    private boolean updateChecking;
+    private @Nullable String updateStatus;
+    private @NotNull ComponentUtils.Tone updateStatusTone;
+    private @Nullable String updateFailure;
+    private @NotNull Map<@NotNull String, @NotNull ModRelease> modUpdates;
+
     private @NotNull LauncherTexts texts;
     private @NotNull LauncherShell shell;
     private @NotNull ModsScreen modsScreen;
     private @NotNull LoginScreen loginScreen;
     private @Nullable AccountMenu accountMenu;
     private @NotNull LauncherShell.Section section;
+    private @Nullable UpdateView updateView;
     private @Nullable RunScreen runScreen;
     private @Nullable RuntimeRun run;
     private @Nullable String selectedJar;
@@ -261,19 +293,25 @@ public final class LauncherWindow {
     public LauncherWindow(@NotNull Stage stage, @NotNull InstallLayout install, @NotNull String version,
                           @NotNull Consumer<@NotNull String> showDocument, @NotNull Consumer<@NotNull Path> openFolder,
                           @NotNull LauncherNodeRunner nodeRunner, @NotNull Function<@NotNull Account, @NotNull LauncherSessionView> openSession) {
-        this.stage        = stage;
-        this.install      = install;
-        this.version      = version;
-        this.showDocument = showDocument;
-        this.openFolder   = openFolder;
-        this.nodeRunner   = nodeRunner;
-        this.openSession  = openSession;
-        this.settingsFile = new LauncherSettingsFile(install.getLauncherSettingsFile());
-        this.nodesFile    = new NodeListFile(install.getNodesFile());
-        this.seedsFile    = new NodeListFile(install.getSeedsFile());
-        this.accountStore = AccountStore.of(install.getBeaconLinkDirectory());
-        this.scene        = new Scene(new StackPane(), DEFAULT_WIDTH, DEFAULT_HEIGHT);
-        this.running      = new SimpleBooleanProperty(false);
+        ReleaseClient releaseClient = new ReleaseClient(ReleaseClient.GITHUB_API);
+
+        this.stage           = stage;
+        this.install         = install;
+        this.version         = version;
+        this.showDocument    = showDocument;
+        this.openFolder      = openFolder;
+        this.nodeRunner      = nodeRunner;
+        this.openSession     = openSession;
+        this.settingsFile    = new LauncherSettingsFile(install.getLauncherSettingsFile());
+        this.nodesFile       = new NodeListFile(install.getNodesFile());
+        this.seedsFile       = new NodeListFile(install.getSeedsFile());
+        this.accountStore    = AccountStore.of(install.getBeaconLinkDirectory());
+        this.launcherUpdater = new LauncherUpdater(install, releaseClient);
+        this.modInstaller    = new ModInstaller(install, releaseClient);
+        this.modIndex        = new ModIndex(releaseClient, ModIndex.DEFAULT_ADDRESS);
+        this.scene           = new Scene(new StackPane(), DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        this.notices         = ComponentUtils.column(ComponentUtils.Spacing.M);
+        this.running         = new SimpleBooleanProperty(false);
 
         this.imageScale = ThemeUtils.getImageScale();
 
@@ -286,12 +324,20 @@ public final class LauncherWindow {
         this.account         = null;
         this.session         = null;
 
+        this.launcherUpdate   = null;
+        this.updateChecking   = false;
+        this.updateStatus     = null;
+        this.updateStatusTone = ComponentUtils.Tone.NEUTRAL;
+        this.updateFailure    = null;
+        this.modUpdates       = new LinkedHashMap<>();
+
         this.texts       = LauncherTexts.of(UiLanguage.select(this.settings.getLanguage(), Locale.getDefault()));
         this.shell       = this.createShell();
         this.modsScreen  = this.createModsScreen();
         this.loginScreen = this.createLoginScreen();
         this.accountMenu = null;
         this.section     = LauncherShell.Section.MODS;
+        this.updateView  = null;
         this.runScreen   = null;
         this.run         = null;
         this.selectedJar = this.settings.getLastMod();
@@ -337,6 +383,23 @@ public final class LauncherWindow {
         Screen.getScreens().addListener((Observable changed) -> this.onDisplayChanged());
         this.stage.outputScaleXProperty().addListener((property, oldScale, newScale) -> this.onDisplayChanged());
         this.stage.outputScaleYProperty().addListener((property, oldScale, newScale) -> this.onDisplayChanged());
+    }
+
+    /**
+     * Runs the checks of the launcher's start, once per run: shows why the last update failed, removes what downloads and updates left, and,
+     * on threads of their own and quietly on failure, looks for a newer version of the launcher (release builds only,
+     * {@link LauncherUpdater#isAutomaticCheckAllowed}) and for newer releases of the mods installed from releases.
+     */
+    public void startChecks() {
+        this.updateFailure = this.launcherUpdater.takeFailure();
+        this.launcherUpdater.cleanUp();
+        this.updateNotices();
+
+        if (LauncherUpdater.isAutomaticCheckAllowed(this.version)) {
+            this.checkLauncherUpdate(this.settings.getUpdateRepository(), false);
+        }
+
+        this.checkModUpdates();
     }
 
     /**
@@ -572,7 +635,7 @@ public final class LauncherWindow {
     }
 
     private @NotNull ModsScreen createModsScreen() {
-        return new ModsScreen(this.install, this.catalog, this.texts, this.imageScale, this.running, new ModsScreen.Actions() {
+        ModsScreen created = new ModsScreen(this.install, this.catalog, this.texts, this.imageScale, this.running, new ModsScreen.Actions() {
             /**
              * Called when the user selects a mod.
              *
@@ -597,6 +660,39 @@ public final class LauncherWindow {
             @Override
             public void onRefresh() {
                 LauncherWindow.this.refreshCatalog();
+                LauncherWindow.this.checkModUpdates();
+            }
+
+            /**
+             * Called when the user installs a mod.
+             */
+            @Override
+            public void onInstall() {
+                LauncherWindow.this.createModReleaseDialogs().openInstall();
+            }
+
+            /**
+             * Called when the user updates the mod to its newer release.
+             *
+             * @param entry the mod
+             */
+            @Override
+            public void onUpdate(@NotNull ModEntry entry) {
+                ModRelease release = LauncherWindow.this.modUpdates.get(entry.getJarName());
+
+                if (release != null) {
+                    LauncherWindow.this.createModReleaseDialogs().openUpdate(entry, release);
+                }
+            }
+
+            /**
+             * Called when the user removes the mod.
+             *
+             * @param entry the mod
+             */
+            @Override
+            public void onRemove(@NotNull ModEntry entry) {
+                LauncherWindow.this.createModReleaseDialogs().openRemove(entry);
             }
 
             /**
@@ -630,6 +726,146 @@ public final class LauncherWindow {
                 LauncherWindow.this.showDocument.accept(address);
             }
         });
+
+        created.setUpdates(this.getModUpdateTags());
+
+        return created;
+    }
+
+    private @NotNull Map<@NotNull String, @NotNull String> getModUpdateTags() {
+        Map<String, String> tags = new LinkedHashMap<>();
+
+        for (Map.Entry<String, ModRelease> update : this.modUpdates.entrySet()) {
+            tags.put(update.getKey(), update.getValue().getTag());
+        }
+
+        return tags;
+    }
+
+    private @NotNull ModReleaseDialogs createModReleaseDialogs() {
+        return new ModReleaseDialogs(this.shell, this.texts, this.modInstaller, this.modIndex, () -> this.catalog, this::onModChanged);
+    }
+
+    /**
+     * Lists the mods again after a mod was installed, updated or removed, with that mod selected while it is listed.
+     */
+    private void onModChanged(@NotNull String jarName) {
+        this.modUpdates.remove(jarName);
+        this.selectedJar = jarName;
+        this.refreshCatalog();
+    }
+
+    /**
+     * Looks for newer releases of the mods installed from releases on a thread of its own and shows them in the mods' details; a repository
+     * that cannot be read, or a record that cannot be read, shows none.
+     */
+    private void checkModUpdates() {
+        ModCatalog checked = this.catalog;
+        Thread thread = new Thread(() -> {
+            Map<String, ModRelease> found;
+
+            try {
+                found = this.modInstaller.findUpdates(checked);
+            } catch (IOException exception) {
+                return;
+            }
+
+            Platform.runLater(() -> {
+                this.modUpdates = new LinkedHashMap<>(found);
+                this.modsScreen.setUpdates(this.getModUpdateTags());
+            });
+        }, UPDATE_CHECK_THREAD_NAME);
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * Looks for a newer launcher version on a thread of its own. A check the user asked for saves the update source and shows its result
+     * on the Settings screen; the check of the start fails quietly.
+     */
+    private void checkLauncherUpdate(@NotNull String source, boolean asked) {
+        ReleaseRepository repository = ReleaseRepository.parse(source);
+
+        if (repository == null) {
+            this.updateStatus     = this.texts.format("update.failed", this.texts.describeReleaseProblem(ReleaseProblem.INVALID_REPOSITORY));
+            this.updateStatusTone = ComponentUtils.Tone.DANGER;
+            this.showUpdateStatus();
+
+            return;
+        }
+
+        if (asked) {
+            this.settings = this.settings.withUpdateRepository(repository.toString());
+            this.saveSettings();
+        }
+
+        this.updateChecking = true;
+        this.showUpdateStatus();
+
+        Thread thread = new Thread(() -> {
+            try {
+                LauncherRelease found = this.launcherUpdater.findUpdate(repository, this.version);
+
+                Platform.runLater(() -> this.finishLauncherUpdateCheck(found, null, asked));
+            } catch (ReleaseException exception) {
+                Platform.runLater(() -> this.finishLauncherUpdateCheck(null, exception, asked));
+            }
+        }, UPDATE_CHECK_THREAD_NAME);
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void finishLauncherUpdateCheck(@Nullable LauncherRelease found, @Nullable ReleaseException failure, boolean asked) {
+        this.updateChecking = false;
+
+        if (failure == null) {
+            this.launcherUpdate   = found;
+            this.updateStatus     = found == null && asked ? this.texts.get("update.current") : null;
+            this.updateStatusTone = ComponentUtils.Tone.SUCCESS;
+        } else if (asked) {
+            this.updateStatus     = this.texts.format("update.failed", this.texts.describeReleaseProblem(failure.getProblem()));
+            this.updateStatusTone = ComponentUtils.Tone.DANGER;
+        }
+
+        this.showUpdateStatus();
+        this.updateNotices();
+    }
+
+    private void showUpdateStatus() {
+        UpdateView shown = this.updateView;
+        LauncherRelease available = this.launcherUpdate;
+
+        if (shown == null) {
+            return;
+        }
+
+        if (this.updateChecking) {
+            shown.showChecking();
+        } else if (available != null) {
+            shown.showStatus(this.texts.format("update.available", available.getVersion()), ComponentUtils.Tone.ACCENT, true);
+        } else {
+            shown.showStatus(this.updateStatus, this.updateStatusTone, false);
+        }
+    }
+
+    private void openLauncherUpdate() {
+        LauncherRelease available = this.launcherUpdate;
+
+        if (available != null) {
+            new LauncherUpdateDialog(this.shell, this.texts, this.launcherUpdater, available, this.running, this::closeForUpdate).open();
+        }
+    }
+
+    /**
+     * Closes the launcher for the updater: saves the window state, closes the session and ends the application.
+     */
+    private void closeForUpdate() {
+        this.saveWindowState();
+        this.closeSession();
+        this.stage.close();
+        Platform.exit();
     }
 
     private void rebuildViews() {
@@ -680,7 +916,7 @@ public final class LauncherWindow {
     private void showLogin() {
         this.runScreen = null;
         this.loginScreen.refresh();
-        this.shell.showLogin(this.addNotices(this.loginScreen.getRoot(), false));
+        this.shell.showLogin(this.addNotices(this.loginScreen.getRoot()));
 
         if (this.listAccounts().isEmpty()) {
             this.loginScreen.openNewAccount();
@@ -700,34 +936,56 @@ public final class LauncherWindow {
             this.runScreen = null;
         }
 
-        this.shell.show(shown, this.addNotices(content, shown == LauncherShell.Section.MODS));
+        if (shown != LauncherShell.Section.SETTINGS) {
+            this.updateView = null;
+        }
+
+        this.shell.show(shown, this.addNotices(content));
     }
 
     /**
-     * Puts the launcher's notices above a view's content: a settings file problem, and on the Mods screen a mods folder problem.
+     * Puts the launcher's notices above a view's content ({@link #updateNotices}).
      */
-    private @NotNull Node addNotices(@NotNull Node content, boolean catalogNotice) {
-        List<Node> notices = new ArrayList<>();
+    private @NotNull Node addNotices(@NotNull Node content) {
+        VBox column = ComponentUtils.column(ComponentUtils.Spacing.M, this.notices, content);
 
-        if (this.settingsProblem != null) {
-            notices.add(ComponentUtils.notice(ComponentUtils.Tone.WARNING, this.texts.format("notice.settings", this.settingsProblem)));
-        }
-
-        if (this.catalogProblem != null && catalogNotice) {
-            notices.add(ComponentUtils.notice(ComponentUtils.Tone.DANGER, this.texts.format("notice.catalog", this.catalogProblem)));
-        }
-
-        if (notices.isEmpty()) {
-            return content;
-        }
-
-        VBox column = ComponentUtils.column(ComponentUtils.Spacing.M);
-
-        column.getChildren().addAll(notices);
-        column.getChildren().add(content);
         VBox.setVgrow(content, Priority.ALWAYS);
+        this.updateNotices();
 
         return column;
+    }
+
+    /**
+     * Shows the launcher's notices: a settings file problem, why the last update failed and, once logged in, a newer launcher version with
+     * its Update button and, on the Mods screen, a mods folder problem.
+     */
+    private void updateNotices() {
+        List<Node> shown = new ArrayList<>();
+        boolean loggedIn = this.account != null;
+        LauncherRelease available = this.launcherUpdate;
+
+        if (this.settingsProblem != null) {
+            shown.add(ComponentUtils.notice(ComponentUtils.Tone.WARNING, this.texts.format("notice.settings", this.settingsProblem)));
+        }
+
+        if (this.updateFailure != null) {
+            shown.add(ComponentUtils.notice(ComponentUtils.Tone.DANGER, this.texts.format("notice.update.failed", this.updateFailure)));
+        }
+
+        if (available != null && loggedIn) {
+            Button update = ComponentUtils.smallButton(this.texts.get("update.start"), ComponentUtils.ButtonRole.PRIMARY);
+
+            update.setOnAction(event -> this.openLauncherUpdate());
+            shown.add(ComponentUtils.notice(ComponentUtils.Tone.ACCENT, this.texts.format("update.available", available.getVersion()), update));
+        }
+
+        if (this.catalogProblem != null && loggedIn && this.section == LauncherShell.Section.MODS) {
+            shown.add(ComponentUtils.notice(ComponentUtils.Tone.DANGER, this.texts.format("notice.catalog", this.catalogProblem)));
+        }
+
+        this.notices.getChildren().setAll(shown);
+        this.notices.setVisible(!shown.isEmpty());
+        this.notices.setManaged(!shown.isEmpty());
     }
 
     private @NotNull RunScreen createRunScreen() {
@@ -818,8 +1076,30 @@ public final class LauncherWindow {
                 LauncherWindow.this.pingNodes(pinged, results);
             }
         };
+        UpdateView shownUpdate = new UpdateView(this.texts, this.version, this.settings.getUpdateRepository(), new UpdateView.Actions() {
+            /**
+             * Called when the user checks for a newer version.
+             *
+             * @param source the update source as typed
+             */
+            @Override
+            public void onCheck(@NotNull String source) {
+                LauncherWindow.this.checkLauncherUpdate(source, true);
+            }
 
-        return new OptionsScreen(this.texts, this.settings.getLanguage(), this.nodes, this.nodesProblem, this.nodeRunner, actions);
+            /**
+             * Called when the user updates to the newer version.
+             */
+            @Override
+            public void onUpdate() {
+                LauncherWindow.this.openLauncherUpdate();
+            }
+        });
+
+        this.updateView = shownUpdate;
+        this.showUpdateStatus();
+
+        return new OptionsScreen(this.texts, this.settings.getLanguage(), shownUpdate, this.nodes, this.nodesProblem, this.nodeRunner, actions);
     }
 
     private void showAbout() {

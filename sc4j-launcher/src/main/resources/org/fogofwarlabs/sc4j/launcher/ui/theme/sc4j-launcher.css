@@ -448,7 +448,7 @@
     -fx-border-width: 0 0 0 3;
     -fx-padding: 10 12;
     -fx-spacing: 10;
-    -fx-alignment: top-left;
+    -fx-alignment: center-left;
 }
 
 .notice .label {

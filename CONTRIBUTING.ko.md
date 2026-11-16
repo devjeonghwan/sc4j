@@ -25,10 +25,11 @@ IntelliJ IDEA: 저장소 루트 폴더를 열고 Gradle 빌드를 가져옵니�
 
 ## 빌드와 테스트
 
-| 명령 | 실행 내용 | 필요한 것 |
-|---|---|---|
-| `.\gradlew.bat build` | 컴파일, 단위 테스트(`test`), `check`의 검사: API 목록, 모듈 경계, 결정성 | 저장소 밖의 것 없음 |
-| `.\gradlew.bat :sc4j-runtime:distributionTest` | 사용자 패키지를 만들어 풀고 런타임을 헤드리스로 시작 | 저장소 밖의 것 없음 |
+| 명령 | 실행 내용 |
+|---|---|
+| `.\gradlew.bat build` | 컴파일, 단위 테스트(`test`), `check`의 검사: API 목록, 모듈 경계, 결정성 |
+| `.\gradlew.bat :sc4j-runtime:distributionTest` | 사용자 패키지를 만들어 풀고 런타임을 헤드리스로 시작 |
+| `.\gradlew.bat :sc4j-beaconlink:simulationTest` | 피어 약 천 개의 대규모 Beacon.Link 시뮬레이션(각각 몇 분) |
 
 `sc4j-engine-client` 테스트의 OpenGL, GLFW 검사는 Gradle 속성 `sc4j.render.smoke`가 `true`일 때 숨은 창을 엽니다(`gradle.properties`의 기본값). `-Psc4j.render.smoke=false`로 끕니다.
 

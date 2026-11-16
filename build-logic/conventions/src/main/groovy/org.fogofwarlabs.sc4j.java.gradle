@@ -1,4 +1,4 @@
-// The conventions of the engine's own builds. A project applies it before its Java plugins react; the root project registers checkPrivatePaths.
+// The conventions of the engine build. A project applies it before its Java plugins react; the root project registers checkPrivatePaths.
 
 // The licence files of every distribution: LICENSE, NOTICE and the third-party licence texts of licenses/ that NOTICE names. A
 // distribution folder carries all three, a jar LICENSE and NOTICE in META-INF/. checkDistributionLicenses fails when a file is missing,
@@ -35,11 +35,9 @@ ext.checkDistributionLicenses = checkDistributionLicenses
 [Test, JavaExec].each { taskType ->
     tasks.withType(taskType).configureEach { processTask ->
         def temporaryDirectory = layout.buildDirectory.dir("tmp/${processTask.name}-io")
-        ext.processTemporaryDirectory = temporaryDirectory
-        ext.processStorageArguments = ['-XX:-UsePerfData', '-Djava.io.tmpdir=' + temporaryDirectory.get().asFile.absolutePath]
-        jvmArgs processStorageArguments
+        jvmArgs '-XX:-UsePerfData', '-Djava.io.tmpdir=' + temporaryDirectory.get().asFile.absolutePath
         doFirst {
-            def directory = processTask.processTemporaryDirectory.get().asFile
+            def directory = temporaryDirectory.get().asFile
             if (!directory.isDirectory() && !directory.mkdirs()) {
                 throw new GradleException("Cannot create the JVM temporary directory: " + directory)
             }
@@ -137,11 +135,8 @@ plugins.withType(JavaLibraryPlugin).configureEach {
         options.tags('apiNote:a:API Note:', 'implSpec:a:Implementation Requirements:')
     }
 
-    // Unit tier: the tests tagged integration or corpus need input from outside the repository and run in tasks of their own.
     tasks.named("test") {
-        useJUnitPlatform {
-            excludeTags 'integration', 'corpus'
-        }
+        useJUnitPlatform()
     }
 }
 

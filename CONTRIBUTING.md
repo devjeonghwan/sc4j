@@ -25,10 +25,11 @@ Commands below run in PowerShell from the repository root. On Linux use `./gradl
 
 ## Build and test
 
-| Command | What runs | What it needs |
-|---|---|---|
-| `.\gradlew.bat build` | compile, unit tests (`test`) and the checks of `check`: API listings, module boundaries, determinism | nothing outside the repository |
-| `.\gradlew.bat :sc4j-runtime:distributionTest` | builds the user package, unpacks it and starts its runtime headless | nothing outside the repository |
+| Command | What runs |
+|---|---|
+| `.\gradlew.bat build` | compile, unit tests (`test`) and the checks of `check`: API listings, module boundaries, determinism |
+| `.\gradlew.bat :sc4j-runtime:distributionTest` | builds the user package, unpacks it and starts its runtime headless |
+| `.\gradlew.bat :sc4j-beaconlink:simulationTest` | the large Beacon.Link simulations of about a thousand peers (minutes each) |
 
 The OpenGL and GLFW checks of the `sc4j-engine-client` tests open a hidden window when the Gradle property `sc4j.render.smoke` is `true` (the default in `gradle.properties`); `-Psc4j.render.smoke=false` turns them off.
 

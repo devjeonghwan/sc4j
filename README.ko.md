@@ -79,7 +79,7 @@ JDK 25가 필요합니다. Gradle은 Gradle 래퍼가 내려받습니다. 아래
 .\gradlew.bat runDevLauncher
 ```
 
-런처는 `build/dev-install/mods/`의 모든 jar를 보여 줍니다. 모드를 골라 시작하면 됩니다.
+런처는 `build/dev-install/mods/`의 모든 jar를 보여 줍니다. 모드를 골라 시작하면 됩니다. 다른 저장소의 모드는 그 저장소의 `installMod -Psc4j.install=<이 저장소>\build\dev-install`로 들어오며, `devInstall`은 그 jar를 지우지 않습니다.
 
 사용자 패키지에는 런처, 런타임, 데모 모드, Java 런타임, 시작 파일 `SC4J.bat`와 `SC4J`가 들어 있습니다. 사용자 데이터는 들어 있지 않으며, 새 설치본은 처음 시작할 때 `userdata/`를 만듭니다.
 

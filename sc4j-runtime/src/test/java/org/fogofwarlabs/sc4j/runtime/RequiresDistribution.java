@@ -6,8 +6,7 @@ import java.lang.annotation.*;
 
 /**
  * Marks a test of the built user package ({@link RuntimeTestResources#getDistribution()}): the package holds every mod, so the test runs only
- * in the Gradle task {@code distributionTest} of this module, which builds the package first, never in {@code test}, {@code check} or
- * {@code integrationTest}. It needs no input from outside the repository.
+ * in the Gradle task {@code distributionTest} of this module, which builds the package first, never in {@code test} or {@code check}.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

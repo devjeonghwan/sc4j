@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-Fog of War Labs와 SC4J의 로고, 그리고 이 저장소에 있는 모드의 런처 그림(아이콘과 배너)입니다.
+Fog of War Labs와 SC4J의 로고, 그리고 데모 모드의 런처 그림(아이콘과 배너)입니다.
 
 <p align="center">
   <img src="sc4j-logo-512.png" alt="SC4J logo" width="160">

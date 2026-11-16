@@ -6,8 +6,7 @@ import java.lang.annotation.*;
 
 /**
  * Marks a large simulation on the in-memory network ({@link SimulatedNetwork}): it runs minutes of signature work, so it runs only in the
- * Gradle task {@code simulationTest} of this module, never in {@code test}, {@code check} or {@code integrationTest}. It needs no input from
- * outside the repository.
+ * Gradle task {@code simulationTest} of this module, never in {@code test} or {@code check}.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-The logos of Fog of War Labs and SC4J, and the launcher art (icon and banner) of the mods in this repository.
+The logos of Fog of War Labs and SC4J, and the launcher art (icon and banner) of the demo mod.
 
 <p align="center">
   <img src="sc4j-logo-512.png" alt="SC4J logo" width="160">

@@ -14,8 +14,7 @@ tasks.withType(Test).configureEach {
 dependencies {
     api project(':sc4j-engine-sim')
 
-    // The window, its OpenGL context, the OpenGL calls, the OpenAL sound and the Ogg Vorbis decoding (stb_vorbis) of the client defaults (the
-    // LWJGL modules the mods already use).
+    // The window, its OpenGL context, the OpenGL calls, the OpenAL sound and the Ogg Vorbis decoding (stb_vorbis) of the client defaults.
     implementation platform("org.lwjgl:lwjgl-bom:$LWJGL_VERSION")
     implementation 'org.lwjgl:lwjgl'
     implementation 'org.lwjgl:lwjgl-glfw'

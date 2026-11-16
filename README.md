@@ -79,7 +79,7 @@ A first run:
 .\gradlew.bat runDevLauncher
 ```
 
-The launcher lists every jar in `build/dev-install/mods/`. Choose a mod and start it.
+The launcher lists every jar in `build/dev-install/mods/`. Choose a mod and start it. A mod of another repository gets in with its own `installMod -Psc4j.install=<this repository>\build\dev-install`; `devInstall` keeps it.
 
 The user package holds the launcher, the runtime, the demo mod, a Java runtime and the start files `SC4J.bat` and `SC4J`. It holds no user data: a fresh install makes `userdata/` at its first start.
 

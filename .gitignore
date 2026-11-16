@@ -21,16 +21,9 @@
 
 # Ignore Build Directory
 build/
-/release/
-/reports/
-/sc4j-app/
 
 # Ignore crash logs and caches of runs started from the repository
 hs_err_pid*.log
 replay_pid*.log
-__pycache__/
 /.cache/
 /.lwjgl/
-
-# Ignore local tool installations
-/tools/mcp-venv/

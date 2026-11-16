@@ -28,7 +28,7 @@ dependencies {
 }
 
 // The simulations of about a thousand peers (@LargeSimulation, tag simulation) run minutes of signature work each: they run only in their own
-// task, never in test, check or integrationTest (integrationTest includes the tag integration only).
+// task, never in test or check.
 tasks.named('test') {
     options {
         excludeTags 'simulation'

@@ -500,6 +500,6 @@ In `register` a mod tells the runtime how it runs. There are two ways, and a mod
 
 **Engine scenes.** `WindowClient` is a `HostApplication`: every frame the host polls the window events, `WindowClient` hands the input to the scenes, runs the `SceneClient` frame and presents it with vertical sync. The mod writes scenes (chapter 10) and does not see the frame loop.
 
-**Own application.** The mod writes the frame loop itself: its `HostApplication` decides what one frame does (`runFrame`) and the frame rate the host paces to (`getFrameRateLimit`). It also does what `WindowClient` does for engine scenes: it opens and closes the window, the canvas, the audio and the cursor in order. The SC:R mod uses this way because its frames follow the native game: the simulation advances by the host's time, and the native game's frame rate limits apply in menus and in games.
+**Own application.** The mod writes the frame loop itself: its `HostApplication` decides what one frame does (`runFrame`) and the frame rate the host paces to (`getFrameRateLimit`). It also does what `WindowClient` does for engine scenes: it opens and closes the window, the canvas, the audio and the cursor in order.
 
 **Which to choose.** Almost always engine scenes. Choose an own application only when the mod must control the frame loop itself. The rest of a mod is the same for both: the manifest, the content, the simulation, replays and saves, network play and Beacon.Link (`ModLaunch.getBeaconLink()`).

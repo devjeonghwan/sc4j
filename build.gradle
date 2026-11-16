@@ -34,7 +34,6 @@ if (architecture.contains("AMD64") || architecture.contains("X86_64")) {
 ext {
     OS = platformOperatingSystem
     ARCH = platformArchitecture
-    PLATFORM = OS + '-' + ARCH
 
     LWJGL_VERSION = '3.3.6'
     LWJGL_NATIVES = "natives-" + OS + (ARCH == "arm64" ? "-arm64" : "")

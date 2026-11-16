@@ -256,13 +256,15 @@ def createJavaRuntime = tasks.register('createJavaRuntime', Exec) {
 }
 
 // The programs of an install: launcher/ (the launcher distribution with the shipped seed list), runtime/ (the runtime distribution with its
-// native libraries), LICENSE, NOTICE and licenses/. The development install and the user package copy it with the jars of the mods below.
+// native libraries), LICENSE, NOTICE, licenses/ and the start files SC4J.bat and SC4J. The development install and the user package copy it
+// with the jars of the mods below.
 // The launcher, the runtime and the mods are evaluated after this project, so the copies name their tasks only when Gradle configures them.
 def installContents = copySpec {
     from({ project(':sc4j-launcher').tasks.named('installDist') }) { into 'launcher' }
     from({ project(':sc4j-runtime').tasks.named('installDist') }) { into 'runtime' }
     from(licenseFiles)
     from(licenseTexts) { into 'licenses' }
+    from(project(':sc4j-launcher').file('src/package'))
 }
 def installModProjects = [':mods:demo']
 def installModJars = { installModProjects.collect { path -> project(path).tasks.named('jar') } }
@@ -366,8 +368,8 @@ tasks.register('devInstallBrokenMod', Copy) {
 }
 
 // The user package build/distributions/SC4J-<version>.zip: one folder SC4J-<version> with the programs of an install and the jars of the
-// mods above in mods/, the Java runtime that the start scripts use (java/) and the start of the launcher for users (SC4J.bat and SC4J from
-// sc4j-launcher/src/package). It holds no userdata/ and no cache: a fresh install makes them at its first start.
+// mods above in mods/ and the Java runtime that the start scripts use (java/). It holds no userdata/ and no cache: a fresh install makes
+// them at its first start.
 // The package is staged in build/user-package first, where the licence check runs, and zipped without file times in a fixed order, so that
 // the same sources give the same zip.
 def userPackageName = 'SC4J-' + version
@@ -378,7 +380,6 @@ def stageUserPackage = tasks.register('stageUserPackage', Sync) {
     with installContents
     from(installModJars) { into 'mods' }
     from(createJavaRuntime) { into 'java' }
-    from(project(':sc4j-launcher').file('src/package'))
     doLast {
         checkDistributionLicenses(destinationDir)
     }

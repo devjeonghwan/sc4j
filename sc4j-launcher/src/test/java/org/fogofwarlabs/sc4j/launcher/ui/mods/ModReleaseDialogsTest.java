@@ -89,8 +89,7 @@ final class ModReleaseDialogsTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"en", "ko"})
-    void install_should_list_the_catalog_confirm_the_release_and_add_the_jar(@NotNull String languageCode, @TempDir @NotNull Path directory)
-    throws Exception {
+    void install_should_list_the_catalog_confirm_the_release_and_add_the_jar(@NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
         UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
         LauncherTexts texts = LauncherTexts.of(language);
         InstallLayout install = InstallLayout.of(directory.resolve("install"));

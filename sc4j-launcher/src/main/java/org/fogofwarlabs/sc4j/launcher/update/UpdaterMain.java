@@ -117,8 +117,8 @@ public final class UpdaterMain {
             log("Replacing the programs of " + install.getRoot() + " with " + packageRoot + ".");
             FileTreeUtils.delete(folder.getBackupDirectory());
             new PackageSwap(install.getRoot(), packageRoot, folder.getBackupDirectory(), MOVE_ATTEMPTS, RETRY_DELAY_MILLIS).apply();
-            FileTreeUtils.delete(folder.getBackupDirectory());
             log("The programs were replaced.");
+            deleteBackup(folder);
         } catch (IOException exception) {
             writeFailure(folder, String.valueOf(exception.getMessage()));
             status = FAILURE_STATUS;
@@ -147,6 +147,17 @@ public final class UpdaterMain {
         }
 
         return status;
+    }
+
+    /**
+     * Deletes the replaced programs; a file that cannot be deleted is left for the launcher's cleanup.
+     */
+    private static void deleteBackup(@NotNull UpdateFolder folder) {
+        try {
+            FileTreeUtils.delete(folder.getBackupDirectory());
+        } catch (IOException exception) {
+            log("The replaced programs are removed later: " + exception.getMessage());
+        }
     }
 
     private static void writeFailure(@NotNull UpdateFolder folder, @Nullable String reason) {

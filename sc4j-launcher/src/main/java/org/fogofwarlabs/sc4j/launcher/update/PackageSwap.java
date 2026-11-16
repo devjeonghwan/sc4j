@@ -25,9 +25,9 @@ import java.util.List;
  * jars the player installed are not touched. An install without the list has every listed jar replaced or added. {@code userdata/} and
  * every other file of the install stay as they are.
  * <p>
- * Each item of the install is moved into the backup folder first, then the package's item is copied into its place; the package itself is
- * not changed, so the updater can run from it. When a step fails, the items replaced so far are removed and their backups moved back, so the
- * install keeps its old programs. A move is tried again a few times, as a program that has just ended may hold its files for a moment.
+ * Each package item is copied into {@link #STAGED_FOLDER} of the backup folder, the install's item is moved into the backup folder, and the
+ * copy is moved into its place; the package is not changed. On a failure every replaced item is moved aside and its backup moved back; an
+ * item that cannot be restored keeps the new one. A failed move is tried again a few times.
  */
 public final class PackageSwap {
     /**
@@ -71,6 +71,11 @@ public final class PackageSwap {
      * The file of a package, kept in the install, that lists the jars of {@code mods/} the package ships, one file name per line.
      */
     public static final @NotNull String PACKAGE_MODS_FILE = InstallLayout.LAUNCHER_FOLDER + "/package-mods.txt";
+
+    /**
+     * The folder of the backup folder that holds the staged package items and the items moved aside when an update is undone.
+     */
+    public static final @NotNull String STAGED_FOLDER = ".staged";
 
     private static final @NotNull String JAR_EXTENSION = ".jar";
 
@@ -145,7 +150,8 @@ public final class PackageSwap {
      *
      * @param installRoot      the install folder
      * @param packageRoot      the unpacked user package
-     * @param backupRoot       the folder that keeps the replaced items until the swap has ended; it holds none of the items
+     * @param backupRoot       the folder that keeps the replaced items, deleted by the caller; it holds none of the items and is on the
+     *                         install's file system
      * @param moveAttempts     how often a move is tried, at least {@code 1}
      * @param retryDelayMillis the wait before a move is tried again, in milliseconds
      */
@@ -167,15 +173,23 @@ public final class PackageSwap {
     public void apply() throws IOException {
         List<String> items = new ArrayList<>(ITEMS);
         List<String> replaced = new ArrayList<>();
+        Path stagedRoot = this.backupRoot.resolve(STAGED_FOLDER);
 
         checkPackage(this.packageRoot);
         items.addAll(this.findModItems());
-        Files.createDirectories(this.backupRoot);
+        FileTreeUtils.delete(stagedRoot);
+        Files.createDirectories(stagedRoot);
 
         try {
             for (String item : items) {
                 Path installed = this.installRoot.resolve(item);
                 Path packaged = this.packageRoot.resolve(item);
+                Path staged = stagedRoot.resolve(item);
+
+                if (Files.exists(packaged, LinkOption.NOFOLLOW_LINKS)) {
+                    Files.createDirectories(staged.getParent());
+                    FileTreeUtils.copy(packaged, staged);
+                }
 
                 if (Files.exists(installed, LinkOption.NOFOLLOW_LINKS)) {
                     Path backup = this.backupRoot.resolve(item);
@@ -186,18 +200,16 @@ public final class PackageSwap {
 
                 replaced.add(item);
 
-                if (Files.exists(packaged, LinkOption.NOFOLLOW_LINKS)) {
+                if (Files.exists(staged, LinkOption.NOFOLLOW_LINKS)) {
                     Files.createDirectories(installed.getParent());
-                    FileTreeUtils.copy(packaged, installed);
+                    this.move(staged, installed);
                 }
             }
         } catch (IOException exception) {
-            try {
-                this.restore(replaced);
-            } catch (IOException restoreFailure) {
-                exception.addSuppressed(restoreFailure);
+            List<String> unrestored = this.restore(replaced, stagedRoot, exception);
 
-                throw Exceptions.newIOException(exception, "The update failed and the old files were not all restored; they are in {0}.",
+            if (!unrestored.isEmpty()) {
+                throw Exceptions.newIOException(exception, "The update failed and {0} kept the new files; the old ones are in {1}.", unrestored,
                                                 this.backupRoot);
             }
 
@@ -233,17 +245,37 @@ public final class PackageSwap {
         return items;
     }
 
-    private void restore(@NotNull List<@NotNull String> replaced) throws IOException {
+    /**
+     * Moves every replaced item aside and its backup back, the last replaced first, and adds each failure to the update's failure.
+     *
+     * @return the items that kept the new files
+     */
+    private @NotNull List<@NotNull String> restore(@NotNull List<@NotNull String> replaced, @NotNull Path stagedRoot,
+                                                   @NotNull IOException updateFailure) {
+        List<String> unrestored = new ArrayList<>();
+
         for (String item : replaced.reversed()) {
             Path installed = this.installRoot.resolve(item);
             Path backup = this.backupRoot.resolve(item);
+            Path aside = stagedRoot.resolve(item);
 
-            FileTreeUtils.delete(installed);
+            try {
+                if (Files.exists(installed, LinkOption.NOFOLLOW_LINKS)) {
+                    FileTreeUtils.delete(aside);
+                    Files.createDirectories(aside.getParent());
+                    this.move(installed, aside);
+                }
 
-            if (Files.exists(backup, LinkOption.NOFOLLOW_LINKS)) {
-                this.move(backup, installed);
+                if (Files.exists(backup, LinkOption.NOFOLLOW_LINKS)) {
+                    this.move(backup, installed);
+                }
+            } catch (IOException restoreFailure) {
+                updateFailure.addSuppressed(restoreFailure);
+                unrestored.add(item);
             }
         }
+
+        return unrestored;
     }
 
     private void move(@NotNull Path source, @NotNull Path target) throws IOException {

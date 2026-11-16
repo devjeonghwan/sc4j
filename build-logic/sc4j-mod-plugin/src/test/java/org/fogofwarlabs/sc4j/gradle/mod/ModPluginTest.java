@@ -56,8 +56,7 @@ final class ModPluginTest {
     }
 
     @Test
-    void process_resources_should_write_the_project_version_and_the_engine_api_version_after_the_opening_brace(@TempDir @NotNull Path project)
-    throws IOException {
+    void process_resources_should_write_the_project_version_and_the_engine_api_version_after_the_opening_brace(@TempDir @NotNull Path project) throws IOException {
         String engineApi = readEngineProperties().getProperty("engineApi");
 
         writeProject(project, MOD_VERSION, "{\n  \"format\": 1,\n  \"id\": \"test-mod\"\n}\n");
@@ -172,8 +171,7 @@ final class ModPluginTest {
         writeProject(project, version, null, manifest);
     }
 
-    private static void writeProject(@NotNull Path project, @NotNull String version, @Nullable String modId, @Nullable String manifest)
-    throws IOException {
+    private static void writeProject(@NotNull Path project, @NotNull String version, @Nullable String modId, @Nullable String manifest) throws IOException {
         Path manifestFile = project.resolve(SOURCE_MANIFEST);
         String modIdBlock = modId == null ? "" : MOD_ID_BLOCK.formatted(modId);
 

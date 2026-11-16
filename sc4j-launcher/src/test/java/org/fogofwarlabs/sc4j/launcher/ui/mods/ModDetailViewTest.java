@@ -7,6 +7,7 @@ import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Region;
 import org.fogofwarlabs.sc4j.launcher.catalog.ModCatalog;
@@ -47,7 +48,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * Tests the layout of the selected mod's banner: the icon area and the banner have the same size for a mod with an icon (of any aspect
  * ratio) and a mod without one, and an icon is scaled to fit inside the icon area. Run is disabled while a run is in progress and enabled
- * after it, at 100% and 200% in English and Korean.
+ * after it, at 100% and 200% in English and Korean. The update notice centers its text on its Update button.
  */
 final class ModDetailViewTest {
     private static final @NotNull String MANIFEST = """
@@ -77,6 +78,9 @@ final class ModDetailViewTest {
     private static final double PERCENT_SCALE = 100;
     private static final long FX_TIMEOUT_SECONDS = 30;
     private static final double ASPECT_RATIO_TOLERANCE = 0.05;
+    private static final @NotNull String NOTICE_SELECTOR = ".notice";
+    private static final @NotNull String UPDATE_RELEASE = "v1.1.0";
+    private static final double CENTER_TOLERANCE = 1;
 
     /**
      * Receives no action; the test only lays the view out.
@@ -189,6 +193,44 @@ final class ModDetailViewTest {
 
             Assertions.assertFalse(run.isDisabled());
             LauncherFxScenario.saveSample(root, scale, "run-ready-" + suffix);
+
+            return null;
+        });
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    void update_notice_centers_its_text_on_the_update_button(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
+        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        LauncherTexts texts = LauncherTexts.of(language);
+        String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
+        InstallLayout install = InstallLayout.of(directory);
+
+        writeMod(install, WITHOUT_ICON_ID + ".jar", MANIFEST.formatted(WITHOUT_ICON_ID, WITHOUT_ICON_ID, ""), null);
+
+        ModEntry entry = requireEntry(ModCatalog.scan(install, InstallationRecords.NONE), WITHOUT_ICON_ID + ".jar");
+        ModManifest manifest = entry.getManifest();
+
+        Assertions.assertNotNull(manifest);
+
+        LauncherFxScenario.run(() -> {
+            ModDetailView view = new ModDetailView(entry, UPDATE_RELEASE, SettingsForm.create(manifest.getSettings(), Map.of()), texts,
+                                                   new ModArt(scale), new SimpleBooleanProperty(false), new NoActions());
+            Region root = view.getRoot();
+            Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
+
+            ThemeUtils.apply(scene, language);
+            root.applyCss();
+            root.layout();
+
+            Node notice = root.lookup(NOTICE_SELECTOR);
+            Button update = LauncherFxScenario.findButton(notice, texts.get("mods.update.start"));
+            Label text = (Label) notice.lookup(".label");
+            Bounds textBounds = text.getBoundsInParent();
+            Bounds buttonBounds = update.getBoundsInParent();
+
+            LauncherFxScenario.saveSample(notice, scale, "update-notice-" + suffix);
+            Assertions.assertEquals(buttonBounds.getCenterY(), textBounds.getCenterY(), CENTER_TOLERANCE, "the text is centered on the button");
 
             return null;
         });

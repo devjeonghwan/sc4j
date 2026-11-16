@@ -1238,7 +1238,7 @@ public final class LauncherWindow {
         }
 
         RuntimeCommandLine commandLine = RuntimeCommandLine.create(this.install, manifest.getId(), entry.getJar(), chosen.getDirectory(),
-                                                                   RuntimeCommandLine.isWindows());
+                                                                   RuntimeCommandLine.getLauncherJavaHome(), RuntimeCommandLine.isWindows());
         String failure = null;
         String settingsText = "";
 
@@ -1266,8 +1266,8 @@ public final class LauncherWindow {
         this.settings    = this.settings.withLastMod(this.selectedJar);
         this.saveSettings();
 
-        if (failure == null && !Files.isRegularFile(commandLine.getScript())) {
-            failure = this.texts.format("run.script.missing", commandLine.getScript());
+        if (failure == null && commandLine.getMissingProgram() != null) {
+            failure = this.texts.format("run.program.missing", commandLine.getMissingProgram());
         }
 
         if (failure == null) {

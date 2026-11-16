@@ -200,8 +200,7 @@ final class ModDetailViewTest {
 
     @ParameterizedTest
     @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
-    void update_notice_centers_its_text_on_the_update_button(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory)
-        throws Exception {
+    void update_notice_centers_its_text_on_the_update_button(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
         UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();

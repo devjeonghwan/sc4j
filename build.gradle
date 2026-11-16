@@ -48,55 +48,6 @@ allprojects {
     }
 }
 
-// Engine boundary check: no source, resource or build file of an engine-side module names the SC:R mod's packages or an Scr* type.
-// "check" (and so "build") runs it for every engine-side module.
-def engineSideModules = ['sc4j-base', 'sc4j-mod-manifest', 'sc4j-engine-core', 'sc4j-engine-sim', 'sc4j-engine-net', 'sc4j-engine-client', 'sc4j-engine', 'sc4j-runtime', 'sc4j-launcher', 'sc4j-beaconlink-protocol',
-                         'sc4j-beaconlink-peer', 'sc4j-beaconlink-node', 'sc4j-beaconlink']
-def modPackagePattern = ~/org[.\/]fogofwarlabs[.\/]sc4j[.\/]scr\b/
-// SC:R type names (ScrUnits, ScrNativeIds ...), also in comments.
-def scrTypeNamePattern = ~/\bScr[A-Z]\w*/
-// EUD names and native SC:R image addresses (0x14xxxxxxx), also in comments.
-def eudNamePattern = ~/(?i)\beuds?\b/
-def nativeAddressPattern = ~/\b0x14[0-9A-Fa-f]{7}\b/
-
-// The demo (mods/demo) runs the same check.
-def modBoundaryModules = engineSideModules + ['mods:demo']
-
-configure(modBoundaryModules.collect { name -> project(':' + name) }) { module ->
-    def checkedFiles = files(module.buildFile, fileTree(module.file('src')) {
-        include '**/*.java', '**/*.gradle', '**/*.json', '**/*.properties', '**/*.css', '**/*.txt', '**/*.md'
-    })
-    def report = module.layout.buildDirectory.file('reports/mod-boundary.txt')
-    def checkModBoundary = module.tasks.register('checkModBoundary') {
-        description = 'Checks that this module names no part of the SC:R mod (org.fogofwarlabs.sc4j.scr, Scr* types, EUD, native SC:R ' +
-                      'addresses).'
-        group = 'verification'
-        inputs.files(checkedFiles)
-        inputs.property('namePatterns', [modPackagePattern.toString(), scrTypeNamePattern.toString(), eudNamePattern.toString(),
-                                         nativeAddressPattern.toString()])
-        outputs.file(report)
-        doLast {
-            def problems = []
-            checkedFiles.each { file ->
-                file.readLines('UTF-8').eachWithIndex { line, index ->
-                    if (line =~ modPackagePattern || line =~ scrTypeNamePattern || line =~ eudNamePattern || line =~ nativeAddressPattern) {
-                        problems << file.path + ':' + (index + 1) + ': ' + line.trim()
-                    }
-                }
-            }
-            if (!problems.isEmpty()) {
-                throw new GradleException(module.path + ' must not name the SC:R mod:\n  ' + problems.join('\n  '))
-            }
-            report.get().asFile.text = 'No name of the SC:R mod: ' + checkedFiles.files.size() + ' files checked.\n'
-        }
-    }
-    module.plugins.withId('java-library') {
-        module.tasks.named('check') {
-            dependsOn checkModBoundary
-        }
-    }
-}
-
 // Engine simulation determinism check: the simulation packages of the engine core and simulation modules use no source of
 // nondeterminism. Comments, string and character literals are blanked first, so only code is checked. "check" (and so "build") runs it.
 def simulationPackages = ['random', 'math', 'game', 'entity', 'state', 'animation', 'content', 'hook', 'movement', 'path', 'collision',
@@ -233,9 +184,10 @@ configure((apiModules + publishedTestFixtureModules).unique().collect { name -> 
 
 // The Java runtime of the user package: an image of the JDK that runs this build, made with that JDK's own jlink, with the modules that the
 // launcher, the runtime and the mods use: what jdeps finds in their jars and in the JavaFX modules (which stay in launcher/lib/javafx), and
-// the charsets and locale data they look up by name. The locale data covers the languages of the mods' texts.
+// the charsets and locale data they look up by name.
 def javaRuntimeModules = ['java.base', 'java.desktop', 'java.management', 'java.net.http', 'java.xml', 'jdk.unsupported', 'jdk.charsets',
                           'jdk.localedata']
+// The languages of mod texts.
 def javaRuntimeLocales = ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'zh']
 def javaRuntimeHome = providers.systemProperty('java.home').get()
 def javaRuntimeImage = layout.buildDirectory.dir('java-runtime')

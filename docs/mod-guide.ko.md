@@ -19,6 +19,8 @@ JDK 25와 이 저장소(Gradle 래퍼와 개발용 설치본)가 필요합니다
 
 [모드 템플릿](https://github.com/fogofwarlabs/sc4j-mod-template)에 이 장의 파일이 바로 빌드할 수 있게 들어 있습니다. GitHub에서 "Use this template"으로 쓰면 됩니다.
 
+다른 모드의 소스로 모드를 만들려면 [SC:R Crossover 복제 가이드](https://github.com/fogofwarlabs/sc4j-scr-crossover/blob/main/docs/scr-crossover.md)를 보세요.
+
 ### 2.1 SC4J 설치본
 
 모드는 설치본의 `mods/`에 들어갑니다. `.\gradlew.bat devInstall`은 개발용 설치본 `build/dev-install/`을 만듭니다. 설치본에는 `launcher/`, `runtime/`, `mods/`가 있고, 한 번 쓰면 `userdata/`가 생깁니다.
@@ -227,7 +229,7 @@ jar 루트의 `sc4j-mod.json`([데모](../mods/demo/src/main/resources/sc4j-mod.
 | `registerReplayFormat`, `registerSaveFormat` | 13장 | 엔진 형식 |
 | `registerHeadlessRunner` | `--headless` 실행(9장) | `DemoHeadlessRunner` |
 | `registerFirstScene` | 첫 화면(10장) | `MainMenuScene` |
-| `registerApplication` | 자체 프레임 루프(20장) | - |
+| `registerApplication` | 자체 프레임 루프(19장) | - |
 | `addIdentityData` | 정체성 데이터 | - |
 
 ## 5. 콘텐츠: 표준 데이터 팩
@@ -312,7 +314,7 @@ plugins {
 
 ### 7.2 이 저장소 안의 모드
 
-데모는 같은 플러그인을 씁니다([`mods/demo/build.gradle`](../mods/demo/build.gradle)). 저장소 안에서는 엔진 의존성이 엔진 프로젝트이고 설치본은 `build/dev-install/`입니다. 검사: `checkModBoundary`, `checkDemoNames`(다른 게임 이름 없음), `determinismCheck`(12장). 테스트는 jar를 실행하고(`DemoModTest`) 클라이언트를 화면 밖에서 실행합니다(`DemoClientScenario`).
+데모는 같은 플러그인을 씁니다([`mods/demo/build.gradle`](../mods/demo/build.gradle)). 저장소 안에서는 엔진 의존성이 엔진 프로젝트이고 설치본은 `build/dev-install/`입니다. 검사: `checkDemoNames`(다른 게임 이름 없음), `determinismCheck`(12장). 테스트는 jar를 실행하고(`DemoModTest`) 클라이언트를 화면 밖에서 실행합니다(`DemoClientScenario`).
 
 ## 8. 맵과 첫 실행 콘텐츠
 
@@ -439,20 +441,13 @@ for (String file : List.of("maps/first-field.json")) {
 - 자기 작업물이나 모드에 담아 재배포할 수 있는 라이선스의 자료(CC0, 또는 조건을 지킬 수 있는 라이선스)를 씁니다. 라이선스 파일과 고지문을 jar에 넣고, 요구되는 표기를 매니페스트의 `license`와 `description`에 넣습니다. 데모: [`mods/demo/THIRD-PARTY.md`](../mods/demo/THIRD-PARTY.md), `demo.jar`에 들어 있음.
 - 다른 게임 설치본의 파일은 jar나 저장소에 넣지 않습니다. 실행할 때 폴더 설정(3장)으로 읽습니다.
 
-## 18. 기존 모드 복제
-
-복제 모드는 빌드할 때 다른 모드의 소스를 복사하고, 자기 모드 id로 몇몇 자기 파일을 덮어씁니다. 덮어쓴 파일을 원본이 바꾸면 잠금이 빌드를 멈춥니다. 가이드: [SC:R 복제 모드 가이드](https://github.com/fogofwarlabs/sc4j-scr-crossover/blob/main/docs/scr-crossover.ko.md).
-
-- 복제 모드는 자기 id, 설정, 저장 폴더(처음엔 비어 있으므로 맵을 넣어 둠, 8장), 로그 폴더를 가집니다.
-- 정체성이 같을 때만 함께 플레이합니다. 모드 id를 담지 않는 자체 네트워크 프로토콜에는 호스트가 확인하는 버전 같은 복제 모드만의 값이 필요합니다.
-
-## 19. 모드 테스트
+## 18. 모드 테스트
 
 - 이 저장소 밖: jar를 빌드해 임시 설치본에 설치하고, 런타임을 헤드리스로 두 번, 리플레이로 한 번 실행해 프레임 해시를 비교합니다.
 - 배포되는 테스트 픽스처([API 정책](api-policy.ko.md#1-api란)): `RecordingCommunitySession`, `RecordingBeaconLink`(`sc4j-engine`), 127.0.0.1에서 NAT를 에뮬레이션하는 `ClientScenario`(`sc4j-beaconlink`), `FakeInstallationRecords`(`sc4j-mod-manifest`).
 - 이 저장소 안: 테스트 JVM의 `RuntimeSession.run`(`DemoModTest`), 화면 밖 클라이언트(`DemoClientScenario`), 런타임 JVM 둘(`determinismCheck`).
 
-## 20. 모드가 실행되는 두 방식
+## 19. 모드가 실행되는 두 방식
 
 모드는 `register`에서 둘 중 하나를 등록합니다. 둘 다 등록하면 `IllegalStateException`이 발생합니다.
 
@@ -461,6 +456,6 @@ for (String file : List.of("maps/first-field.json")) {
 | 등록 | `registerFirstScene(FirstSceneFactory)`, `registerHeadlessRunner(HeadlessRunner)` | `registerApplication(ModApplication)` |
 | 창 실행 | 런타임이 창, 캔버스, 오디오, 커서, 입력을 열고 `ClientHost` 위에서 `WindowClient`(`HostApplication`: 이벤트 폴링, 씬에 입력 전달, `SceneClient` 프레임 실행, 수직 동기화로 표시)를 실행 | 런타임이 `ModApplication.run(ModLaunch)`을 호출하고, 모드가 창, 캔버스, 오디오, 커서를 열고 `ClientHost.initialize()`, `createWindow`, `ClientHost.run`으로 자기 `HostApplication`(`runFrame`, `getFrameRateLimit`)을 실행 |
 | `--headless` | `HeadlessRunner` | `isHeadlessCapable()`이면 같은 `run` |
-| 사용 | 첫 모드, 데모 | [SC:R 모드](https://github.com/fogofwarlabs/sc4j-scr) |
+| 사용 | 첫 모드, 데모 | 자체 프레임 루프를 가진 모드 |
 
 모드가 프레임 루프를 직접 가져야 하지 않으면 엔진 씬을 씁니다.

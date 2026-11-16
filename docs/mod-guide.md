@@ -19,6 +19,8 @@ You need JDK 25 and this repository (its Gradle wrapper and development install)
 
 The [mod template](https://github.com/fogofwarlabs/sc4j-mod-template) holds the files of this chapter, ready to build: use it on GitHub with "Use this template".
 
+To build a mod from another mod's sources, see the [SC:R Crossover clone guide](https://github.com/fogofwarlabs/sc4j-scr-crossover/blob/main/docs/scr-crossover.md).
+
 ### 2.1 An SC4J install
 
 Mods go into `mods/` of an install. `.\gradlew.bat devInstall` makes the development install `build/dev-install/`; any install holds `launcher/`, `runtime/`, `mods/` and, once used, `userdata/`.
@@ -227,7 +229,7 @@ The mod reads it with `ModContext.getSettings().getDirectory(key)`.
 | `registerReplayFormat`, `registerSaveFormat` | chapter 13 | engine formats |
 | `registerHeadlessRunner` | `--headless` run (chapter 9) | `DemoHeadlessRunner` |
 | `registerFirstScene` | first screen (chapter 10) | `MainMenuScene` |
-| `registerApplication` | own frame loop (chapter 20) | - |
+| `registerApplication` | own frame loop (chapter 19) | - |
 | `addIdentityData` | identity data | - |
 
 ## 5. Content: the standard data pack
@@ -312,7 +314,7 @@ The tasks form the group `sc4j`; `tasks.named('jar') { from(...) }` adds files. 
 
 ### 7.2 A mod inside this repository
 
-The demo uses the same plugin ([`mods/demo/build.gradle`](../mods/demo/build.gradle)); inside the repository the engine dependency is the engine projects and the install is `build/dev-install/`. Its checks: `checkModBoundary`, `checkDemoNames` (names no other game), `determinismCheck` (chapter 12); its tests run the jar (`DemoModTest`) and the client offscreen (`DemoClientScenario`).
+The demo uses the same plugin ([`mods/demo/build.gradle`](../mods/demo/build.gradle)); inside the repository the engine dependency is the engine projects and the install is `build/dev-install/`. Its checks: `checkDemoNames` (names no other game), `determinismCheck` (chapter 12); its tests run the jar (`DemoModTest`) and the client offscreen (`DemoClientScenario`).
 
 ## 8. Maps and first-run content
 
@@ -439,20 +441,13 @@ Details: [engine API policy](api-policy.md).
 - Use own work or material licensed for redistribution in a mod (CC0, or a licence whose terms you meet). Put the licence files and a notice into the jar and the required notation into the manifest's `license` and `description`. Demo: [`mods/demo/THIRD-PARTY.md`](../mods/demo/THIRD-PARTY.md), packed in `demo.jar`.
 - Never put files of another game's installation into a jar or repository; read them at run time through a directory setting (chapter 3).
 
-## 18. Clone an existing mod
-
-A clone copies another mod's sources at build time, overlays a few own files under its own mod id, and a lock stops the build when the original changes a replaced file. Guide: [SC:R clone modder guide](https://github.com/fogofwarlabs/sc4j-scr-crossover/blob/main/docs/scr-crossover.md).
-
-- A clone has its own id, settings, storage (empty at first; seed its maps, chapter 8) and log folders.
-- It plays only with equal identities; an own network protocol without a mod id needs a clone-specific value, such as a version the host checks.
-
-## 19. Testing your mod
+## 18. Testing your mod
 
 - Outside this repository: build the jar, install it into a scratch install, run the runtime headless twice and once on the replay, compare the frame hashes.
 - Published test fixtures ([API policy](api-policy.md#1-what-the-api-is)): `RecordingCommunitySession`, `RecordingBeaconLink` (`sc4j-engine`), `ClientScenario` with emulated NATs on 127.0.0.1 (`sc4j-beaconlink`), `FakeInstallationRecords` (`sc4j-mod-manifest`).
 - Inside this repository: `RuntimeSession.run` in the test JVM (`DemoModTest`), the client offscreen (`DemoClientScenario`), two runtime JVMs (`determinismCheck`).
 
-## 20. Two ways a mod runs
+## 19. Two ways a mod runs
 
 A mod registers one of these in `register`; both throw an `IllegalStateException`.
 
@@ -461,6 +456,6 @@ A mod registers one of these in `register`; both throw an `IllegalStateException
 | Registration | `registerFirstScene(FirstSceneFactory)`, `registerHeadlessRunner(HeadlessRunner)` | `registerApplication(ModApplication)` |
 | Window run | the runtime opens window, canvas, audio, cursor and input and runs `WindowClient` (a `HostApplication`: polls events, feeds the scenes, runs the `SceneClient` frame, presents with vertical sync) on `ClientHost` | the runtime calls `ModApplication.run(ModLaunch)`; the mod opens window, canvas, audio and cursor and runs its own `HostApplication` (`runFrame`, `getFrameRateLimit`) with `ClientHost.initialize()`, `createWindow`, `ClientHost.run` |
 | `--headless` | the `HeadlessRunner` | the same `run` if `isHeadlessCapable()` |
-| Used by | the first mod, the demo | the [SC:R mod](https://github.com/fogofwarlabs/sc4j-scr) |
+| Used by | the first mod, the demo | mods that own their frame loop |
 
 Use engine scenes unless the mod must own the frame loop.

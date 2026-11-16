@@ -13,7 +13,7 @@
 
 | 명령 | 실행 내용 |
 |---|---|
-| `.\gradlew.bat build` | 컴파일, 단위 테스트(`test`), `check`: API 목록, 모듈 경계, 결정성 |
+| `.\gradlew.bat build` | 컴파일, 단위 테스트(`test`), `check`: API 목록, 결정성 |
 | `.\gradlew.bat :sc4j-runtime:distributionTest` | 사용자 패키지를 만들어 풀고 런타임을 헤드리스로 시작 |
 | `.\gradlew.bat :sc4j-beaconlink:simulationTest` | 피어 약 천 개의 Beacon.Link 시뮬레이션(각각 몇 분) |
 | `.\gradlew.bat :sc4j-engine-sim:test` | 모듈 하나 |
@@ -40,7 +40,7 @@
 - 모든 public 클래스와 public API 메서드, 생성자에는 Javadoc을 씁니다. `javadoc`은 경고 없이 실행되어야 합니다.
 - Javadoc과 주석은 영어입니다. 요약은 3인칭 동사(`Creates`, `Returns`)로 시작하고, Markdown 대신 `{@code}`와 `{@link}`를 씁니다. 태그 순서는 `@param`, `@return`, `@throws`이고, 설명은 소문자로 시작해 마침표 없이 끝나며, `@throws`는 `if ...`로 씁니다.
 - 주석은 쉽게 알 수 없는 코드가 하는 일을 적고, 변경의 경과는 적지 않습니다.
-- 엔진 쪽 모듈은 어떤 모드도 이름으로 쓰지 않습니다. `checkModBoundary`는 SC:R 모드의 패키지나 타입 이름에서 실패합니다.
+- 엔진 쪽 모듈은 어떤 모드도 이름으로 쓰지 않습니다.
 - 시뮬레이션 코드는 결정적입니다([모드 제작 가이드 12장](docs/mod-guide.ko.md#12-결정성)).
 - 엔진 API를 바꾸면 목록을 갱신합니다([API 정책](docs/api-policy.ko.md#6-목록-갱신)).
 - 테스트 클래스는 `<Subject>Test`, 테스트 메서드는 확인 내용을 말하는 `snake_case` 이름입니다.

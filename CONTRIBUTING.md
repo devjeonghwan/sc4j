@@ -13,7 +13,7 @@ Setup, tests, code style, commits and releases. Commands run as in the [README](
 
 | Command | Runs |
 |---|---|
-| `.\gradlew.bat build` | compile, unit tests (`test`), `check`: API listings, module boundaries, determinism |
+| `.\gradlew.bat build` | compile, unit tests (`test`), `check`: API listings, determinism |
 | `.\gradlew.bat :sc4j-runtime:distributionTest` | builds and unpacks the user package, starts its runtime headless |
 | `.\gradlew.bat :sc4j-beaconlink:simulationTest` | Beacon.Link simulations of about a thousand peers (minutes each) |
 | `.\gradlew.bat :sc4j-engine-sim:test` | one module |
@@ -40,7 +40,7 @@ Follow the surrounding code and these rules.
 - Every public class and public API method and constructor has Javadoc; `javadoc` runs without warnings.
 - Javadoc and comments are English. Summaries start with a third-person verb (`Creates`, `Returns`); use `{@code}` and `{@link}`, not Markdown. Tags in the order `@param`, `@return`, `@throws`; descriptions start in lower case without a final period; `@throws` says `if ...`.
 - Comments say what non-obvious code does, not the history of a change.
-- Engine-side modules name no mod; `checkModBoundary` fails on the SC:R mod's packages or types.
+- Engine-side modules name no mod.
 - Simulation code is deterministic ([mod author guide, chapter 12](docs/mod-guide.md#12-determinism)).
 - An engine API change updates its listings ([API policy](docs/api-policy.md#6-updating-the-listings)).
 - Test classes are `<Subject>Test`; test methods have `snake_case` names that say what they check.

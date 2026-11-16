@@ -23,7 +23,8 @@ import java.util.concurrent.TimeoutException;
  * <p>
  * The launcher starts it from the unpacked package of the new version with that package's Java runtime ({@link LauncherUpdater#startUpdater})
  * and exits. The updater waits for the launcher's process to end, replaces the programs of the install with those of the package
- * ({@link PackageSwap}) and starts the launcher of the install: the new one, or the old one when the replacement failed and was undone. The
+ * ({@link PackageSwap}) and starts the launcher of the install: the new one, or the old one when the replacement failed and was undone. On
+ * Windows the start program {@code SC4J.exe} starts it, or {@code SC4J.bat} in an install without that program. The
  * reason of a failure is written to the update folder's failure file ({@link UpdateFolder#getFailureFile()}), which the launcher shows at
  * its next start; the steps are printed on the standard output, which the launcher writes to the update folder's log.
  */
@@ -123,12 +124,20 @@ public final class UpdaterMain {
             status = FAILURE_STATUS;
         }
 
+        Path program = install.getRoot().resolve(PackageSwap.WINDOWS_PROGRAM);
         Path startFile = install.getRoot().resolve(windows ? PackageSwap.WINDOWS_START_FILE : PackageSwap.UNIX_START_FILE);
-        List<String> command = windows ? List.of(WINDOWS_SHELL, WINDOWS_SHELL_COMMAND_OPTION, startFile.toString())
-                                       : List.of(UNIX_SHELL, startFile.toString());
+        List<String> command;
+
+        if (windows && Files.isRegularFile(program)) {
+            command = List.of(program.toString());
+        } else if (windows) {
+            command = List.of(WINDOWS_SHELL, WINDOWS_SHELL_COMMAND_OPTION, startFile.toString());
+        } else {
+            command = List.of(UNIX_SHELL, startFile.toString());
+        }
 
         try {
-            log("Starting " + startFile + ".");
+            log("Starting " + command.getLast() + ".");
             new ProcessBuilder(command).directory(install.getRoot().toFile()).redirectOutput(ProcessBuilder.Redirect.DISCARD)
                                        .redirectError(ProcessBuilder.Redirect.DISCARD).start();
         } catch (IOException exception) {

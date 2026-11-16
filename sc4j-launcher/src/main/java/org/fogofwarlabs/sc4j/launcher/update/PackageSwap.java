@@ -13,8 +13,9 @@ import java.util.List;
 
 /**
  * Replaces the programs of an install with those of an unpacked user package: the items {@link #ITEMS}, that is {@code java/},
- * {@code launcher/}, {@code runtime/}, the start files, {@code LICENSE}, {@code NOTICE} and {@code licenses/}. {@code userdata/},
- * {@code mods/} and every other file of the install stay as they are.
+ * {@code launcher/}, {@code runtime/}, the start program {@code SC4J.exe} with its folder {@code app/}, the start files, {@code LICENSE},
+ * {@code NOTICE} and {@code licenses/}. {@code userdata/}, {@code mods/} and every other file of the install stay as they are. Only the
+ * Windows package has the items {@link #WINDOWS_ITEMS}; an install updated from a package without them loses its own.
  * <p>
  * Each item of the install is moved into the backup folder first, then the package's item is copied into its place; the package itself is
  * not changed, so the updater can run from it. When a step fails, the items replaced so far are removed and their backups moved back, so the
@@ -25,6 +26,16 @@ public final class PackageSwap {
      * The Java runtime folder of the user package.
      */
     public static final @NotNull String JAVA_FOLDER = "java";
+
+    /**
+     * The start program of the launcher on Windows.
+     */
+    public static final @NotNull String WINDOWS_PROGRAM = "SC4J.exe";
+
+    /**
+     * The folder of the configuration of {@link #WINDOWS_PROGRAM}.
+     */
+    public static final @NotNull String WINDOWS_PROGRAM_FOLDER = "app";
 
     /**
      * The start file of the launcher on Windows.
@@ -40,17 +51,23 @@ public final class PackageSwap {
      * The items of the install an update replaces, in the order they are replaced.
      */
     public static final @NotNull List<@NotNull String> ITEMS = List.of(JAVA_FOLDER, InstallLayout.LAUNCHER_FOLDER, InstallLayout.RUNTIME_FOLDER,
-                                                                       WINDOWS_START_FILE, UNIX_START_FILE, "LICENSE", "NOTICE", "licenses");
+                                                                       WINDOWS_PROGRAM, WINDOWS_PROGRAM_FOLDER, WINDOWS_START_FILE, UNIX_START_FILE,
+                                                                       "LICENSE", "NOTICE", "licenses");
 
     /**
-     * Checks that an unpacked user package holds every item an update replaces.
+     * The items of {@link #ITEMS} that only the Windows package has.
+     */
+    public static final @NotNull List<@NotNull String> WINDOWS_ITEMS = List.of(WINDOWS_PROGRAM, WINDOWS_PROGRAM_FOLDER);
+
+    /**
+     * Checks that an unpacked user package holds every item an update replaces, the {@link #WINDOWS_ITEMS} aside.
      *
      * @param packageRoot the package's folder
      * @throws IOException if an item is missing
      */
     public static void checkPackage(@NotNull Path packageRoot) throws IOException {
         for (String item : ITEMS) {
-            if (!Files.exists(packageRoot.resolve(item), LinkOption.NOFOLLOW_LINKS)) {
+            if (!WINDOWS_ITEMS.contains(item) && !Files.exists(packageRoot.resolve(item), LinkOption.NOFOLLOW_LINKS)) {
                 throw Exceptions.newIOException("The package {0} has no {1}.", packageRoot, item);
             }
         }
@@ -95,13 +112,17 @@ public final class PackageSwap {
         try {
             for (String item : ITEMS) {
                 Path installed = this.installRoot.resolve(item);
+                Path packaged = this.packageRoot.resolve(item);
 
                 if (Files.exists(installed, LinkOption.NOFOLLOW_LINKS)) {
                     this.move(installed, this.backupRoot.resolve(item));
                 }
 
                 replaced.add(item);
-                FileTreeUtils.copy(this.packageRoot.resolve(item), installed);
+
+                if (Files.exists(packaged, LinkOption.NOFOLLOW_LINKS)) {
+                    FileTreeUtils.copy(packaged, installed);
+                }
             }
         } catch (IOException exception) {
             try {

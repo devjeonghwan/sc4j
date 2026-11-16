@@ -28,6 +28,8 @@ final class UserPackageScenario {
         files.put("java/bin/java", text);
         files.put("launcher/lib/sc4j-launcher.jar", text);
         files.put("runtime/lib/sc4j-runtime.jar", text);
+        files.put(PackageSwap.WINDOWS_PROGRAM, text);
+        files.put(PackageSwap.WINDOWS_PROGRAM_FOLDER + "/SC4J.cfg", text);
         files.put(PackageSwap.WINDOWS_START_FILE, text);
         files.put(PackageSwap.UNIX_START_FILE, text);
         files.put("LICENSE", text);

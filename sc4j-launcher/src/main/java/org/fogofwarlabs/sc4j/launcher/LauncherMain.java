@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -37,6 +38,7 @@ public final class LauncherMain {
     private static final @NotNull String NAMED_PARAMETER_PREFIX = "--";
     private static final @NotNull String NAMED_PARAMETER_SEPARATOR = "=";
     private static final @NotNull String USAGE = "Usage: sc4j-launcher [--install <dir>] [--list]";
+    private static final @NotNull String TEMPORARY_DIRECTORY_PROPERTY = "java.io.tmpdir";
     private static final @NotNull String LIST_FORMAT = "%-7s %-20s %s";
     private static final @NotNull String ISSUE_PREFIX = "        ";
     private static final int SUCCESS_STATUS = 0;
@@ -82,6 +84,8 @@ public final class LauncherMain {
             return;
         }
 
+        createTemporaryDirectory();
+
         if (list) {
             System.exit(printCatalog(install, System.out));
         }
@@ -122,6 +126,15 @@ public final class LauncherMain {
         }
 
         return catalog.countStatus(ModStatus.ERROR) == 0 ? SUCCESS_STATUS : FAILURE_STATUS;
+    }
+
+    // SC4J.exe starts the JVM directly, so no start script has made its temporary folder.
+    private static void createTemporaryDirectory() {
+        try {
+            Files.createDirectories(Path.of(System.getProperty(TEMPORARY_DIRECTORY_PROPERTY)));
+        } catch (IOException | InvalidPathException exception) {
+            // Only creating a temporary file fails then.
+        }
     }
 
     private static @Nullable Path parsePath(@NotNull String text) {

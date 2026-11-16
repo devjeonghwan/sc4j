@@ -64,7 +64,7 @@ JDK 25 is required; the Gradle wrapper fetches Gradle. Commands run in PowerShel
 
 The launcher lists every jar in `build/dev-install/mods/`. A mod of another repository installs there with its `installMod -Psc4j.install=<this repository>\build\dev-install`; `devInstall` keeps it.
 
-The user package holds the launcher, the runtime, the demo, a Java runtime and the start files `SC4J.bat` and `SC4J`; `userdata/` is created at the first start.
+The user package holds the launcher, the runtime, the demo and a Java runtime and starts with `SC4J.exe` on Windows (or `SC4J.bat`) and `SC4J` on Linux; `userdata/` is created at the first start.
 
 The launcher updates itself from the GitHub releases of SC4J and installs a mod from the latest release of a GitHub repository (`owner/name`, typed or chosen from the catalog of [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods)); `userdata/` and `mods/` stay.
 

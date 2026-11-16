@@ -64,7 +64,7 @@ JDK 25가 필요하며, Gradle은 Gradle 래퍼가 내려받습니다. 명령은
 
 런처는 `build/dev-install/mods/`의 모든 jar를 보여 줍니다. 다른 저장소의 모드는 그 저장소의 `installMod -Psc4j.install=<이 저장소>\build\dev-install`로 이곳에 설치되며, `devInstall`은 그 jar를 지우지 않습니다.
 
-사용자 패키지에는 런처, 런타임, 데모, Java 런타임, 시작 파일 `SC4J.bat`와 `SC4J`가 있습니다. `userdata/`는 처음 시작할 때 만들어집니다.
+사용자 패키지에는 런처, 런타임, 데모, Java 런타임이 있으며 Windows에서는 `SC4J.exe`(또는 `SC4J.bat`), Linux에서는 `SC4J`로 시작합니다. `userdata/`는 처음 시작할 때 만들어집니다.
 
 런처는 SC4J의 GitHub 릴리스로 스스로 업데이트하고, GitHub 저장소(`owner/name`, 직접 입력하거나 [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods) 목록에서 선택)의 최신 릴리스에서 모드를 설치합니다. `userdata/`와 `mods/`는 그대로 남습니다.
 

@@ -22,13 +22,16 @@ import org.jetbrains.annotations.NotNull;
  * ({@code org.fogofwarlabs.sc4j:sc4j-engine}) and sets up these tasks of the group {@code sc4j}:
  * <ul>
  *     <li>{@code jar}: packs the classes and resources of the source sets into {@code build/libs/<id>.jar} without file times in a fixed
- *     order, with the licence files in {@code META-INF/}, and checks that its manifest {@code sc4j-mod.json} names the mod id and an entry
- *     class of the jar.</li>
+ *     order, with the licence files in {@code META-INF/}, and checks that its manifest {@code sc4j-mod.json} names the mod id, the
+ *     versions below and an entry class of the jar.</li>
  *     <li>{@code run}: runs the mod jar in the engine runtime of the plugin's version, with the user data of the install or of
  *     {@code build/sc4j-run}; {@code --args} passes runtime options (such as {@code --headless}) and {@code --debug-jvm} waits for a
  *     debugger. {@code prepareRun} stages the runtime's native libraries for it.</li>
  *     <li>{@code installMod}: copies the mod jar into {@code mods/} of the install.</li>
  * </ul>
+ * The {@code processResources} task of each source set writes {@code version} (the project version) and {@code engine} (the engine API
+ * version {@code MAJOR.MINOR} of the plugin's version) into {@code sc4j-mod.json}. A source manifest with either field, or without a
+ * {@code format} that the engine of the plugin's version reads, fails the build.
  * The variant of the usage {@code sc4j-mod-jar} ({@code modJarElements}) gives the mod jar to other projects of the build.
  */
 public abstract class ModExtension {

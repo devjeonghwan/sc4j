@@ -1,3 +1,4 @@
+import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import org.fogofwarlabs.sc4j.gradle.mod.ModExtension
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
@@ -20,12 +21,64 @@ def engineProperties = new Properties()
 ModExtension.getResourceAsStream('engine.properties').withReader('UTF-8') { reader -> engineProperties.load(reader) }
 def engineGroup = engineProperties.getProperty('group')
 def engineVersion = engineProperties.getProperty('version')
+def engineApiVersion = engineProperties.getProperty('engineApi')
+def manifestFormat = Integer.parseInt(engineProperties.getProperty('manifestFormat'))
 
 def mod = extensions.create('sc4jMod', ModExtension)
 def mainSourceSet = sourceSets.main
 mod.sourceSets.convention([mainSourceSet])
 mod.install.convention(layout.projectDirectory.dir(providers.gradleProperty('sc4j.install')))
 mod.licenses.convention(rootProject.files('LICENSE', 'NOTICE').filter { file -> file.isFile() })
+def modVersion = provider { project.version.toString() }
+
+// The manifest sc4j-mod.json of the mod's resources gets "version" (the project version) and "engine" (the engine API version of the
+// plugin) after its opening brace; the source manifest leaves both out and names a "format" that the plugin's engine reads.
+def manifestName = 'sc4j-mod.json'
+def writeManifestVersions = { File manifestFile, String version ->
+    if (version == Project.DEFAULT_VERSION) {
+        throw new GradleException('The mod project ' + project.name + ' has no version: set version in its build.gradle or gradle.properties.')
+    }
+    def text = manifestFile.getText('UTF-8')
+    def manifest = new JsonSlurper().parseText(text)
+    if (!(manifest instanceof Map)) {
+        throw new GradleException('The manifest ' + manifestName + ' is not a JSON object.')
+    }
+    if (!manifest.containsKey('format')) {
+        throw new GradleException('The manifest ' + manifestName + ' has no "format": set it to ' + manifestFormat + '.')
+    }
+    if (!(manifest.format instanceof Integer || manifest.format instanceof Long) || manifest.format != manifestFormat) {
+        throw new GradleException('The manifest ' + manifestName + ' has the format ' + manifest.format + '; SC4J ' + engineVersion +
+                                  ' reads format ' + manifestFormat + '.')
+    }
+    ['version', 'engine'].each { field ->
+        if (manifest.containsKey(field)) {
+            throw new GradleException('The manifest ' + manifestName + ' must not have the field "' + field + '": the mod plugin writes it.')
+        }
+    }
+    def start = text.indexOf('{') + 1
+    def lineStart = (text.substring(start) =~ /^\r?\n[ \t]*/).with { matcher -> matcher.find() ? matcher.group() : '' }
+    def fields = ['"version": ' + JsonOutput.toJson(version), '"engine": ' + JsonOutput.toJson(engineApiVersion)]
+    def inserted = fields.collect { field -> lineStart + field + (lineStart.isEmpty() ? ', ' : ',') }.join('')
+    manifestFile.setText(text.substring(0, start) + inserted + text.substring(start), 'UTF-8')
+}
+afterEvaluate {
+    // A source set container finds source sets by name, so the owner of each source set is found by identity.
+    ([mainSourceSet] + mod.sourceSets.get()).unique { first, second -> first.is(second) ? 0 : 1 }.each { sourceSet ->
+        def owner = rootProject.allprojects.find { candidate ->
+            candidate.extensions.findByType(SourceSetContainer)?.any { candidateSourceSet -> candidateSourceSet.is(sourceSet) }
+        }
+        owner.tasks.named(sourceSet.processResourcesTaskName, ProcessResources) { task ->
+            task.inputs.property('sc4jModVersion', modVersion)
+            task.inputs.property('sc4jEngineApiVersion', engineApiVersion)
+            task.doLast {
+                def manifestFile = new File(task.destinationDir, manifestName)
+                if (manifestFile.isFile()) {
+                    writeManifestVersions(manifestFile, modVersion.get())
+                }
+            }
+        }
+    }
+}
 
 def javaRuntime = { AttributeContainer attributes ->
     attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
@@ -47,7 +100,7 @@ afterEvaluate {
 }
 
 // The mod jar: no file times and a fixed order, so the same sources give the same jar and the same mod identity.
-def checkModJar = { File jar, String id, List<String> licenseNames ->
+def checkModJar = { File jar, String id, String version, List<String> licenseNames ->
     new ZipFile(jar).withCloseable { archive ->
         def problems = licenseNames.collect { name -> 'META-INF/' + name }.findAll { name -> archive.getEntry(name) == null }.collect { name ->
             'lacks ' + name
@@ -59,6 +112,10 @@ def checkModJar = { File jar, String id, List<String> licenseNames ->
             def manifest = archive.getInputStream(manifestEntry).withCloseable { input -> new JsonSlurper().parse(input, 'UTF-8') }
             if (manifest.id != id) {
                 problems << 'has the mod id ' + manifest.id + ' instead of ' + id + ' in sc4j-mod.json'
+            }
+            if (manifest.version != version || manifest.engine != engineApiVersion) {
+                problems << 'has the version ' + manifest.version + ' and the engine ' + manifest.engine + ' instead of ' + version + ' and ' +
+                            engineApiVersion + ' in sc4j-mod.json'
             }
             if (!(manifest.entry instanceof String) || archive.getEntry(manifest.entry.replace('.', '/') + '.class') == null) {
                 problems << 'lacks the entry class ' + manifest.entry + ' of sc4j-mod.json'
@@ -84,7 +141,7 @@ def jar = tasks.named('jar', Jar) {
     def modId = mod.id
     def licenses = mod.licenses
     doLast {
-        checkModJar(archiveFile.get().asFile, modId.get(), licenses.files.collect { file -> file.name })
+        checkModJar(archiveFile.get().asFile, modId.get(), modVersion.get(), licenses.files.collect { file -> file.name })
     }
 }
 

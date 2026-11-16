@@ -28,7 +28,7 @@ A mod is its own Gradle project, here `my-mod` next to the repository folder:
 | File | Content |
 |---|---|
 | `settings.gradle` | repositories and project name (section 7.1) |
-| `build.gradle` | mod plugin and mod id (section 7.1) |
+| `build.gradle` | mod plugin, mod version and mod id (section 7.1) |
 | `gradle.properties` | `sc4j.install=<install>` (Windows path with forward slashes) |
 | `src/main/resources/sc4j-mod.json` | manifest (chapter 3) |
 | `src/main/java/com/example/mymod/` | `MyMod` (entry) and `FirstScene` (screen) |
@@ -40,11 +40,11 @@ A mod id is lower-case letters and digits in groups joined by single hyphens (`m
   "format": 1,
   "id": "my-mod",
   "name": {"en": "My Mod"},
-  "version": "0.1.0",
-  "engine": "0.1",
   "entry": "com.example.mymod.MyMod"
 }
 ```
+
+The mod plugin adds `version` and `engine` (chapter 3).
 
 The entry registers a headless runner that logs one line and the first screen of the window run:
 
@@ -187,13 +187,15 @@ Players install a released mod from the launcher: the latest GitHub release of t
 | `format` | yes | `1` |
 | `id` | yes | mod id |
 | `name` | yes | per language: `{"en": "My Mod", "ko": "..."}` |
-| `version` | yes | mod version, part of the identity |
-| `engine` | yes | engine API version `MAJOR.MINOR`; runs when the majors are equal and the mod's minor is not higher ([API policy 3.1](api-policy.md#31-the-engine-api-version)) |
+| `version` | written by the mod plugin | mod version: the Gradle project's `version`; part of the identity |
+| `engine` | written by the mod plugin | engine API version `MAJOR.MINOR` of the plugin's SC4J version; runs when the majors are equal and the mod's minor is not higher ([API policy 3.1](api-policy.md#31-the-sc4j-version-and-the-engine-api-version)) |
 | `entry` | yes | fully qualified entry class |
 | `description`, `authors`, `website`, `license` | no | launcher mod details; `license` holds the notation your asset licences ask for |
 | `notices` | no | short legal notices per language like `name`: `[{"en": "Example Game is a trademark of Example Company.", "ko": "..."}]`; the About box lists them under the mod name, in the display language or English |
 | `images` | no | `icon`, `banner`, `screenshots`: PNG paths in the jar |
 | `settings` | no | pre-run settings (below) |
+
+The mod plugin writes `version` and `engine` into the manifest of the jar. A source manifest with either field, or without a `format` that the plugin's engine reads, fails the build.
 
 **Pre-run settings**: entries with `key`, `type` (`directory`, `file`, `choice`, `integer`, `string`, `boolean`), `label`, `description`, `required`, `default`, `message` and type fields (`SettingsSchema`). The launcher validates them and saves `userdata/settings/<id>.json`; the mod reads `ModContext.getSettings()`. A locale `choice` with `"systemDefault": true` defaults to the operating system's locale option (`koKR` for Korean in Korea), else `default`. Missing required settings make the mod `WARNING`.
 
@@ -292,6 +294,8 @@ plugins {
     id 'org.fogofwarlabs.sc4j.mod' version '<sc4j version>'
 }
 
+version = '0.1.0'
+
 sc4jMod {
     id = 'my-mod'
 }
@@ -300,7 +304,8 @@ sc4jMod {
 | Task or setting | Effect |
 |---|---|
 | compile | against the engine API of the plugin's version (`org.fogofwarlabs.sc4j:sc4j-engine` with `sc4j-base`, `sc4j-mod-manifest`, engine modules); not packed |
-| `jar` | `build/libs/<id>.jar`, reproducible (no timestamps, fixed order, duplicates fail), `LICENSE` and `NOTICE` in `META-INF/`; fails when `sc4j-mod.json` names another id or a missing entry class |
+| `processResources` | writes `version` and `engine` into `sc4j-mod.json` (chapter 3) |
+| `jar` | `build/libs/<id>.jar`, reproducible (no timestamps, fixed order, duplicates fail), `LICENSE` and `NOTICE` in `META-INF/`; fails when `sc4j-mod.json` names another id, other versions or a missing entry class |
 | `run` | runs the jar in the plugin's engine runtime with the install's user data (or `build/sc4j-run`); `--args=--headless`, `--debug-jvm` |
 | `installMod` | copies the jar into `<install>/mods/` (Gradle property `sc4j.install`) |
 | `sc4jMod` | `id`, `sourceSets` (more source sets in the jar), `install`, `licenses` (files of `META-INF/`) |
@@ -428,7 +433,7 @@ Details: [engine API policy](api-policy.md).
 
 - The API is the public and protected classes and members of `sc4j-base`, `sc4j-mod-manifest`, `sc4j-engine-core`, `-sim`, `-net`, `-client` and `sc4j-engine`, listed in `api/*.api`. The Javadoc of each class is its contract.
 - Internal, not API (`@ApiStatus.Internal`): `engine.mod.loading`, `engine.client.render.gl`, `engine.client.audio.openal`, `GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface`, `WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock`. Use `engine.client.render` (`GraphicsDevice.getCurrent()`), `engine.client.audio` (`AudioDevice.openDefault()`) and the `engine.client.host` interfaces (`ClientHost.initialize()`; `HostWindow`: `createInput`, `isKeyDown`, `setPointerMode`, `createCursorSurface`, focus, clipboard, dropped files, gamma ramp, `getTextInputMethod`; `SystemPointerSpeed`, `HostTickClock`).
-- Engine API version `MAJOR.MINOR` (`EngineVersion.CURRENT`, 0.1) goes into the manifest's `engine` field. A major may break mods, a minor only adds; at 0.x anything may change, visible as `.api` diffs.
+- The SC4J version is a semantic version; its `MAJOR.MINOR` is the engine API version (`EngineVersion.CURRENT`), which the mod plugin writes into the manifest's `engine` field. A major may break mods, a minor only adds; at 0.x anything may change, visible as `.api` diffs.
 - Changed simulation results raise at least the minor version; replays and saves do not cross engine versions.
 
 ## 17. Licences for assets

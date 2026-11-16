@@ -10,3 +10,27 @@ plugins {
 dependencies {
     api project(':sc4j-base')
 }
+
+// The SC4J version (gradle.properties) as the resource that gives EngineVersion.CURRENT its major and minor version.
+def sc4jVersionText = 'version=' + version + '\n'
+def sc4jVersionResources = layout.buildDirectory.dir('generated/sc4j-version')
+def writeSc4jVersion = tasks.register('writeSc4jVersion') {
+    description = 'Writes the SC4J version into the resources of the mod manifest module.'
+    inputs.property('sc4jVersionText', sc4jVersionText)
+    outputs.dir(sc4jVersionResources)
+    doLast {
+        def folder = sc4jVersionResources.get().dir('org/fogofwarlabs/sc4j/manifest/version').asFile
+        folder.mkdirs()
+        new File(folder, 'sc4j-version.properties').setText(sc4jVersionText, 'UTF-8')
+    }
+}
+sourceSets.main.resources.srcDir(writeSc4jVersion)
+
+tasks.withType(Test).configureEach {
+    systemProperty 'sc4j.version', version.toString()
+}
+
+// The mod plugin (build-logic) takes the engine API version and the manifest format of this module; its tests run with this check.
+tasks.named('check') {
+    dependsOn gradle.includedBuild('build-logic').task(':sc4j-mod-plugin:check')
+}

@@ -2,8 +2,6 @@
   "format": 1,
   "id": "demo",
   "name": {"en": "SC4J Demo: Dawnhold and Cindermaw", "ko": "SC4J 데모: 던홀드와 신더모"},
-  "version": "0.1.0",
-  "engine": "0.1",
   "entry": "org.fogofwarlabs.sc4j.demo.DemoMod",
   "description": {
     "en": "Real-time strategy demo on the SC4J engine. Dawnhold against Cindermaw.",

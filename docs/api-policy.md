@@ -42,20 +42,22 @@ The annotation on a package-info covers that package (not subpackages); on a cla
 
 ## 3. Versions
 
-### 3.1 The engine API version
+### 3.1 The SC4J version and the engine API version
 
-`EngineVersion.CURRENT` (`sc4j-mod-manifest`), `MAJOR.MINOR`. A mod names the version it is built against in the `engine` field of `sc4j-mod.json`; the launcher and the runtime run it only when the majors are equal and the mod's minor is not higher. The distribution version (`version` in `gradle.properties`) says nothing about API compatibility.
+The SC4J version (`version` in `gradle.properties`) is a semantic version `MAJOR.MINOR.PATCH`; section 3.2 says which part a change raises.
+
+The engine API version `EngineVersion.CURRENT` (`sc4j-mod-manifest`) is `MAJOR.MINOR` of the SC4J version, taken from the build: `0.1.0-SNAPSHOT` gives `0.1`. The mod plugin writes it into the `engine` field of a mod's `sc4j-mod.json`; the launcher and the runtime run a mod only when the majors are equal and the mod's minor is not higher.
 
 ### 3.2 What changes which number
 
-| Change | Version |
+| Change | Part of the SC4J version to raise |
 |---|---|
 | A listing line removed or changed incompatibly: a class, member or constructor removed or renamed; a parameter, return or field type changed; access narrowed; `final`, `abstract` or `static` changed where mod code can tell; an abstract method added to a type mods implement or extend; a checked exception added; a constant value changed | major |
 | A documented contract changed without a listing change: return or accepted values, throw conditions, threading or lifecycle rules, nullability narrowed for input or widened for output | major |
 | A simulation result changed for the same inputs (section 4) | at least minor |
 | Additions only: class, member, constructor, default method, enum constant (where mods do not switch over it exhaustively), a compatible contract widening | minor |
 | A deprecation (section 3.3) | minor |
-| No listing or contract change (implementation, performance, internal elements) | none |
+| No listing or contract change (implementation, performance, internal elements) | patch |
 
 A changed listing line shows as one line removed and one added; decide by this table, not by the diff shape.
 
@@ -65,7 +67,7 @@ A minor release adds `@Deprecated` and a Javadoc `@deprecated` tag naming the re
 
 ### 3.4 Before 1.0 is declared
 
-`EngineVersion.CURRENT` is 0.1. At 0.x nothing is stable: incompatible changes may happen without a version change, each visible as an `.api` diff. The rule of section 3.1 applies; sections 3.2 and 3.3 apply in full from 1.0.
+The SC4J version is 0.x (engine API version `0.MINOR`). At 0.x nothing is stable: incompatible changes may happen without a version change, each visible as an `.api` diff. The rule of section 3.1 applies; sections 3.2 and 3.3 apply in full from 1.0.
 
 ## 4. Determinism, replays and saves
 

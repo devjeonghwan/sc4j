@@ -28,7 +28,7 @@ JDK 25와 이 저장소(Gradle 래퍼와 개발용 설치본)가 필요합니다
 | 파일 | 내용 |
 |---|---|
 | `settings.gradle` | 저장소와 프로젝트 이름(7.1절) |
-| `build.gradle` | 모드 플러그인과 모드 id(7.1절) |
+| `build.gradle` | 모드 플러그인, 모드 버전, 모드 id(7.1절) |
 | `gradle.properties` | `sc4j.install=<install>`(Windows 경로는 슬래시로) |
 | `src/main/resources/sc4j-mod.json` | 매니페스트(3장) |
 | `src/main/java/com/example/mymod/` | `MyMod`(진입 클래스)와 `FirstScene`(화면) |
@@ -40,11 +40,11 @@ JDK 25와 이 저장소(Gradle 래퍼와 개발용 설치본)가 필요합니다
   "format": 1,
   "id": "my-mod",
   "name": {"en": "My Mod"},
-  "version": "0.1.0",
-  "engine": "0.1",
   "entry": "com.example.mymod.MyMod"
 }
 ```
+
+`version`과 `engine`은 모드 플러그인이 넣습니다(3장).
 
 진입 클래스는 한 줄을 로그에 쓰는 헤드리스 러너와 창 실행의 첫 화면을 등록합니다.
 
@@ -187,13 +187,15 @@ jar 루트의 `sc4j-mod.json`([데모](../mods/demo/src/main/resources/sc4j-mod.
 | `format` | 예 | `1` |
 | `id` | 예 | 모드 id |
 | `name` | 예 | 언어별: `{"en": "My Mod", "ko": "..."}` |
-| `version` | 예 | 모드 버전. 정체성의 일부 |
-| `engine` | 예 | 엔진 API 버전 `MAJOR.MINOR`. major가 같고 모드의 minor가 더 높지 않으면 실행([API 정책 3.1](api-policy.ko.md#31-엔진-api-버전)) |
+| `version` | 모드 플러그인이 씀 | 모드 버전: Gradle 프로젝트의 `version`. 정체성의 일부 |
+| `engine` | 모드 플러그인이 씀 | 플러그인 SC4J 버전의 엔진 API 버전 `MAJOR.MINOR`. major가 같고 모드의 minor가 더 높지 않으면 실행([API 정책 3.1](api-policy.ko.md#31-sc4j-버전과-엔진-api-버전)) |
 | `entry` | 예 | 진입 클래스의 전체 이름 |
 | `description`, `authors`, `website`, `license` | 아니요 | 런처의 모드 상세 정보. `license`에는 에셋 라이선스가 요구하는 표기를 씁니다 |
 | `notices` | 아니요 | `name`처럼 언어별인 짧은 법적 고지: `[{"en": "Example Game is a trademark of Example Company.", "ko": "..."}]`. 정보 상자가 모드 이름 아래에 표시 언어나 영어로 보여 줍니다 |
 | `images` | 아니요 | `icon`, `banner`, `screenshots`: jar 안의 PNG 경로 |
 | `settings` | 아니요 | 실행 전 설정(아래) |
+
+모드 플러그인이 jar의 매니페스트에 `version`과 `engine`을 씁니다. 소스 매니페스트에 둘 중 하나가 있거나, 플러그인 엔진이 읽는 `format`이 없으면 빌드가 실패합니다.
 
 **실행 전 설정**: `key`, `type`(`directory`, `file`, `choice`, `integer`, `string`, `boolean`), `label`, `description`, `required`, `default`, `message`와 타입별 필드를 가진 항목입니다(`SettingsSchema`). 런처가 검사해 `userdata/settings/<id>.json`에 저장하고, 모드는 `ModContext.getSettings()`로 읽습니다. `"systemDefault": true`인 로캘 `choice`의 기본값은 운영 체제 로캘의 선택지(한국의 한국어면 `koKR`)이고, 없으면 `default`입니다. 필수 설정이 비어 있으면 모드는 `WARNING`입니다.
 
@@ -292,6 +294,8 @@ plugins {
     id 'org.fogofwarlabs.sc4j.mod' version '<sc4j version>'
 }
 
+version = '0.1.0'
+
 sc4jMod {
     id = 'my-mod'
 }
@@ -300,7 +304,8 @@ sc4jMod {
 | 태스크나 설정 | 효과 |
 |---|---|
 | 컴파일 | 플러그인 버전의 엔진 API(`org.fogofwarlabs.sc4j:sc4j-engine`과 `sc4j-base`, `sc4j-mod-manifest`, 엔진 모듈) 대상. jar에는 넣지 않음 |
-| `jar` | `build/libs/<id>.jar`, 재현 가능(시간 기록 없음, 고정 순서, 중복이면 실패), `META-INF/`에 `LICENSE`와 `NOTICE`. `sc4j-mod.json`이 다른 id나 없는 진입 클래스를 가리키면 실패 |
+| `processResources` | `sc4j-mod.json`에 `version`과 `engine`을 씀(3장) |
+| `jar` | `build/libs/<id>.jar`, 재현 가능(시간 기록 없음, 고정 순서, 중복이면 실패), `META-INF/`에 `LICENSE`와 `NOTICE`. `sc4j-mod.json`이 다른 id, 다른 버전, 없는 진입 클래스를 가리키면 실패 |
 | `run` | 플러그인 버전의 엔진 런타임에서 설치본의 사용자 데이터(없으면 `build/sc4j-run`)로 실행. `--args=--headless`, `--debug-jvm` |
 | `installMod` | jar를 `<install>/mods/`에 복사(Gradle 속성 `sc4j.install`) |
 | `sc4jMod` | `id`, `sourceSets`(jar에 더 넣을 소스 세트), `install`, `licenses`(`META-INF/`의 파일) |
@@ -428,7 +433,7 @@ for (String file : List.of("maps/first-field.json")) {
 
 - API는 `sc4j-base`, `sc4j-mod-manifest`, `sc4j-engine-core`, `-sim`, `-net`, `-client`, `sc4j-engine`의 public, protected 클래스와 멤버이며 `api/*.api`에 나열됩니다. 각 클래스의 Javadoc이 계약입니다.
 - API가 아닌 내부 요소(`@ApiStatus.Internal`): `engine.mod.loading`, `engine.client.render.gl`, `engine.client.audio.openal`, `GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface`, `WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock`. 대신 `engine.client.render`(`GraphicsDevice.getCurrent()`), `engine.client.audio`(`AudioDevice.openDefault()`), `engine.client.host` 인터페이스(`ClientHost.initialize()`. `HostWindow`: `createInput`, `isKeyDown`, `setPointerMode`, `createCursorSurface`, 포커스, 클립보드, 끌어다 놓은 파일, 감마 램프, `getTextInputMethod`. `SystemPointerSpeed`, `HostTickClock`)를 씁니다.
-- 엔진 API 버전 `MAJOR.MINOR`(`EngineVersion.CURRENT`, 0.1)는 매니페스트의 `engine` 필드에 넣습니다. major는 모드를 깨뜨릴 수 있고 minor는 추가만 합니다. 0.x에서는 무엇이든 바뀔 수 있으며 `.api` 차이로 드러납니다.
+- SC4J 버전은 유의적 버전이며, 그 `MAJOR.MINOR`가 엔진 API 버전(`EngineVersion.CURRENT`)입니다. 모드 플러그인이 이 값을 매니페스트의 `engine` 필드에 씁니다. major는 모드를 깨뜨릴 수 있고 minor는 추가만 합니다. 0.x에서는 무엇이든 바뀔 수 있으며 `.api` 차이로 드러납니다.
 - 시뮬레이션 결과가 바뀌면 적어도 minor 버전을 올립니다. 리플레이와 저장 게임은 엔진 버전 사이에 호환되지 않습니다.
 
 ## 17. 에셋의 라이선스

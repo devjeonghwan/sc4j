@@ -4,6 +4,9 @@ import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,14 +19,23 @@ import java.util.regex.Pattern;
  */
 public final class EngineVersion {
     /**
-     * The engine API version of this SC4J release. The launcher and the runtime check mods against it.
+     * The engine API version of this SC4J release: {@code major.minor} of the SC4J version that the build writes into this module. The
+     * launcher and the runtime check mods against it.
      */
-    public static final @NotNull EngineVersion CURRENT = new EngineVersion(0, 1);
+    public static final @NotNull EngineVersion CURRENT;
 
     private static final @NotNull Pattern VERSION_PATTERN = Pattern.compile("(0|[1-9][0-9]{0,8})\\.(0|[1-9][0-9]{0,8})");
+    private static final @NotNull Pattern SC4J_VERSION_PATTERN =
+            Pattern.compile("(0|[1-9][0-9]{0,8})\\.(0|[1-9][0-9]{0,8})\\.(0|[1-9][0-9]{0,8})(?:-[0-9A-Za-z]+(?:\\.[0-9A-Za-z]+)*)?");
     private static final int MAJOR_GROUP = 1;
     private static final int MINOR_GROUP = 2;
     private static final int HASH_MULTIPLIER = 31;
+    private static final @NotNull String SC4J_VERSION_RESOURCE = "sc4j-version.properties";
+    private static final @NotNull String SC4J_VERSION_KEY = "version";
+
+    static {
+        CURRENT = fromSc4jVersion(readSc4jVersion());
+    }
 
     /**
      * Creates a {@link EngineVersion} instance from its text form.
@@ -40,6 +52,52 @@ public final class EngineVersion {
         }
 
         return new EngineVersion(Integer.parseInt(matcher.group(MAJOR_GROUP)), Integer.parseInt(matcher.group(MINOR_GROUP)));
+    }
+
+    /**
+     * Creates the engine API version of an SC4J version: its major and minor version.
+     *
+     * @param sc4jVersion the SC4J version {@code major.minor.patch} with an optional pre-release label, such as {@code 0.1.0-SNAPSHOT}
+     * @return the created {@link EngineVersion} instance, such as {@code 0.1}
+     * @throws IllegalArgumentException if the text is not {@code major.minor.patch} with an optional pre-release label
+     */
+    static @NotNull EngineVersion fromSc4jVersion(@NotNull String sc4jVersion) {
+        Matcher matcher = SC4J_VERSION_PATTERN.matcher(sc4jVersion);
+
+        if (!matcher.matches()) {
+            throw Exceptions.newIllegalArgumentException("Invalid SC4J version (expected major.minor.patch): {0}", sc4jVersion);
+        }
+
+        return new EngineVersion(Integer.parseInt(matcher.group(MAJOR_GROUP)), Integer.parseInt(matcher.group(MINOR_GROUP)));
+    }
+
+    /**
+     * Reads the SC4J version that the build writes into this module.
+     *
+     * @return the SC4J version, such as {@code 0.1.0-SNAPSHOT}
+     * @throws IllegalStateException if the resource is missing, unreadable or names no version
+     */
+    static @NotNull String readSc4jVersion() {
+        Properties properties = new Properties();
+
+        try (InputStream input = EngineVersion.class.getResourceAsStream(SC4J_VERSION_RESOURCE)) {
+            if (input == null) {
+                throw Exceptions.newIllegalStateException("Missing resource {0} of {1}", SC4J_VERSION_RESOURCE, EngineVersion.class.getName());
+            }
+
+            properties.load(input);
+        } catch (IOException exception) {
+            throw Exceptions.newIllegalStateException(exception, "Unreadable resource {0} of {1}", SC4J_VERSION_RESOURCE,
+                                                      EngineVersion.class.getName());
+        }
+
+        String version = properties.getProperty(SC4J_VERSION_KEY);
+
+        if (version == null) {
+            throw Exceptions.newIllegalStateException("The resource {0} names no {1}", SC4J_VERSION_RESOURCE, SC4J_VERSION_KEY);
+        }
+
+        return version;
     }
 
 

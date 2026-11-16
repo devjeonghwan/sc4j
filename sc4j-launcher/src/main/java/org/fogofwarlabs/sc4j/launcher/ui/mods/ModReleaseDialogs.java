@@ -111,14 +111,13 @@ public final class ModReleaseDialogs {
      */
     public void openInstall() {
         ModalDialog shown = new ModalDialog(this.texts.get("mods.install.title"));
-        ComboBox<String> repository = new ComboBox<>();
+        ComboBox<String> repository = ComponentUtils.comboBox(REPOSITORY_WIDTH);
         Button cancel = ComponentUtils.button(this.texts.get("mods.cancel"), ComponentUtils.ButtonRole.SECONDARY);
         Button next = ComponentUtils.button(this.texts.get("mods.install.next"), ComponentUtils.ButtonRole.PRIMARY);
         AtomicBoolean cancelled = new AtomicBoolean(false);
 
         repository.setEditable(true);
         repository.setPromptText(this.texts.get("mods.install.prompt"));
-        repository.setPrefWidth(REPOSITORY_WIDTH);
         repository.setMaxWidth(Double.MAX_VALUE);
         repository.setCellFactory(view -> new RepositoryCell());
         this.readIndex(repository);

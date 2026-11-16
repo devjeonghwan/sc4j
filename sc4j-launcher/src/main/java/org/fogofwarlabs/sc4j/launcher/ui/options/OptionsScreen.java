@@ -238,7 +238,7 @@ public final class OptionsScreen {
     }
 
     private @NotNull VBox createLauncherPanel(@Nullable UiLanguage language, @NotNull UpdateView updateView) {
-        ComboBox<LanguageOption> choice = new ComboBox<>();
+        ComboBox<LanguageOption> choice = ComponentUtils.comboBox(LANGUAGE_WIDTH);
         UiLanguage system = UiLanguage.select(null, Locale.getDefault());
         LanguageOption systemOption = new LanguageOption(null, this.texts.format("language.system", this.getLanguageName(system)));
         HBox row;
@@ -256,7 +256,6 @@ public final class OptionsScreen {
             }
         }
 
-        choice.setPrefWidth(LANGUAGE_WIDTH);
         choice.valueProperty().addListener((observable, previous, current) -> {
             if (current != null) {
                 this.actions.onLanguageChanged(current.language);

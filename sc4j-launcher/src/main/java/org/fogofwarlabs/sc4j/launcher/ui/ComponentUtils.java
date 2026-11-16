@@ -4,9 +4,12 @@ import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -497,6 +500,28 @@ public final class ComponentUtils {
         graphic.setMinWidth(0);
         cell.setText(null);
         cell.setGraphic(graphic);
+    }
+
+    /**
+     * Creates a combo box whose drop-down list is exactly as wide as the combo box.
+     *
+     * @param width the preferred width
+     * @param <T>   the item type
+     * @return the combo box
+     */
+    public static <T> @NotNull ComboBox<T> comboBox(double width) {
+        ComboBox<T> comboBox = new ComboBox<>();
+
+        comboBox.setPrefWidth(width);
+        comboBox.addEventHandler(ComboBoxBase.ON_SHOWING, event -> {
+            if (comboBox.getSkin() instanceof ComboBoxListViewSkin<?> skin && skin.getPopupContent() instanceof Region list) {
+                list.setMinWidth(comboBox.getWidth());
+                list.setPrefWidth(comboBox.getWidth());
+                list.setMaxWidth(comboBox.getWidth());
+            }
+        });
+
+        return comboBox;
     }
 
 

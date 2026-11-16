@@ -201,6 +201,14 @@ final class ClientHostTest {
 
             window.setPointerMode(PointerMode.HIDDEN);
             window.setPointerMode(PointerMode.NORMAL);
+            // A window without the focus holds no pointer clip: a position outside it stays as reported.
+            window.setPointerMode(PointerMode.CAPTURED);
+            window.setPointerClip(PointerClip.of(WIDTH / 4f, HEIGHT / 4f, WIDTH / 2f, HEIGHT / 2f));
+
+            Assertions.assertFalse(((GlfwHostWindow) window).confinePointer(0, 0));
+
+            window.setPointerClip(null);
+            window.setPointerMode(PointerMode.NORMAL);
             window.setFileDropListener(files -> Assertions.fail("nothing is dropped"));
             window.setFileDropListener(null);
 

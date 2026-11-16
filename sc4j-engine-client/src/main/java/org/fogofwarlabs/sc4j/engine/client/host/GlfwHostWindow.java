@@ -110,6 +110,16 @@ public final class GlfwHostWindow implements HostWindow {
 
     private @Nullable TextInputMethod textInputMethod;
 
+    private @NotNull PointerMode pointerMode;
+    private @Nullable PointerClip pointerClip;
+    /**
+     * The applied clip in window coordinates ({@link PointerClip#toWindowBounds}), or {@code null} while no clip applies.
+     */
+    private int @Nullable [] pointerClipBounds;
+    private @Nullable WindowsCursorClip cursorClip;
+    private boolean cursorClipBound;
+    private boolean cursorClipApplied;
+
     private boolean closed;
 
     /**
@@ -137,6 +147,13 @@ public final class GlfwHostWindow implements HostWindow {
         this.dropCallbackInstalled = false;
 
         this.textInputMethod = null;
+
+        this.pointerMode       = PointerMode.NORMAL;
+        this.pointerClip       = null;
+        this.pointerClipBounds = null;
+        this.cursorClip        = null;
+        this.cursorClipBound   = false;
+        this.cursorClipApplied = false;
 
         this.closed = false;
     }
@@ -181,6 +198,12 @@ public final class GlfwHostWindow implements HostWindow {
             return;
         }
 
+        this.changeDisplayMode(mode, defaultWidth, defaultHeight);
+        // The content area moved or changed size: the pointer clip follows it.
+        this.applyPointerClip();
+    }
+
+    private void changeDisplayMode(@NotNull DisplayMode mode, int defaultWidth, int defaultHeight) {
         boolean wasWindowed = this.displayMode == null || this.displayMode == DisplayMode.WINDOWED;
 
         this.displayMode = mode;
@@ -432,11 +455,105 @@ public final class GlfwHostWindow implements HostWindow {
      */
     @Override
     public void setPointerMode(@NotNull PointerMode mode) {
+        this.pointerMode = mode;
+
         GLFW.glfwSetInputMode(this.handle, GLFW.GLFW_CURSOR, switch (mode) {
             case NORMAL -> GLFW.GLFW_CURSOR_NORMAL;
             case HIDDEN -> GLFW.GLFW_CURSOR_HIDDEN;
             case CAPTURED -> GLFW.GLFW_CURSOR_CAPTURED;
         });
+        // GLFW captures the whole content area (and releases it on focus loss, during a move or resize and for another mode); a clip narrows it.
+        this.applyPointerClip();
+    }
+
+    /**
+     * Narrows the captured area to a rectangle: while the pointer mode is {@link PointerMode#CAPTURED}, the window is focused and not minimized,
+     * the pointer stays inside the rectangle instead of the whole content area. On Windows the system cursor is clipped ({@code ClipCursor});
+     * elsewhere a pointer reported outside is moved to the nearest point inside. The clip follows the content area when the display mode changes;
+     * after a move, a resize or a focus change, GLFW captures the whole content area again and the clip is applied again as soon as the pointer
+     * passes its edge.
+     *
+     * @param clip the rectangle in framebuffer pixels, or {@code null} for the whole content area
+     */
+    @Override
+    public void setPointerClip(@Nullable PointerClip clip) {
+        this.pointerClip = clip;
+
+        if (clip != null && !this.cursorClipBound) {
+            this.cursorClip      = WindowsCursorClip.create();
+            this.cursorClipBound = true;
+        }
+
+        this.applyPointerClip();
+    }
+
+    /**
+     * Keeps a pointer position the window reported inside the applied clip: a position outside applies the clip again (the platform's own
+     * capture replaced it) and moves the pointer to the nearest point inside, which the window reports next.
+     *
+     * @param x the reported column in window coordinates
+     * @param y the reported row in window coordinates
+     * @return {@code true} if the position was outside and the pointer moved, {@code false} if it stays as reported
+     */
+    boolean confinePointer(double x, double y) {
+        int[] bounds = this.pointerClipBounds;
+
+        if (bounds == null || !PointerClip.isApplied(this.pointerClip, this.pointerMode, this.isFocused(), this.isMinimized(), this.closed)) {
+            return false;
+        }
+
+        double insideX = Math.clamp(x, bounds[PointerClip.LEFT_INDEX], bounds[PointerClip.RIGHT_INDEX] - 1);
+        double insideY = Math.clamp(y, bounds[PointerClip.TOP_INDEX], bounds[PointerClip.BOTTOM_INDEX] - 1);
+
+        if (insideX == x && insideY == y) {
+            return false;
+        }
+
+        this.applyPointerClip();
+        GLFW.glfwSetCursorPos(this.handle, insideX, insideY);
+
+        return true;
+    }
+
+    /**
+     * Applies the pointer clip when it holds the pointer ({@link PointerClip#isApplied}): the window bounds for {@link #confinePointer} and, on
+     * Windows, the system cursor clip in screen coordinates. A clip removed from a captured, focused window gives the system cursor the whole
+     * content area back, as GLFW's capture keeps it.
+     */
+    private void applyPointerClip() {
+        PointerClip clip = this.pointerClip;
+        boolean focused = this.isFocused();
+        boolean minimized = this.isMinimized();
+        int[] bounds = clip != null && PointerClip.isApplied(clip, this.pointerMode, focused, minimized, this.closed)
+                       ? clip.toWindowBounds(this.getWidth(), this.getHeight(), this.getFramebufferWidth(), this.getFramebufferHeight())
+                       : null;
+
+        this.pointerClipBounds = bounds;
+
+        WindowsCursorClip system = this.cursorClip;
+
+        if (system == null || bounds == null && !this.cursorClipApplied) {
+            return;
+        }
+
+        int[] left = new int[1];
+        int[] top = new int[1];
+
+        // The content area's position on the virtual screen.
+        GLFW.glfwGetWindowPos(this.handle, left, top);
+
+        if (bounds != null) {
+            this.cursorClipApplied = system.clip(left[0] + bounds[PointerClip.LEFT_INDEX], top[0] + bounds[PointerClip.TOP_INDEX],
+                                                 left[0] + bounds[PointerClip.RIGHT_INDEX], top[0] + bounds[PointerClip.BOTTOM_INDEX]);
+
+            return;
+        }
+
+        if (this.pointerMode == PointerMode.CAPTURED && focused && !minimized && !this.closed) {
+            system.clip(left[0], top[0], left[0] + this.getWidth(), top[0] + this.getHeight());
+        }
+
+        this.cursorClipApplied = false;
     }
 
     /**
@@ -693,6 +810,14 @@ public final class GlfwHostWindow implements HostWindow {
         }
 
         this.closed = true;
+
+        WindowsCursorClip system = this.cursorClip;
+
+        // A window that lost the focus had its clip released already; another program may hold the cursor clip since.
+        if (system != null && this.cursorClipApplied && this.isFocused()) {
+            system.release();
+            this.cursorClipApplied = false;
+        }
 
         if (this.gammaMonitor != MemoryUtil.NULL && this.originalGammaRamp != null) {
             writeGammaRamp(this.gammaMonitor, this.originalGammaRamp);

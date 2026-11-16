@@ -155,6 +155,16 @@ public interface HostWindow extends AutoCloseable {
     void setPointerMode(@NotNull PointerMode mode);
 
     /**
+     * Narrows the captured area to a rectangle of the content area: while the pointer mode is {@link PointerMode#CAPTURED}, the window is
+     * focused and not minimized, the pointer stays inside the rectangle instead of the whole content area. The clip is released while the window
+     * is not focused, minimized or closed and for another pointer mode, and holds again when the pointer is captured again. It is kept in
+     * framebuffer pixels and follows the content area's position and size.
+     *
+     * @param clip the rectangle in framebuffer pixels, or {@code null} for the whole content area
+     */
+    void setPointerClip(@Nullable PointerClip clip);
+
+    /**
      * Moves the pointer to a point of the content area. Nothing moves while the window does not have the input focus.
      *
      * @param x the column in window coordinates

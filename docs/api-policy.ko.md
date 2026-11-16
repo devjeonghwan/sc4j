@@ -63,7 +63,7 @@ SC4J 버전(`gradle.properties`의 `version`)은 유의적 버전 `MAJOR.MINOR.P
 
 ### 3.3 사용 중단
 
-minor 릴리스에서 `@Deprecated`와 대체 요소를 밝히는 Javadoc `@deprecated` 태그를 붙이고, `forRemoval = true`는 제거할 릴리스를 표시합니다. 사용 중단된 요소는 적어도 minor 릴리스 하나 동안 남고, major 릴리스에서만 제거됩니다.
+minor 릴리즈에서 `@Deprecated`와 대체 요소를 밝히는 Javadoc `@deprecated` 태그를 붙이고, `forRemoval = true`는 제거할 릴리즈를 표시합니다. 사용 중단된 요소는 적어도 minor 릴리즈 하나 동안 남고, major 릴리즈에서만 제거됩니다.
 
 ### 3.4 1.0 선언 전
 

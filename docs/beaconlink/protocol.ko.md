@@ -273,7 +273,7 @@ Beacon.Link의 와이어 형식과 파일: 피어와 클라이언트의 메시�
 
 | 파일 | 내용 |
 |---|---|
-| `<install>/launcher/seeds.json` | 함께 배포되는 시드 목록, 릴리스마다 바뀜. `nodes.json`과 같은 형식 |
+| `<install>/launcher/seeds.json` | 함께 배포되는 시드 목록, 릴리즈마다 바뀜. `nodes.json`과 같은 형식 |
 | `<install>/userdata/beaconlink/nodes.json` | 사용자의 노드 목록(`NodeListFile`). 사용자가 저장할 때 쓰고 `--seeds`로 넘김. 없는 동안은 `seeds.json`이 대신함. `{"format": 1, "nodes": [...]}`, 항목은 `"host:port"`(어느 키든) 또는 `{"address": "host:port", "key": "<64 hex digits>"}`(고정 키). 최대 64 KiB, 중첩 최대 8, IPv6 호스트는 대괄호 |
 | `<install>/userdata/beaconlink/node.json` | 런처 노드 설정 `{"format": 1, "role": "automatic", "port": 7455}`. `automatic`(포트에서 수신, 자체 시험을 통과하면 전체 피어) 또는 `off`(빈 포트에서 리프 전용). 없으면 7455에서 자동 |
 | `<install>/userdata/beaconlink/peers.json`, 노드의 `<state>/peers.json` | 학습한 피어(`PeerStore`, 공유 파일), 아래 |

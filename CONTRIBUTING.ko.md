@@ -2,7 +2,7 @@
 
 [English](CONTRIBUTING.md) | **한국어**
 
-개발 환경, 테스트, 코드 스타일, 커밋, 릴리스. 명령은 [README](README.ko.md#빌드와-실행)처럼 실행합니다.
+개발 환경, 테스트, 코드 스타일, 커밋, 릴리즈. 명령은 [README](README.ko.md#빌드와-실행)처럼 실행합니다.
 
 ## 개발 환경
 
@@ -56,9 +56,9 @@
 - 새 에셋은 모드에 담아 재배포할 수 있는 라이선스여야 합니다. 라이선스 파일과 고지문을 옆에 두고 [NOTICE](NOTICE)에 항목을 추가합니다.
 - CI는 `main`이나 `develop`으로 들어오는 모든 풀 리퀘스트에서 `test`를 실행하며, 병합 전에 `test` 검사가 통과해야 합니다.
 
-## 릴리스
+## 릴리즈
 
-`develop`은 `X.Y.Z-SNAPSHOT`을 가지며 Central Portal에 스냅샷을 게시합니다. 릴리스는 `develop`에서 `gradle.properties`에 `version=X.Y.Z`를 정한 뒤, `develop`에서 `main`으로 ``Release version `X.Y.Z` `` 제목의 풀 리퀘스트를 열어 merge commit으로 병합합니다. `main`에 푸시할 때마다 Maven Central에 게시하고, `SC4J-X.Y.Z.zip`과 `SC4J-X.Y.Z.zip.sha256`이 붙은 태그와 GitHub 릴리스 `vX.Y.Z`를 만듭니다.
+`develop`은 `X.Y.Z-SNAPSHOT`을 가지며 Central Portal에 스냅샷을 게시합니다. 릴리즈는 `develop`에서 `gradle.properties`에 `version=X.Y.Z`를 정한 뒤, `develop`에서 `main`으로 ``Release version `X.Y.Z` `` 제목의 풀 리퀘스트를 열어 merge commit으로 병합합니다. `main`에 푸시할 때마다 Maven Central에 게시하고, `SC4J-X.Y.Z.zip`과 `SC4J-X.Y.Z.zip.sha256`이 붙은 태그와 GitHub 릴리즈 `vX.Y.Z`를 만듭니다.
 
 ## 기여물의 라이선스
 

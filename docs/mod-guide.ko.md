@@ -168,7 +168,7 @@ READY   my-mod               my-mod.jar
 
 `<install>\launcher\bin\sc4j-launcher.bat`은 런처를 엽니다. "My Mod"를 시작하면 `FirstScene`이 보입니다.
 
-플레이어는 릴리스된 모드를 런처에서 설치합니다. 모드 저장소의 최신 GitHub 릴리스에 `<id>.jar`와 `<id>.jar.sha256`이 있어야 합니다. [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods) 목록은 모드를 이름으로 보여 줍니다.
+플레이어는 릴리즈된 모드를 런처에서 설치합니다. 모드 저장소의 최신 GitHub 릴리즈에 `<id>.jar`와 `<id>.jar.sha256`이 있어야 합니다. [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods) 목록은 모드를 이름으로 보여 줍니다.
 
 ### 2.6 게임으로 만들기
 

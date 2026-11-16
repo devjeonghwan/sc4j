@@ -17,6 +17,8 @@ You need JDK 25 and this repository (its Gradle wrapper and development install)
 
 ## 2. Your first mod
 
+The [mod template](https://github.com/fogofwarlabs/sc4j-mod-template) holds the files of this chapter, ready to build: use it on GitHub with "Use this template".
+
 ### 2.1 An SC4J install
 
 Mods go into `mods/` of an install. `.\gradlew.bat devInstall` makes the development install `build/dev-install/`; any install holds `launcher/`, `runtime/`, `mods/` and, once used, `userdata/`.

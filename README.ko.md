@@ -73,6 +73,7 @@ JDK 25가 필요하며, Gradle은 Gradle 래퍼가 내려받습니다. 명령은
 | 가이드 | 주제 |
 |---|---|
 | [모드 제작 가이드](docs/mod-guide.ko.md) | 모드 만들기 |
+| [모드 템플릿](https://github.com/fogofwarlabs/sc4j-mod-template) | 빌드, 실행, 설치가 되는 시작용 모드 |
 | [엔진 API 정책](docs/api-policy.ko.md) | API 범위, 버전, 내부 요소 |
 | [Beacon.Link 프로토콜](docs/beaconlink/protocol.ko.md) | 와이어 프로토콜과 파일 |
 | [Beacon.Link 운영 가이드](docs/beaconlink/operator.ko.md) | 공개 피어 운영 |

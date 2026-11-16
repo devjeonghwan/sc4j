@@ -73,6 +73,7 @@ The launcher updates itself from the GitHub releases of SC4J and installs a mod 
 | Guide | Topic |
 |---|---|
 | [Mod author guide](docs/mod-guide.md) | making a mod |
+| [Mod template](https://github.com/fogofwarlabs/sc4j-mod-template) | a mod that builds, runs and installs, to start from |
 | [Engine API policy](docs/api-policy.md) | API scope, versions, internal elements |
 | [Beacon.Link protocol](docs/beaconlink/protocol.md) | wire protocol and files |
 | [Beacon.Link operator guide](docs/beaconlink/operator.md) | running a public peer |

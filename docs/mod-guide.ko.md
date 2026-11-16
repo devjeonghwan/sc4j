@@ -17,6 +17,8 @@ JDK 25와 이 저장소(Gradle 래퍼와 개발용 설치본)가 필요합니다
 
 ## 2. 첫 모드
 
+[모드 템플릿](https://github.com/fogofwarlabs/sc4j-mod-template)에 이 장의 파일이 바로 빌드할 수 있게 들어 있습니다. GitHub에서 "Use this template"으로 쓰면 됩니다.
+
 ### 2.1 SC4J 설치본
 
 모드는 설치본의 `mods/`에 들어갑니다. `.\gradlew.bat devInstall`은 개발용 설치본 `build/dev-install/`을 만듭니다. 설치본에는 `launcher/`, `runtime/`, `mods/`가 있고, 한 번 쓰면 `userdata/`가 생깁니다.

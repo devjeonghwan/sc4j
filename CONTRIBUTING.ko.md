@@ -97,7 +97,7 @@ throw Exceptions.newIllegalStateException("Invalid frame index: {0}", index);
 
 ## 릴리스
 
-`develop`은 다음 버전을 `X.Y.Z-SNAPSHOT`으로 가지며 Central Portal에 스냅샷을 게시합니다. `main`은 릴리스 버전을 가지며 푸시마다 Maven Central에 게시하고 `vX.Y.Z` 태그를 답니다.
+`develop`은 다음 버전을 `X.Y.Z-SNAPSHOT`으로 가지며 Central Portal에 스냅샷을 게시합니다. `main`은 릴리스 버전을 가지며 푸시마다 Maven Central에 게시하고 `vX.Y.Z` 태그와 GitHub 릴리스 `vX.Y.Z`를 만듭니다. 릴리스에는 사용자 패키지 `SC4J-X.Y.Z.zip`과 그 체크섬 `SC4J-X.Y.Z.zip.sha256`이 붙습니다.
 
 릴리스는 `gradle.properties`의 `version=X.Y.Z`를 정하는 `develop`에서 `main`으로의 풀 리퀘스트입니다.
 

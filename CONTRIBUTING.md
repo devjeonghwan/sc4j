@@ -97,7 +97,7 @@ Test classes are named `<Subject>Test`; test methods use `snake_case` names that
 
 ## Releases
 
-`develop` holds the next version as `X.Y.Z-SNAPSHOT` and publishes snapshots to the Central Portal. `main` holds release versions and publishes each push to Maven Central with the tag `vX.Y.Z`.
+`develop` holds the next version as `X.Y.Z-SNAPSHOT` and publishes snapshots to the Central Portal. `main` holds release versions and publishes each push to Maven Central with the tag `vX.Y.Z` and the GitHub release `vX.Y.Z`, which carries the user package `SC4J-X.Y.Z.zip` and its checksum `SC4J-X.Y.Z.zip.sha256`.
 
 A release is a pull request from `develop` into `main` that sets `version=X.Y.Z` in `gradle.properties`.
 

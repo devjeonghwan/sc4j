@@ -81,6 +81,17 @@ jobs:
       - name: Test
         run: ./gradlew test -Psc4j.render.smoke=false
 
+      - name: Build the user package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        # The checksum file has the sha256sum format: the hash, two spaces and the file name.
+        run: |
+          ./gradlew distribution
+          cd build/distributions
+          package="SC4J-$VERSION.zip"
+          hash=$(sha256sum "$package" | cut -d ' ' -f 1)
+          printf '%s  %s\n' "$hash" "$package" > "$package.sha256"
+
       - name: Publish and release
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
@@ -99,7 +110,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
-        run: gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          package="build/distributions/SC4J-$VERSION.zip"
+          gh release create "$TAG" "$package" "$package.sha256" --target "$GITHUB_SHA" --title "$TAG" --generate-notes
 
       - name: Upload the reports
         if: failure()

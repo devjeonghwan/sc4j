@@ -13,10 +13,6 @@ import org.jetbrains.annotations.NotNull;
  * plugins {
  *     id 'org.fogofwarlabs.sc4j.mod' version '<engine version>'
  * }
- *
- * sc4jMod {
- *     id = 'my-mod'
- * }
  *}
  * The plugin compiles the source sets with the engine's Java version (a Java 25 toolchain) against the engine API of its own version
  * ({@code org.fogofwarlabs.sc4j:sc4j-engine}) and sets up these tasks of the group {@code sc4j}:
@@ -30,8 +26,9 @@ import org.jetbrains.annotations.NotNull;
  *     <li>{@code installMod}: copies the mod jar into {@code mods/} of the install.</li>
  * </ul>
  * The {@code processResources} task of each source set writes {@code version} (the project version) and {@code engine} (the engine API
- * version {@code MAJOR.MINOR} of the plugin's version) into {@code sc4j-mod.json}. A source manifest with either field, or without a
- * {@code format} that the engine of the plugin's version reads, fails the build.
+ * version {@code MAJOR.MINOR} of the plugin's version) into {@code sc4j-mod.json}. A source manifest with either field, without an
+ * {@code id}, with another {@code id} than {@link #getId()} when that is set, or without a {@code format} that the engine of the plugin's
+ * version reads, fails the build.
  * The variant of the usage {@code sc4j-mod-jar} ({@code modJarElements}) gives the mod jar to other projects of the build.
  */
 public abstract class ModExtension {
@@ -42,7 +39,9 @@ public abstract class ModExtension {
     }
 
     /**
-     * Returns the mod id: the {@code id} of the manifest and the name of the mod jar ({@code <id>.jar}). It must be set.
+     * Returns the mod id: the {@code id} of the manifest and the name of the mod jar ({@code <id>.jar}). When it is not set, the plugin reads
+     * it from the source manifest {@code sc4j-mod.json} in the resource folders of the mod's source sets; a manifest that a task writes
+     * needs it set.
      *
      * @return the mod id
      */

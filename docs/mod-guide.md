@@ -28,8 +28,8 @@ A mod is its own Gradle project, here `my-mod` next to the repository folder:
 | File | Content |
 |---|---|
 | `settings.gradle` | repositories and project name (section 7.1) |
-| `build.gradle` | mod plugin, mod version and mod id (section 7.1) |
-| `gradle.properties` | `sc4j.install=<install>` (Windows path with forward slashes) |
+| `build.gradle` | mod plugin (section 7.1) |
+| `gradle.properties` | `version=0.1.0` (mod version) and `sc4j.install=<install>` (Windows path with forward slashes) |
 | `src/main/resources/sc4j-mod.json` | manifest (chapter 3) |
 | `src/main/java/com/example/mymod/` | `MyMod` (entry) and `FirstScene` (screen) |
 
@@ -293,13 +293,9 @@ rootProject.name = 'my-mod'
 plugins {
     id 'org.fogofwarlabs.sc4j.mod' version '<sc4j version>'
 }
-
-version = '0.1.0'
-
-sc4jMod {
-    id = 'my-mod'
-}
 ```
+
+The mod id is the `id` of `src/main/resources/sc4j-mod.json`; the mod version is the project version (`version` in `gradle.properties` or `build.gradle`). A missing manifest or `id` fails the build.
 
 | Task or setting | Effect |
 |---|---|
@@ -308,7 +304,7 @@ sc4jMod {
 | `jar` | `build/libs/<id>.jar`, reproducible (no timestamps, fixed order, duplicates fail), `LICENSE` and `NOTICE` in `META-INF/`; fails when `sc4j-mod.json` names another id, other versions or a missing entry class |
 | `run` | runs the jar in the plugin's engine runtime with the install's user data (or `build/sc4j-run`); `--args=--headless`, `--debug-jvm` |
 | `installMod` | copies the jar into `<install>/mods/` (Gradle property `sc4j.install`) |
-| `sc4jMod` | `id`, `sourceSets` (more source sets in the jar), `install`, `licenses` (files of `META-INF/`) |
+| `sc4jMod` | `id` (optional, must equal the manifest `id`; needed when a build task writes the manifest), `sourceSets` (more source sets in the jar), `install`, `licenses` (files of `META-INF/`) |
 
 The tasks form the group `sc4j`; `tasks.named('jar') { from(...) }` adds files. A run-time library goes into the jar unless the runtime's `lib/` has it (LWJGL, FFmpeg, ...); check its licence (chapter 17).
 

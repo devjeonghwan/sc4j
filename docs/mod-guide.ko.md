@@ -28,8 +28,8 @@ JDK 25와 이 저장소(Gradle 래퍼와 개발용 설치본)가 필요합니다
 | 파일 | 내용 |
 |---|---|
 | `settings.gradle` | 저장소와 프로젝트 이름(7.1절) |
-| `build.gradle` | 모드 플러그인, 모드 버전, 모드 id(7.1절) |
-| `gradle.properties` | `sc4j.install=<install>`(Windows 경로는 슬래시로) |
+| `build.gradle` | 모드 플러그인(7.1절) |
+| `gradle.properties` | `version=0.1.0`(모드 버전)과 `sc4j.install=<install>`(Windows 경로는 슬래시로) |
 | `src/main/resources/sc4j-mod.json` | 매니페스트(3장) |
 | `src/main/java/com/example/mymod/` | `MyMod`(진입 클래스)와 `FirstScene`(화면) |
 
@@ -293,13 +293,9 @@ rootProject.name = 'my-mod'
 plugins {
     id 'org.fogofwarlabs.sc4j.mod' version '<sc4j version>'
 }
-
-version = '0.1.0'
-
-sc4jMod {
-    id = 'my-mod'
-}
 ```
+
+모드 id는 `src/main/resources/sc4j-mod.json`의 `id`이고, 모드 버전은 프로젝트 버전(`gradle.properties`나 `build.gradle`의 `version`)입니다. 매니페스트나 `id`가 없으면 빌드가 실패합니다.
 
 | 태스크나 설정 | 효과 |
 |---|---|
@@ -308,7 +304,7 @@ sc4jMod {
 | `jar` | `build/libs/<id>.jar`, 재현 가능(시간 기록 없음, 고정 순서, 중복이면 실패), `META-INF/`에 `LICENSE`와 `NOTICE`. `sc4j-mod.json`이 다른 id, 다른 버전, 없는 진입 클래스를 가리키면 실패 |
 | `run` | 플러그인 버전의 엔진 런타임에서 설치본의 사용자 데이터(없으면 `build/sc4j-run`)로 실행. `--args=--headless`, `--debug-jvm` |
 | `installMod` | jar를 `<install>/mods/`에 복사(Gradle 속성 `sc4j.install`) |
-| `sc4jMod` | `id`, `sourceSets`(jar에 더 넣을 소스 세트), `install`, `licenses`(`META-INF/`의 파일) |
+| `sc4jMod` | `id`(선택, 매니페스트 `id`와 같아야 함. 빌드 태스크가 매니페스트를 쓰면 필요), `sourceSets`(jar에 더 넣을 소스 세트), `install`, `licenses`(`META-INF/`의 파일) |
 
 태스크는 그룹 `sc4j`에 있고, `tasks.named('jar') { from(...) }`로 파일을 더 넣습니다. 실행에 필요한 라이브러리는 런타임의 `lib/`에 없으면(LWJGL, FFmpeg 등은 있음) jar에 넣으며, 먼저 라이선스를 확인합니다(17장).
 

@@ -136,7 +136,7 @@ final class ReleaseClientTest {
             ReleaseException exception = Assertions.assertThrows(ReleaseException.class, () -> {
                 client.download(requireAsset(release, JAR), requireAsset(release, JAR + ReleaseServerScenario.CHECKSUM_EXTENSION), target,
                                 JAR_CONTENTS.length, share -> {
-                                });
+                        });
             });
 
             Assertions.assertEquals(ReleaseProblem.CHECKSUM_MISMATCH, exception.getProblem());
@@ -154,7 +154,7 @@ final class ReleaseClientTest {
             ReleaseException exception = Assertions.assertThrows(ReleaseException.class, () -> {
                 client.download(requireAsset(release, JAR), requireAsset(release, JAR + ReleaseServerScenario.CHECKSUM_EXTENSION),
                                 directory.resolve(JAR), SMALL_LIMIT, share -> {
-                                });
+                        });
             });
 
             Assertions.assertEquals(ReleaseProblem.TOO_LARGE, exception.getProblem());

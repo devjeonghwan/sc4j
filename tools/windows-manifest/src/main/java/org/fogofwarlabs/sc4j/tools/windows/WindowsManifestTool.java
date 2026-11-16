@@ -5,14 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.foreign.AddressLayout;
-import java.lang.foreign.Arena;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SymbolLookup;
-import java.lang.foreign.ValueLayout;
+import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -241,8 +234,8 @@ public final class WindowsManifestTool {
             }
 
             int updated = (int) ResourceFunctions.UPDATE_RESOURCE.invokeExact(update, MemorySegment.ofAddress(MANIFEST_TYPE),
-                                                                                MemorySegment.ofAddress(MANIFEST_ID), manifest.getLanguage(),
-                                                                                arena.allocateFrom(ValueLayout.JAVA_BYTE, contents), contents.length);
+                                                                              MemorySegment.ofAddress(MANIFEST_ID), manifest.getLanguage(),
+                                                                              arena.allocateFrom(ValueLayout.JAVA_BYTE, contents), contents.length);
             int ended = (int) ResourceFunctions.END_UPDATE.invokeExact(update, updated == FAILED ? DISCARD_CHANGES : WRITE_CHANGES);
 
             if (updated == FAILED || ended == FAILED) {

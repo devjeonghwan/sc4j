@@ -197,6 +197,7 @@ interface ExecOperationsHolder {
     @javax.inject.Inject
     org.gradle.process.ExecOperations getExecOperations()
 }
+
 def execOperations = objects.newInstance(ExecOperationsHolder).execOperations
 
 // On Windows the programs of the user package, SC4J.exe and the java.exe and javaw.exe of its Java runtime, get the UTF-8 active code page in

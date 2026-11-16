@@ -9,11 +9,7 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseClient;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseNotesUtils;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseProblem;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseRepository;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseServerScenario;
+import org.fogofwarlabs.sc4j.launcher.release.*;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherRelease;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherUpdater;
 import org.fogofwarlabs.sc4j.launcher.update.PackageSwap;
@@ -56,13 +52,13 @@ final class LauncherUpdateDialogTest {
     private static final @NotNull String RUNNING_VERSION = "1.1.0";
     private static final @NotNull Instant PUBLISHED_AT = Instant.parse("2026-11-16T12:00:00Z");
     private static final @NotNull String NOTES = """
-            ## What's Changed
-            * The launcher opens the **update** dialog by itself in [#42](https://github.com/owner/sc4j/pull/42)
-            * `Skip this version` is saved in the launcher settings
-            * Release notes show as plain text
-
-            **Full Changelog**: https://github.com/owner/sc4j/compare/v1.1.0...v1.2.0
-            """;
+                                                 ## What's Changed
+                                                 * The launcher opens the **update** dialog by itself in [#42](https://github.com/owner/sc4j/pull/42)
+                                                 * `Skip this version` is saved in the launcher settings
+                                                 * Release notes show as plain text
+                                                 
+                                                 **Full Changelog**: https://github.com/owner/sc4j/compare/v1.1.0...v1.2.0
+                                                 """;
     private static final int FILLER_SIZE = 3 * 1024 * 1024;
     private static final long FILLER_SEED = 42;
     private static final @NotNull String FILLER_FILE = "/filler.bin";

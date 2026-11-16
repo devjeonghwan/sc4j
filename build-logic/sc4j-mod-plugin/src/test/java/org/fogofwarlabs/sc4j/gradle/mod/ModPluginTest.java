@@ -28,7 +28,7 @@ final class ModPluginTest {
                                                         plugins {
                                                             id 'org.fogofwarlabs.sc4j.mod'
                                                         }
-
+                                                        
                                                         version = '%s'
                                                         %s
                                                         tasks.register('printJarName') {
@@ -39,7 +39,7 @@ final class ModPluginTest {
                                                         }
                                                         """;
     private static final @NotNull String MOD_ID_BLOCK = """
-
+                                                        
                                                         sc4jMod {
                                                             id = '%s'
                                                         }
@@ -57,7 +57,7 @@ final class ModPluginTest {
 
     @Test
     void process_resources_should_write_the_project_version_and_the_engine_api_version_after_the_opening_brace(@TempDir @NotNull Path project)
-            throws IOException {
+    throws IOException {
         String engineApi = readEngineProperties().getProperty("engineApi");
 
         writeProject(project, MOD_VERSION, "{\n  \"format\": 1,\n  \"id\": \"test-mod\"\n}\n");
@@ -173,7 +173,7 @@ final class ModPluginTest {
     }
 
     private static void writeProject(@NotNull Path project, @NotNull String version, @Nullable String modId, @Nullable String manifest)
-            throws IOException {
+    throws IOException {
         Path manifestFile = project.resolve(SOURCE_MANIFEST);
         String modIdBlock = modId == null ? "" : MOD_ID_BLOCK.formatted(modId);
 

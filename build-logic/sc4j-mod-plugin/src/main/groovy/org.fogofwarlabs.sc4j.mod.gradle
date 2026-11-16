@@ -1,7 +1,6 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import org.fogofwarlabs.sc4j.gradle.mod.ModExtension
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
 import java.util.zip.ZipFile
 
@@ -144,7 +143,7 @@ def checkModJar = { File jar, String id, String version, List<String> licenseNam
             }
             if (manifest.version != version || manifest.engine != engineApiVersion) {
                 problems << 'has the version ' + manifest.version + ' and the engine ' + manifest.engine + ' instead of ' + version + ' and ' +
-                            engineApiVersion + ' in sc4j-mod.json'
+                engineApiVersion + ' in sc4j-mod.json'
             }
             if (!(manifest.entry instanceof String) || archive.getEntry(manifest.entry.replace('.', '/') + '.class') == null) {
                 problems << 'lacks the entry class ' + manifest.entry + ' of sc4j-mod.json'

@@ -27,13 +27,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -173,7 +172,7 @@ final class DistributionTest {
      * temporary folder.
      */
     private static void listMods(@NotNull Path directory, @NotNull InstallLayout install, @NotNull Path start) throws IOException,
-                                                                                                                       InterruptedException {
+                                                                                                                      InterruptedException {
         Path output = directory.resolve("launcher-output.txt");
         ProcessBuilder builder = new ProcessBuilder(start.toString(), LIST_OPTION);
 
@@ -268,7 +267,7 @@ final class DistributionTest {
     @Test
     @Timeout(TEST_SECONDS)
     void the_windows_program_of_the_package_lists_the_mods_with_the_package_java(@TempDir @NotNull Path directory) throws IOException,
-                                                                                                                           InterruptedException {
+                                                                                                                          InterruptedException {
         Assumptions.assumeTrue(isWindows(), "only the Windows package has " + WINDOWS_PROGRAM);
 
         InstallLayout install = unpack(directory);

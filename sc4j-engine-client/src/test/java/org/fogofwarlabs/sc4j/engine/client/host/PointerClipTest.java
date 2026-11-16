@@ -18,7 +18,7 @@ final class PointerClipTest {
                                      PointerClip.of(240, 0, 1680, 1080).toWindowBounds(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT));
         Assertions.assertArrayEquals(new int[]{0, 0, 1920, 1080},
                                      PointerClip.of(0.375f, 0, 1919.625f, 1080).toWindowBounds(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH,
-                                                                                                WINDOW_HEIGHT));
+                                                                                               WINDOW_HEIGHT));
     }
 
     @Test

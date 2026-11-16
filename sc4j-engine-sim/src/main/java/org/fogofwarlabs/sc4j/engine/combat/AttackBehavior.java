@@ -15,7 +15,8 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * Each update ends the order when there is no target or the unit cannot attack it ({@link CombatSystem#canAttack}); the order system's next
  * order or idle order follows. A target in range is fired at whenever the weapon is ready ({@link StandardCombatSystem#fireWeapon}); a target out
- * of range is pursued ({@link CombatSystem#pursueTarget}), and the order ends when the pursuit ends.
+ * of range is pursued ({@link CombatSystem#pursueTarget}), and the order ends when the pursuit ends. When the order ends, the unit can be pushed
+ * again ({@link Unit#isImmovable}).
  * <p>
  * Determinism contract: the behavior draws no random value and allocates nothing.
  */
@@ -43,13 +44,8 @@ public final class AttackBehavior implements OrderBehavior<OrderContext, Unit> {
         Unit target = unit.getOrderTargetUnit();
         int instructionLimit = context.getInstructionLimit();
 
-        if (target == null || !this.combat.canAttack(unit, target)) {
-            game.getOrders().finishOrder(unit, instructionLimit);
-
-            return;
-        }
-
-        if (!this.combat.pursueTarget(unit, target, instructionLimit)) {
+        if (target == null || !this.combat.canAttack(unit, target) || !this.combat.pursueTarget(unit, target, instructionLimit)) {
+            unit.setImmovable(false);
             game.getOrders().finishOrder(unit, instructionLimit);
 
             return;

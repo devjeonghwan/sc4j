@@ -43,14 +43,15 @@ import java.io.IOException;
  * whose nearest free cell lies in another component of the free cells is not reachable: the unit has no path.
  * <p>
  * A group sent to one destination searches once: a unit whose search would run in the frame of an earlier search to the same destination, from
- * the same component and for the same size, takes that search's path instead when it can walk straight to the path's first waypoint, so a
- * group order costs one search instead of one per unit.
+ * the same component and for the same size, takes that search's path instead: straight to the path's first waypoint when it can walk there,
+ * otherwise after a search to that waypoint, so a group order costs one long search instead of one per unit.
  * <p>
  * A unit keeps its path while the destination stays and it can still walk straight to its current waypoint; it moves on to the next waypoint
  * within half a cell of the current one, or within {@value #LOOKAHEAD_CELLS} cells of it when it can walk straight to the next one. A
  * destination that moved by at most {@value #LOOKAHEAD_CELLS} cells (a followed unit) to a free cell becomes the last waypoint when the last leg
- * still reaches it straight. A unit at the last stored waypoint of a longer path, or whose way is cut (a new structure, or pushed behind a
- * corner), searches again.
+ * still reaches it straight. A unit at the last stored waypoint of a longer path searches again. A unit whose way to its current waypoint is
+ * cut (a new structure, or pushed behind a corner) searches its way back to that waypoint and keeps the rest of its path; it searches its whole
+ * path again only when the waypoint lies on a blocked cell or in another component.
  * <p>
  * Determinism contract: a path update depends only on the terrain, the structures, the unit's position and size, the destination and the
  * searches run before it in the same frame, which run in unit slot order; nothing draws a random value or allocates after the system is
@@ -121,6 +122,8 @@ public final class StandardPathfindingSystem implements PathfindingSystem, State
     private int sharedCount;
     private final int @NotNull [] sharedX;
     private final int @NotNull [] sharedY;
+    private final int @NotNull [] joinedX;
+    private final int @NotNull [] joinedY;
 
     private int structureFrame;
     private boolean @NotNull [] structurePlaced;
@@ -166,6 +169,8 @@ public final class StandardPathfindingSystem implements PathfindingSystem, State
         this.sharedCount       = 0;
         this.sharedX           = new int[WAYPOINT_CAPACITY];
         this.sharedY           = new int[WAYPOINT_CAPACITY];
+        this.joinedX           = new int[WAYPOINT_CAPACITY];
+        this.joinedY           = new int[WAYPOINT_CAPACITY];
 
         this.structureFrame  = NO_FRAME;
         this.structurePlaced = new boolean[0];
@@ -233,6 +238,17 @@ public final class StandardPathfindingSystem implements PathfindingSystem, State
     }
 
     /**
+     * Returns how many cells the path searches visited since the system was attached, for measuring the cost of the paths; it is no simulation
+     * state.
+     *
+     * @return the number of visited cells
+     * @throws IllegalStateException if the system is not attached
+     */
+    public long getSearchedCellCount() {
+        return requireAttached(this.search).getExpandedCount();
+    }
+
+    /**
      * Brings the path of a unit to a destination up to date: a unit that has not reached its current waypoint keeps it,
      * a unit at its waypoint advances to the next one, and a unit without a usable path gets a new one. The current
      * waypoint afterwards is read with {@link #getWaypoint}.
@@ -270,10 +286,18 @@ public final class StandardPathfindingSystem implements PathfindingSystem, State
 
             boolean openLeg = index == last && (flags & OPEN_END) != 0;
 
-            if (!(arrived && (flags & TRUNCATED) != 0) &&
-                (openLeg || attachedClearance.isSegmentClear(unit.getPositionX(), unit.getPositionY(),
-                                                             this.getWaypointX(slot, index), this.getWaypointY(slot, index), 1, false))) {
-                return true;
+            if (!(arrived && (flags & TRUNCATED) != 0)) {
+                if (openLeg || attachedClearance.isSegmentClear(unit.getPositionX(), unit.getPositionY(),
+                                                                this.getWaypointX(slot, index), this.getWaypointY(slot, index), 1, false)) {
+                    return true;
+                }
+
+                int base = slot * WAYPOINT_CAPACITY;
+
+                if (this.join(attachedClearance, unit, slot, targetX, targetY, flags, this.waypointX, this.waypointY, base + index,
+                              base + this.waypointCounts[slot])) {
+                    return true;
+                }
             }
         }
 
@@ -432,11 +456,17 @@ public final class StandardPathfindingSystem implements PathfindingSystem, State
         int frame = requireAttached(this.clock).getFrame();
 
         if (this.sharedFrame == frame && this.sharedGoal == goal && this.sharedRequirement == requirement && this.sharedTargetX == targetX &&
-            this.sharedTargetY == targetY && attachedClearance.isSegmentClear(positionX, positionY, this.sharedX[0], this.sharedY[0], 1, false)) {
-            this.storePath(slot, targetX, targetY, this.sharedFlags, this.sharedCount, this.sharedX, this.sharedY);
-            this.advance(attachedClearance, slot, positionX, positionY);
+            this.sharedTargetY == targetY) {
+            if (attachedClearance.isSegmentClear(positionX, positionY, this.sharedX[0], this.sharedY[0], 1, false)) {
+                this.storePath(slot, targetX, targetY, this.sharedFlags, this.sharedCount, this.sharedX, this.sharedY);
+                this.advance(attachedClearance, slot, positionX, positionY);
 
-            return true;
+                return true;
+            }
+
+            if (this.join(attachedClearance, unit, slot, targetX, targetY, this.sharedFlags, this.sharedX, this.sharedY, 0, this.sharedCount)) {
+                return true;
+            }
         }
 
         this.searchCount++;
@@ -477,6 +507,49 @@ public final class StandardPathfindingSystem implements PathfindingSystem, State
         this.sharedCount       = count;
 
         this.storePath(slot, targetX, targetY, flags, count, this.sharedX, this.sharedY);
+        this.advance(attachedClearance, slot, positionX, positionY);
+
+        return true;
+    }
+
+    /**
+     * Gives a unit a path that first searches the way to a waypoint of a stored path and then follows that path from the waypoint on, as the
+     * class description says; a path longer than the waypoint capacity is cut and searched again at its last stored waypoint.
+     *
+     * @return {@code true} if the unit has the joined path, {@code false} if the waypoint is blocked, in another component or not found
+     */
+    private boolean join(@NotNull WalkClearance attachedClearance, @NotNull Unit unit, int slot, int targetX, int targetY, int flags,
+                         int @NotNull [] pathX, int @NotNull [] pathY, int from, int end) {
+        GridPathSearch attachedSearch = requireAttached(this.search);
+        int positionX = unit.getPositionX();
+        int positionY = unit.getPositionY();
+        int joinX = pathX[from];
+        int joinY = pathY[from];
+        int start = attachedClearance.findNearestFree(positionX, positionY, NEAREST_FREE_LIMIT);
+        int joinCell = attachedClearance.findCell(joinX, joinY);
+
+        if (start == WalkClearance.OUTSIDE || attachedClearance.getClearance(joinCell) == 0 ||
+            attachedClearance.getComponent(start) != attachedClearance.getComponent(joinCell)) {
+            return false;
+        }
+
+        this.searchCount++;
+
+        if (!attachedSearch.search(positionX, positionY, start, joinCell, joinX, joinY, this.findRequirement(attachedClearance, unit))) {
+            return false;
+        }
+
+        // The search's last waypoint is the joined waypoint itself, so the stored path follows on after it.
+        int leading = attachedSearch.getWaypointCount();
+        int total = leading + end - from - 1;
+        int count = Math.min(total, WAYPOINT_CAPACITY);
+
+        for (int index = 0; index < count; index++) {
+            this.joinedX[index] = index < leading ? attachedSearch.getWaypointX(index) : pathX[from + 1 + index - leading];
+            this.joinedY[index] = index < leading ? attachedSearch.getWaypointY(index) : pathY[from + 1 + index - leading];
+        }
+
+        this.storePath(slot, targetX, targetY, total > WAYPOINT_CAPACITY ? TRUNCATED : flags, count, this.joinedX, this.joinedY);
         this.advance(attachedClearance, slot, positionX, positionY);
 
         return true;

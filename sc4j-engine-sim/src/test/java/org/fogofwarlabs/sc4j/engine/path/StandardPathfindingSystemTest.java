@@ -19,7 +19,8 @@ import java.util.List;
 /**
  * Tests the engine default path finding over the walk cells of a terrain: a path around a wall in a few straight legs that keep the unit's size
  * off the wall, structures that block their cells while they stand, a destination on a structure, on unwalkable terrain and in an enclosed area,
- * and the same paths in two games.
+ * a search around the end of a wall that keeps near its way, a unit whose way a new structure cuts searching only its way back to the path, and
+ * the same paths in two games.
  */
 final class StandardPathfindingSystemTest {
     private static final int TILE_SIZE = 32;
@@ -32,6 +33,7 @@ final class StandardPathfindingSystemTest {
     private static final int WALL_END_ROW = 12;
     private static final int LEG_LIMIT = StandardPathfindingSystem.WAYPOINT_CAPACITY + 1;
     private static final int SAMPLE_DISTANCE = 2;
+    private static final int MAXIMUM_DETOUR_CELLS = 1200;
 
     private final @NotNull UnitType soldier;
     private final @NotNull UnitType tower;
@@ -133,6 +135,64 @@ final class StandardPathfindingSystemTest {
         paths.releasePath(unit);
 
         Assertions.assertFalse(paths.getWaypoint(unit, waypoint));
+    }
+
+    @Test
+    void a_search_around_the_end_of_a_wall_keeps_near_its_way() {
+        Game game = this.createGame(createWalledTerrain(WALL_END_ROW));
+        Unit unit = this.createUnit(game, this.soldier, 2 * TILE_SIZE, 2 * TILE_SIZE);
+        StandardPathfindingSystem paths = (StandardPathfindingSystem) game.getPathfinding();
+
+        Assertions.assertTrue(paths.updatePath(unit, (WALL_COLUMN + 4) * TILE_SIZE, 2 * TILE_SIZE));
+        Assertions.assertTrue(paths.getSearchedCellCount() <= MAXIMUM_DETOUR_CELLS, "searched cells: " + paths.getSearchedCellCount());
+    }
+
+    @Test
+    void a_unit_whose_way_a_new_structure_cuts_searches_only_its_way_back_to_the_path() {
+        long[] searchedCells = new long[2];
+
+        for (int run = 0; run < searchedCells.length; run++) {
+            ArrayTerrainGrid terrain = createWalledTerrain(WALL_END_ROW);
+            Game game = this.createGame(terrain);
+            Unit unit = this.createUnit(game, this.soldier, 2 * TILE_SIZE, 10 * TILE_SIZE);
+            StandardPathfindingSystem paths = (StandardPathfindingSystem) game.getPathfinding();
+            MutablePoint waypoint = new MutablePoint();
+            int targetX = (WALL_COLUMN + 4) * TILE_SIZE;
+            int targetY = 2 * TILE_SIZE;
+
+            Assertions.assertTrue(paths.updatePath(unit, targetX, targetY));
+            Assertions.assertTrue(paths.getWaypoint(unit, waypoint));
+
+            Unit structure = this.createUnit(game, this.tower, (unit.getPositionX() + waypoint.getX()) / 2,
+                                             (unit.getPositionY() + waypoint.getY()) / 2);
+
+            game.getClock().setFrame(game.getClock().getFrame() + 1);
+
+            if (run == 1) {
+                paths.releasePath(unit);
+            }
+
+            int searches = paths.getSearchCount();
+            long cells = paths.getSearchedCellCount();
+
+            Assertions.assertTrue(paths.updatePath(unit, targetX, targetY));
+            Assertions.assertEquals(searches + 1, paths.getSearchCount());
+
+            searchedCells[run] = paths.getSearchedCellCount() - cells;
+
+            int previousX = unit.getPositionX();
+            int previousY = unit.getPositionY();
+
+            for (int[] leg : this.walkPath(game, unit, targetX, targetY)) {
+                this.assertLegClear(terrain, structure, previousX, previousY, leg[0], leg[1]);
+
+                previousX = leg[0];
+                previousY = leg[1];
+            }
+        }
+
+        Assertions.assertTrue(searchedCells[0] < searchedCells[1],
+                              "the way back searched " + searchedCells[0] + " cells, a new path " + searchedCells[1]);
     }
 
     @Test

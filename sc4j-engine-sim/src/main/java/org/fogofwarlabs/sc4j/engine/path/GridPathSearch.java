@@ -11,8 +11,14 @@ import java.util.Arrays;
  * <p>
  * A step costs the distance between the two cell centres; a step into a cell whose clearance is below the unit's requirement costs
  * {@value #NARROW_COST_FACTOR} times as much, so that units keep their size away from walls and structures but still pass a narrow gap. The
- * estimate is the straight distance to the goal's centre, so the search finds a cheapest path. Of equal totals the smaller estimate, then the
- * lower cell index comes first; the binary heap holds each cell once.
+ * estimate is the larger of the straight distance to the goal's centre and the landmark bound, so the search finds a cheapest path. Of equal
+ * totals the smaller estimate, then the lower cell index comes first; the binary heap holds each cell once.
+ * <p>
+ * Landmarks: on creation the search measures the step distances over the terrain without structures from up to {@value #LANDMARK_COUNT}
+ * landmark cells, each the free cell farthest from the landmarks before it (the first one farthest from the first free cell). A path with
+ * structures is never shorter than without them, so the difference of the distances of a cell and of the goal to a landmark is a lower bound of
+ * the cell's way to the goal; around a long detour (a river crossed at a ford) it keeps the search near the way instead of filling the
+ * terrain in front of the obstacle.
  * <p>
  * String pulling: the corner cells of the cell path (where its step direction changes) and the end point are the candidate waypoints; from the
  * start point each leg goes to the farthest candidate (at most {@value #PULL_WINDOW} ahead) that a straight walk reaches over cells of the
@@ -32,6 +38,11 @@ final class GridPathSearch {
     static final int PULL_WINDOW = 32;
 
     /**
+     * The number of landmark cells the estimate measures from at most.
+     */
+    static final int LANDMARK_COUNT = 4;
+
+    /**
      * The cost of a world unit of distance, so that diagonal steps keep their fraction.
      */
     private static final int COST_SCALE = 16;
@@ -47,6 +58,10 @@ final class GridPathSearch {
      * The branching factor of the binary heap.
      */
     private static final int HEAP_BRANCHING = 2;
+    /**
+     * The landmark distance of a cell that no step from the landmark reaches.
+     */
+    private static final int UNREACHED = Integer.MAX_VALUE;
 
     private final @NotNull WalkClearance clearance;
     private final int neighbourCount;
@@ -58,14 +73,18 @@ final class GridPathSearch {
     private final int @NotNull [] parentSteps;
     private final int @NotNull [] marks;
     private final boolean @NotNull [] closed;
-    private final int @NotNull [] heap;
+    private final long @NotNull [] heapTotals;
+    private final long @NotNull [] heapTies;
     private final int @NotNull [] heapPositions;
     private final int @NotNull [] pathCells;
     private final int @NotNull [] candidateX;
     private final int @NotNull [] candidateY;
     private final int @NotNull [] waypointX;
     private final int @NotNull [] waypointY;
+    private final int @NotNull [] landmarkDistances;
+    private final int landmarkCount;
 
+    private long expandedCount;
     private int mark;
     private int heapSize;
     private int waypointCount;
@@ -89,7 +108,8 @@ final class GridPathSearch {
         this.parentSteps   = new int[cellCount];
         this.marks         = new int[cellCount];
         this.closed        = new boolean[cellCount];
-        this.heap          = new int[cellCount];
+        this.heapTotals    = new long[cellCount];
+        this.heapTies      = new long[cellCount];
         this.heapPositions = new int[cellCount];
         this.pathCells     = new int[cellCount];
         this.candidateX    = new int[cellCount + 1];
@@ -97,6 +117,9 @@ final class GridPathSearch {
         this.waypointX     = new int[cellCount + 1];
         this.waypointY     = new int[cellCount + 1];
 
+        this.landmarkDistances = new int[cellCount * LANDMARK_COUNT];
+
+        this.expandedCount = 0;
         this.mark          = 0;
         this.heapSize      = 0;
         this.waypointCount = 0;
@@ -108,6 +131,15 @@ final class GridPathSearch {
                 this.stepCosts[cell * neighbours + neighbour] = other == WalkClearance.OUTSIDE ? 0 : this.measure(cell, other);
             }
         }
+
+        this.landmarkCount = this.placeLandmarks();
+    }
+
+    /**
+     * @return the number of cells the path searches took from the open set since creation, for measuring their cost
+     */
+    long getExpandedCount() {
+        return this.expandedCount;
     }
 
     /**
@@ -176,10 +208,11 @@ final class GridPathSearch {
         int goalY = this.clearance.getCenterY(goalCell);
 
         this.heapSize = 0;
-        this.open(startCell, searchMark, 0, NO_PARENT, NO_PARENT, goalX, goalY);
+        this.open(startCell, searchMark, 0, NO_PARENT, NO_PARENT, this.estimate(startCell, goalCell, goalX, goalY));
 
         while (this.heapSize > 0) {
             int cell = this.poll();
+            this.expandedCount++;
 
             if (cell == goalCell) {
                 return true;
@@ -203,12 +236,12 @@ final class GridPathSearch {
                 int cost = this.costs[cell] + stepCost;
 
                 if (this.marks[other] != searchMark) {
-                    this.open(other, searchMark, cost, cell, neighbour, goalX, goalY);
+                    this.open(other, searchMark, cost, cell, neighbour, this.estimate(other, goalCell, goalX, goalY));
                 } else if (cost < this.costs[other]) {
                     this.costs[other]       = cost;
                     this.parents[other]     = cell;
                     this.parentSteps[other] = neighbour;
-                    this.siftUp(this.heapPositions[other]);
+                    this.lowerCost(other);
                 }
             }
         }
@@ -216,34 +249,166 @@ final class GridPathSearch {
         return false;
     }
 
-    private void open(int cell, int searchMark, int cost, int parent, int parentStep, int goalX, int goalY) {
-        int centerX = this.clearance.getCenterX(cell);
-        int centerY = this.clearance.getCenterY(cell);
+    /**
+     * Runs a search without goal from a cell over the current clearance and stores the step distance of every cell as a landmark's.
+     */
+    private void measureLandmark(int sourceCell, int landmark) {
+        int searchMark = this.nextMark();
 
+        for (int cell = 0; cell < this.marks.length; cell++) {
+            this.landmarkDistances[cell * LANDMARK_COUNT + landmark] = UNREACHED;
+        }
+
+        this.heapSize = 0;
+        this.open(sourceCell, searchMark, 0, NO_PARENT, NO_PARENT, 0);
+
+        while (this.heapSize > 0) {
+            int cell = this.poll();
+
+            this.closed[cell]                                        = true;
+            this.landmarkDistances[cell * LANDMARK_COUNT + landmark] = this.costs[cell];
+
+            for (int neighbour = 0; neighbour < this.neighbourCount; neighbour++) {
+                int other = this.clearance.getNeighbour(cell, neighbour);
+
+                if (other == WalkClearance.OUTSIDE || this.marks[other] == searchMark && this.closed[other] || !this.clearance.canStep(cell, other)) {
+                    continue;
+                }
+
+                int cost = this.costs[cell] + this.stepCosts[cell * this.neighbourCount + neighbour];
+
+                if (this.marks[other] != searchMark) {
+                    this.open(other, searchMark, cost, cell, neighbour, 0);
+                } else if (cost < this.costs[other]) {
+                    this.costs[other] = cost;
+                    this.lowerCost(other);
+                }
+            }
+        }
+    }
+
+    /**
+     * Places the landmarks on the clearance without structures, as the class description says, and measures their distances.
+     *
+     * @return the number of landmarks placed
+     */
+    private int placeLandmarks() {
+        int seed = 0;
+
+        while (seed < this.marks.length && this.clearance.getClearance(seed) == 0) {
+            seed++;
+        }
+
+        if (seed == this.marks.length) {
+            return 0;
+        }
+
+        // The first landmark's distances hold those of the first free cell until the farthest cell from it replaces them.
+        this.measureLandmark(seed, 0);
+
+        int count = 0;
+
+        while (count < LANDMARK_COUNT) {
+            int farthest = WalkClearance.OUTSIDE;
+            long farthestDistance = 0;
+
+            for (int cell = 0; cell < this.marks.length; cell++) {
+                if (this.clearance.getClearance(cell) == 0) {
+                    continue;
+                }
+
+                long distance = this.findNearestLandmarkDistance(cell, Math.max(count, 1));
+
+                if (distance > farthestDistance) {
+                    farthest         = cell;
+                    farthestDistance = distance;
+                }
+            }
+
+            if (farthest == WalkClearance.OUTSIDE) {
+                break;
+            }
+
+            this.measureLandmark(farthest, count);
+            count++;
+        }
+
+        return count;
+    }
+
+    /**
+     * Returns the step distance from a cell to the nearest of the first landmarks, {@link Long#MAX_VALUE} if none of them reaches it.
+     */
+    private long findNearestLandmarkDistance(int cell, int count) {
+        long nearest = Long.MAX_VALUE;
+
+        for (int landmark = 0; landmark < count; landmark++) {
+            int distance = this.landmarkDistances[cell * LANDMARK_COUNT + landmark];
+
+            if (distance != UNREACHED) {
+                nearest = Math.min(nearest, distance);
+            }
+        }
+
+        return nearest;
+    }
+
+    /**
+     * Returns the estimate of a cell's way to the goal: the straight distance between the centres or the landmark bound, the larger one.
+     */
+    private int estimate(int cell, int goalCell, int goalX, int goalY) {
+        int estimate = IntegerMathUtils.getDistance(this.clearance.getCenterX(cell) * COST_SCALE, this.clearance.getCenterY(cell) * COST_SCALE,
+                                                    goalX * COST_SCALE, goalY * COST_SCALE);
+        int cellBase = cell * LANDMARK_COUNT;
+        int goalBase = goalCell * LANDMARK_COUNT;
+
+        for (int landmark = 0; landmark < this.landmarkCount; landmark++) {
+            int cellDistance = this.landmarkDistances[cellBase + landmark];
+            int goalDistance = this.landmarkDistances[goalBase + landmark];
+
+            if (cellDistance != UNREACHED && goalDistance != UNREACHED) {
+                estimate = Math.max(estimate, Math.abs(goalDistance - cellDistance));
+            }
+        }
+
+        return estimate;
+    }
+
+    private void open(int cell, int searchMark, int cost, int parent, int parentStep, int estimate) {
         this.marks[cell]       = searchMark;
         this.closed[cell]      = false;
         this.costs[cell]       = cost;
-        this.estimates[cell]   = IntegerMathUtils.getDistance(centerX * COST_SCALE, centerY * COST_SCALE, goalX * COST_SCALE, goalY * COST_SCALE);
+        this.estimates[cell]   = estimate;
         this.parents[cell]     = parent;
         this.parentSteps[cell] = parentStep;
 
-        this.heap[this.heapSize] = cell;
-        this.heapPositions[cell] = this.heapSize;
+        this.heapTotals[this.heapSize] = (long) cost + estimate;
+        this.heapTies[this.heapSize]   = (long) estimate << Integer.SIZE | cell;
+        this.heapPositions[cell]       = this.heapSize;
         this.heapSize++;
         this.siftUp(this.heapSize - 1);
     }
 
+    /**
+     * Moves a cell in the heap after its cost became lower.
+     */
+    private void lowerCost(int cell) {
+        int position = this.heapPositions[cell];
+
+        this.heapTotals[position] = (long) this.costs[cell] + this.estimates[cell];
+        this.siftUp(position);
+    }
+
     private int poll() {
-        int first = this.heap[0];
+        int first = (int) this.heapTies[0];
 
         this.heapSize--;
         this.heapPositions[first] = NOT_IN_HEAP;
 
         if (this.heapSize > 0) {
-            int last = this.heap[this.heapSize];
-
-            this.heap[0]             = last;
-            this.heapPositions[last] = 0;
+            this.heapTotals[0]                         = this.heapTotals[this.heapSize];
+            this.heapTies[0]                           = this.heapTies[this.heapSize];
+            this.heapPositions[(int) this.heapTies[0]] = 0;
             this.siftDown(0);
         }
 
@@ -251,28 +416,29 @@ final class GridPathSearch {
     }
 
     private void siftUp(int position) {
-        int cell = this.heap[position];
+        long total = this.heapTotals[position];
+        long tie = this.heapTies[position];
         int current = position;
 
         while (current > 0) {
             int parentPosition = (current - 1) / HEAP_BRANCHING;
-            int parent = this.heap[parentPosition];
 
-            if (!this.isBefore(cell, parent)) {
+            if (!isBefore(total, tie, this.heapTotals[parentPosition], this.heapTies[parentPosition])) {
                 break;
             }
 
-            this.heap[current]         = parent;
-            this.heapPositions[parent] = current;
-                                         current = parentPosition;
+            this.moveEntry(parentPosition, current);
+            current = parentPosition;
         }
 
-        this.heap[current]       = cell;
-        this.heapPositions[cell] = current;
+        this.heapTotals[current]      = total;
+        this.heapTies[current]        = tie;
+        this.heapPositions[(int) tie] = current;
     }
 
     private void siftDown(int position) {
-        int cell = this.heap[position];
+        long total = this.heapTotals[position];
+        long tie = this.heapTies[position];
         int current = position;
 
         while (true) {
@@ -282,41 +448,36 @@ final class GridPathSearch {
                 break;
             }
 
-            if (child + 1 < this.heapSize && this.isBefore(this.heap[child + 1], this.heap[child])) {
+            if (child + 1 < this.heapSize &&
+                isBefore(this.heapTotals[child + 1], this.heapTies[child + 1], this.heapTotals[child], this.heapTies[child])) {
                 child++;
             }
 
-            int childCell = this.heap[child];
-
-            if (!this.isBefore(childCell, cell)) {
+            if (!isBefore(this.heapTotals[child], this.heapTies[child], total, tie)) {
                 break;
             }
 
-            this.heap[current]            = childCell;
-            this.heapPositions[childCell] = current;
-                                            current = child;
+            this.moveEntry(child, current);
+            current = child;
         }
 
-        this.heap[current]       = cell;
-        this.heapPositions[cell] = current;
+        this.heapTotals[current]      = total;
+        this.heapTies[current]        = tie;
+        this.heapPositions[(int) tie] = current;
+    }
+
+    private void moveEntry(int from, int to) {
+        this.heapTotals[to]                         = this.heapTotals[from];
+        this.heapTies[to]                           = this.heapTies[from];
+        this.heapPositions[(int) this.heapTies[to]] = to;
     }
 
     /**
-     * Orders the heap: the smaller total first, then the smaller estimate, then the lower cell index.
+     * Orders the heap: the smaller total first, then the smaller estimate, then the lower cell index; a tie holds the estimate in its high and the
+     * cell in its low half.
      */
-    private boolean isBefore(int cell, int other) {
-        long total = (long) this.costs[cell] + this.estimates[cell];
-        long otherTotal = (long) this.costs[other] + this.estimates[other];
-
-        if (total != otherTotal) {
-            return total < otherTotal;
-        }
-
-        if (this.estimates[cell] != this.estimates[other]) {
-            return this.estimates[cell] < this.estimates[other];
-        }
-
-        return cell < other;
+    private static boolean isBefore(long total, long tie, long otherTotal, long otherTie) {
+        return total != otherTotal ? total < otherTotal : tie < otherTie;
     }
 
     /**

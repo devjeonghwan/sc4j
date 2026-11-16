@@ -1,6 +1,7 @@
 package org.fogofwarlabs.sc4j.engine.combat;
 
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
+import org.fogofwarlabs.sc4j.engine.collision.CollisionSystem;
 import org.fogofwarlabs.sc4j.engine.content.combat.DamageHit;
 import org.fogofwarlabs.sc4j.engine.content.combat.DamageKind;
 import org.fogofwarlabs.sc4j.engine.content.combat.DamageLayer;
@@ -439,8 +440,10 @@ public final class StandardCombatSystem implements CombatSystem {
     /**
      * Keeps a unit after the target of its attack: it moves towards the target until the target is in range.
      * <p>
-     * The standard pursuit stops a unit that has the target in range and otherwise moves it after the target
-     * ({@link MovementSystem#setTargetUnit}); it ends for a unit that cannot move (top speed {@code 0}).
+     * The standard pursuit stops a unit that has the target in range, in a game with a collision system as an immovable unit
+     * ({@link CollisionSystem#makeImmovable}), so that units pressing in from behind go around it instead of pushing it while it fights; otherwise
+     * it moves the unit after the target ({@link MovementSystem#setTargetUnit}), which makes it movable again. The pursuit ends for a unit that
+     * cannot move (top speed {@code 0}).
      *
      * @param unit             the attacking unit
      * @param targetUnit       the target unit
@@ -451,10 +454,15 @@ public final class StandardCombatSystem implements CombatSystem {
      */
     @Override
     public boolean pursueTarget(@NotNull Unit unit, @NotNull Unit targetUnit, int instructionLimit) {
-        MovementSystem movement = requireAttached(this.game).getMovement();
+        Game attachedGame = requireAttached(this.game);
+        MovementSystem movement = attachedGame.getMovement();
 
         if (this.isInRange(unit, targetUnit)) {
-            movement.stop(unit);
+            if (attachedGame.hasSystem(CollisionSystem.KEY)) {
+                attachedGame.getCollision().makeImmovable(unit);
+            } else {
+                movement.stop(unit);
+            }
 
             return true;
         }

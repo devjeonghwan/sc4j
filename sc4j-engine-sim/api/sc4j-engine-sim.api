@@ -2772,6 +2772,7 @@ public final class org.fogofwarlabs.sc4j.engine.path.StandardPathfindingSystem i
   public boolean isReachable(org.fogofwarlabs.sc4j.engine.entity.Unit, int, int);
   public boolean updatePath(org.fogofwarlabs.sc4j.engine.entity.Unit, int, int);
   public int getSearchCount();
+  public long getSearchedCellCount();
   public org.fogofwarlabs.sc4j.engine.path.StandardPathfindingSystem(org.fogofwarlabs.sc4j.engine.terrain.TerrainGrid, org.fogofwarlabs.sc4j.engine.spatial.UnitBounds<org.fogofwarlabs.sc4j.engine.entity.Unit>);
   public static final int WAYPOINT_CAPACITY = 24;
   public void attach(org.fogofwarlabs.sc4j.engine.game.Game);

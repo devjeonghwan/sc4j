@@ -1,8 +1,8 @@
-<p align="center">
+<h1 align="center">
   <img src="docs/branding/sc4j-logo.svg" alt="SC4J 로고" width="160">
-</p>
-
-<h1 align="center">SC4J</h1>
+  <br>
+  SC4J
+</h1>
 
 <p align="center">Java로 만든 실시간 전략 게임 엔진. 모드 런타임, 런처, P2P 온라인 플레이를 함께 제공합니다.</p>
 

@@ -1,8 +1,8 @@
-<p align="center">
+<h1 align="center">
   <img src="docs/branding/sc4j-logo.svg" alt="SC4J logo" width="160">
-</p>
-
-<h1 align="center">SC4J</h1>
+  <br>
+  SC4J
+</h1>
 
 <p align="center">A real-time strategy engine in Java, with a mod runtime, a launcher and peer-to-peer online play.</p>
 

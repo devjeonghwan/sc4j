@@ -1,5 +1,6 @@
 package org.fogofwarlabs.sc4j.engine.client.video;
 
+import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,10 +20,14 @@ public interface VideoStream extends AutoCloseable {
      * @param clip      the clip bytes
      * @param withAudio whether the audio track is decoded ({@link #readAudio})
      * @return the open stream, positioned before its first frame
-     * @throws IOException if the clip cannot be opened or has no decodable video stream
+     * @throws IOException if the FFmpeg libraries cannot be loaded, or the clip cannot be opened or has no decodable video stream
      */
     static @NotNull VideoStream open(byte @NotNull [] clip, boolean withAudio) throws IOException {
-        return new FfmpegVideoStream(clip, withAudio);
+        try {
+            return new FfmpegVideoStream(clip, withAudio);
+        } catch (LinkageError error) {
+            throw Exceptions.newIOException(error, "The FFmpeg libraries cannot be loaded: {0}", error);
+        }
     }
 
     /**

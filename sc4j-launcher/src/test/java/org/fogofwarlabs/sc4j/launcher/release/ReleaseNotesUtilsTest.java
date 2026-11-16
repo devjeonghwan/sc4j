@@ -26,19 +26,19 @@ final class ReleaseNotesUtilsTest {
     @Test
     void to_plain_text_should_strip_emphasis_code_quotes_rules_tables_and_html() {
         String markdown = """
-                # Release 1.2.0 #
-                > Read *this* first, _please_.
-                ---
-                Use `--noSound` or ~~old~~ <kbd>F10</kbd> &amp; snake_case_name stays.
-                | Name | Size |
-                |------|-----:|
-                <!-- hidden
-                comment -->
-                ```
-                **kept as written**
-                ```
-                1. First \\*escaped\\* item
-                """;
+                          # Release 1.2.0 #
+                          > Read *this* first, _please_.
+                          ---
+                          Use `--noSound` or ~~old~~ <kbd>F10</kbd> &amp; snake_case_name stays.
+                          | Name | Size |
+                          |------|-----:|
+                          <!-- hidden
+                          comment -->
+                          ```
+                          **kept as written**
+                          ```
+                          1. First \\*escaped\\* item
+                          """;
 
         Assertions.assertEquals("Release 1.2.0\n" +
                                 "Read this first, please.\n" +

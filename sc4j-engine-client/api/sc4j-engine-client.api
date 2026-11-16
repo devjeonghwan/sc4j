@@ -1240,6 +1240,7 @@ public interface org.fogofwarlabs.sc4j.engine.client.host.HostWindow extends jav
   public abstract void setClipboardText(java.lang.String);
   public abstract void setDisplayMode(org.fogofwarlabs.sc4j.engine.client.host.DisplayMode, int, int);
   public abstract void setFileDropListener(org.fogofwarlabs.sc4j.engine.client.host.FileDropListener);
+  public abstract void setPointerClip(org.fogofwarlabs.sc4j.engine.client.host.PointerClip);
   public abstract void setPointerMode(org.fogofwarlabs.sc4j.engine.client.host.PointerMode);
   public abstract void setPointerPosition(double, double);
   public abstract void setSwapInterval(int);
@@ -1264,6 +1265,17 @@ public final class org.fogofwarlabs.sc4j.engine.client.host.NoTextInputMethod im
   public void cancelComposition();
   public void setEnabled(boolean);
   public void setListener(org.fogofwarlabs.sc4j.engine.client.host.TextCompositionListener);
+}
+
+public final class org.fogofwarlabs.sc4j.engine.client.host.PointerClip {
+  public boolean equals(java.lang.Object);
+  public float getBottom();
+  public float getLeft();
+  public float getRight();
+  public float getTop();
+  public int hashCode();
+  public java.lang.String toString();
+  public static org.fogofwarlabs.sc4j.engine.client.host.PointerClip of(float, float, float, float);
 }
 
 public final class org.fogofwarlabs.sc4j.engine.client.host.PointerMode extends java.lang.Enum<org.fogofwarlabs.sc4j.engine.client.host.PointerMode> {

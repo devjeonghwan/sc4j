@@ -156,6 +156,11 @@ public final class GlfwInput implements WindowInput {
         });
         GLFW.glfwSetCharCallback(handle, (targetWindow, codePoint) -> this.listener.onInput(InputEvent.createCharacterTyped(codePoint)));
         GLFW.glfwSetCursorPosCallback(handle, (targetWindow, horizontal, vertical) -> {
+            // A pointer outside the window's clip is moved inside; the window reports the new position.
+            if (this.window.confinePointer(horizontal, vertical)) {
+                return;
+            }
+
             this.pointerX = this.toFramebufferX(horizontal);
             this.pointerY = this.toFramebufferY(vertical);
             this.listener.onInput(InputEvent.createPointerMoved(this.pointerX, this.pointerY));

@@ -4,10 +4,7 @@ import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
@@ -83,6 +80,7 @@ public final class LauncherShell {
     private final @NotNull StackPane root;
     private final @NotNull StackPane contentArea;
     private final @NotNull StackPane screenArea;
+    private final @NotNull ScrollPane screenScroll;
     private final @NotNull HBox navigation;
     private final @NotNull Map<@NotNull Section, @NotNull ToggleButton> navigationButtons;
     private final @NotNull Button accountButton;
@@ -110,6 +108,7 @@ public final class LauncherShell {
         this.root              = new StackPane(fog, frame);
         this.contentArea       = new StackPane();
         this.screenArea        = new StackPane();
+        this.screenScroll      = new ScrollPane(this.screenArea);
         this.navigation        = new HBox();
         this.navigationButtons = new EnumMap<>(Section.class);
         this.accountButton     = ComponentUtils.smallButton("", ComponentUtils.ButtonRole.SECONDARY);
@@ -123,6 +122,10 @@ public final class LauncherShell {
         fog.setMouseTransparent(true);
         this.root.getStyleClass().add("app-backdrop");
         this.screenArea.getStyleClass().add(CONTENT_MARGIN_STYLE_CLASS);
+        // A screen fills the area between the app bar and the status bar and scrolls when it needs more height than the window gives it.
+        this.screenScroll.setFitToWidth(true);
+        this.screenScroll.setFitToHeight(true);
+        this.screenScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
         frame.setTop(this.appBar);
         frame.setCenter(this.contentArea);
@@ -151,7 +154,7 @@ public final class LauncherShell {
 
         this.setLoggedIn(true);
         this.screenArea.getChildren().setAll(content);
-        this.contentArea.getChildren().setAll(this.screenArea);
+        this.contentArea.getChildren().setAll(this.screenScroll);
     }
 
     /**

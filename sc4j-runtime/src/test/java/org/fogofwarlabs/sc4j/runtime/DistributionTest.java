@@ -23,29 +23,26 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.*;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
  * Tests the built user package as a user unpacks it on a fresh computer without Java: it holds the start of the launcher, its own Java
  * runtime, the launcher with the shipped seed list and its empty JVM temporary folder, the runtime, mods and the licence files but no user
- * data and no cache file; the launcher, started from the package root by the start file and on Windows by {@code SC4J.exe}, lists the mods
- * with the package's Java without a JVM warning; and its runtime, started headless with no user data and no Java of
- * the computer and with the Beacon.Link options the launcher passes a fresh install (the shipped seed list, here naming a node on 127.0.0.1,
- * and the install's peers file), opens a Beacon.Link session and keeps the node in the peers file without writing a node list of the user.
+ * data and no cache file, with its programs executable on Unix; the launcher, started from the package root by the start file and on Windows
+ * by {@code SC4J.exe}, lists the mods with the package's Java without a JVM warning; and its runtime, started headless with no user data and
+ * no Java of the computer and with the Beacon.Link options the launcher passes a fresh install (the shipped seed list, here naming a node on
+ * 127.0.0.1, and the install's peers file), opens a Beacon.Link session and keeps the node in the peers file without writing a node list of the user.
  */
 @RequiresDistribution
 final class DistributionTest {
@@ -71,6 +68,11 @@ final class DistributionTest {
     private static final @NotNull String NATIVE_ENCODING_PROPERTY = "native.encoding";
     private static final @NotNull String CACHE_FOLDER = ".cache";
     private static final @NotNull String LAUNCHER_TEMPORARY_FOLDER = "launcher/.cache/tmp";
+    private static final @NotNull String ARCHIVE_ROOT = "/";
+    private static final @NotNull String POSIX_ATTRIBUTES_OPTION = "enablePosixFileAttributes";
+    private static final @NotNull List<@NotNull String> UNIX_EXECUTABLES = List.of(UNIX_START, "launcher/bin/sc4j-launcher",
+                                                                                   "runtime/bin/" + UNIX_SCRIPT, "java/bin/java",
+                                                                                   "java/lib/jspawnhelper");
     private static final long NODE_POLL_MILLIS = 20L;
     private static final long RUN_SECONDS = 150L;
     private static final long STOP_SECONDS = 10L;
@@ -81,26 +83,35 @@ final class DistributionTest {
     }
 
     /**
-     * Unpacks the user package into a folder and returns the install it holds: the package's only top folder.
+     * Unpacks the user package into a folder with the Unix modes of its entries and returns the install it holds: the package's only top
+     * folder.
      */
     private static @NotNull InstallLayout unpack(@NotNull Path directory) throws IOException {
         Path target = Files.createDirectories(directory.resolve("unpacked")).toAbsolutePath().normalize();
 
-        try (ZipFile archive = new ZipFile(RuntimeTestResources.getDistribution().toFile())) {
-            for (ZipEntry entry : Collections.list(archive.entries())) {
-                Path file = target.resolve(entry.getName()).normalize();
+        try (FileSystem archive = FileSystems.newFileSystem(RuntimeTestResources.getDistribution(), Map.of(POSIX_ATTRIBUTES_OPTION, true))) {
+            Path archiveRoot = archive.getPath(ARCHIVE_ROOT);
+            List<Path> entries;
+
+            try (Stream<Path> walked = Files.walk(archiveRoot)) {
+                entries = walked.toList();
+            }
+
+            for (Path entry : entries) {
+                Path file = target.resolve(archiveRoot.relativize(entry).toString()).normalize();
 
                 if (!file.startsWith(target)) {
-                    throw Exceptions.newIOException("The package entry {0} leaves the package folder.", entry.getName());
+                    throw Exceptions.newIOException("The package entry {0} leaves the package folder.", entry);
                 }
 
-                if (entry.isDirectory()) {
+                if (Files.isDirectory(entry)) {
                     Files.createDirectories(file);
                 } else {
                     Files.createDirectories(file.getParent());
+                    Files.copy(entry, file);
 
-                    try (InputStream input = archive.getInputStream(entry)) {
-                        Files.copy(input, file);
+                    if (!isWindows()) {
+                        Files.setPosixFilePermissions(file, Files.getPosixFilePermissions(entry));
                     }
                 }
             }
@@ -150,12 +161,6 @@ final class DistributionTest {
         }
     }
 
-    private static void makeExecutable(@NotNull Path script) throws IOException {
-        if (!isWindows()) {
-            Files.setPosixFilePermissions(script, PosixFilePermissions.fromString("rwxr-xr-x"));
-        }
-    }
-
     private static void stop(@NotNull Process process) throws InterruptedException {
         process.descendants().forEach(ProcessHandle::destroy);
         process.destroy();
@@ -167,7 +172,7 @@ final class DistributionTest {
      * temporary folder.
      */
     private static void listMods(@NotNull Path directory, @NotNull InstallLayout install, @NotNull Path start) throws IOException,
-                                                                                                                       InterruptedException {
+                                                                                                                      InterruptedException {
         Path output = directory.resolve("launcher-output.txt");
         ProcessBuilder builder = new ProcessBuilder(start.toString(), LIST_OPTION);
 
@@ -217,6 +222,12 @@ final class DistributionTest {
         Assertions.assertTrue(Files.readString(root.resolve(JAVA_RELEASE_FILE), StandardCharsets.UTF_8).contains(JAVA_VERSION),
                               "the package's Java runs the class files of this build");
 
+        if (!isWindows()) {
+            for (String file : UNIX_EXECUTABLES) {
+                Assertions.assertTrue(Files.isExecutable(root.resolve(file)), file + " is executable");
+            }
+        }
+
         try (Stream<Path> listed = Files.list(install.getModsDirectory())) {
             modJars = listed.toList();
         }
@@ -250,15 +261,13 @@ final class DistributionTest {
         InstallLayout install = unpack(directory);
         Path start = install.getRoot().resolve(isWindows() ? WINDOWS_START : UNIX_START);
 
-        makeExecutable(start);
-        makeExecutable(install.getLauncherDirectory().resolve("bin").resolve("sc4j-launcher"));
         listMods(directory, install, start);
     }
 
     @Test
     @Timeout(TEST_SECONDS)
     void the_windows_program_of_the_package_lists_the_mods_with_the_package_java(@TempDir @NotNull Path directory) throws IOException,
-                                                                                                                           InterruptedException {
+                                                                                                                          InterruptedException {
         Assumptions.assumeTrue(isWindows(), "only the Windows package has " + WINDOWS_PROGRAM);
 
         InstallLayout install = unpack(directory);
@@ -278,8 +287,6 @@ final class DistributionTest {
 
         Assertions.assertFalse(Files.exists(install.getUserDataDirectory()));
         TestJarUtils.write(modJar, TestJarUtils.createEntries(MANIFEST.formatted(BeaconLinkMod.class.getName()), BeaconLinkMod.class));
-
-        makeExecutable(script);
 
         try (PeerSocket node = PeerSocket.open(PeerConfiguration.createDefault(), IdentityKeyPair.generate(new SecureRandom()),
                                                new InetSocketAddress(LOOPBACK, 0), ProtocolClock.SYSTEM, new SecureRandom())) {

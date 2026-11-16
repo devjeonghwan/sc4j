@@ -13,7 +13,8 @@ public enum PointerMode {
      */
     HIDDEN,
     /**
-     * The pointer is shown but kept inside the window's content area while the window is focused.
+     * The pointer is shown but kept inside the window's content area while the window is focused, or inside the window's pointer clip when one
+     * is set ({@link HostWindow#setPointerClip}).
      */
     CAPTURED
 }

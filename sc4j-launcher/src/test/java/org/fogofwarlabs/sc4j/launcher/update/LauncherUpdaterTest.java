@@ -1,10 +1,6 @@
 package org.fogofwarlabs.sc4j.launcher.update;
 
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseClient;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseException;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseProblem;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseRepository;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseServerScenario;
+import org.fogofwarlabs.sc4j.launcher.release.*;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
@@ -123,7 +119,7 @@ final class LauncherUpdaterTest {
         LauncherUpdater updater = new LauncherUpdater(install, new ReleaseClient(ReleaseClient.GITHUB_API));
 
         UserPackageScenario.writeFiles(folder.getRoot(), Map.of("package/SC4J-1.2.0/NOTICE", NEW, "mods/my-mod.jar.part", NEW,
-                                                               "updater.log", NEW, "failure.txt", "The update failed."));
+                                                                "updater.log", NEW, "failure.txt", "The update failed."));
 
         Assertions.assertEquals("The update failed.", updater.takeFailure());
         Assertions.assertNull(updater.takeFailure());

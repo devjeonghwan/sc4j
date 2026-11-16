@@ -92,18 +92,18 @@ public final class ReleaseNotesUtils {
             return "";
         }
 
-        text = HEADING_PATTERN.matcher(text).replaceFirst("$1");
-        text = LIST_ITEM_PATTERN.matcher(text).replaceFirst("$1" + LIST_MARK);
-        text = IMAGE_PATTERN.matcher(text).replaceAll("$1");
-        text = LINK_PATTERN.matcher(text).replaceAll("$1");
-        text = AUTOLINK_PATTERN.matcher(text).replaceAll("$1");
-        text = CODE_PATTERN.matcher(text).replaceAll("$1");
-        text = HTML_TAG_PATTERN.matcher(text).replaceAll("");
-        text = STRONG_PATTERN.matcher(text).replaceAll("$2");
-        text = STAR_EMPHASIS_PATTERN.matcher(text).replaceAll("$1");
-        text = UNDERSCORE_EMPHASIS_PATTERN.matcher(text).replaceAll("$1");
-        text = STRIKE_PATTERN.matcher(text).replaceAll("$1");
-        text = ENTITY_PATTERN.matcher(text).replaceAll(match -> switch (match.group(1)) {
+        text  = HEADING_PATTERN.matcher(text).replaceFirst("$1");
+        text  = LIST_ITEM_PATTERN.matcher(text).replaceFirst("$1" + LIST_MARK);
+        text  = IMAGE_PATTERN.matcher(text).replaceAll("$1");
+        text  = LINK_PATTERN.matcher(text).replaceAll("$1");
+        text  = AUTOLINK_PATTERN.matcher(text).replaceAll("$1");
+        text  = CODE_PATTERN.matcher(text).replaceAll("$1");
+        text  = HTML_TAG_PATTERN.matcher(text).replaceAll("");
+        text  = STRONG_PATTERN.matcher(text).replaceAll("$2");
+        text  = STAR_EMPHASIS_PATTERN.matcher(text).replaceAll("$1");
+        text  = UNDERSCORE_EMPHASIS_PATTERN.matcher(text).replaceAll("$1");
+        text  = STRIKE_PATTERN.matcher(text).replaceAll("$1");
+        text  = ENTITY_PATTERN.matcher(text).replaceAll(match -> switch (match.group(1)) {
             case "amp" -> "&";
             case "lt" -> "<";
             case "gt" -> ">";

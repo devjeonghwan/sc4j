@@ -30,3 +30,5 @@ include ':mods:demo'
 
 // The API tools of the engine (apiDump, apiCheck; docs/api-policy.md).
 include ':tools:api-check'
+// The UTF-8 code page of the Windows programs of the user package.
+include ':tools:windows-manifest'

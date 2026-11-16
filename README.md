@@ -45,7 +45,7 @@ This repository holds the engine, the runtime, the launcher, Beacon.Link and the
 | `sc4j-launcher` | the launcher (JavaFX) |
 | `sc4j-beaconlink-protocol`, `-peer`, `-node`, `sc4j-beaconlink` | Beacon.Link wire protocol, peer library, headless node, client |
 | [`mods/`](mods/) | the demo mod |
-| [`tools/`](tools/) | `api-check` (API listings) |
+| [`tools/`](tools/) | `api-check` (API listings), `windows-manifest` (UTF-8 code page of the Windows programs) |
 | [`docs/`](docs/README.md) | guides; [`docs/branding/`](docs/branding/README.md): logos and the demo's launcher art |
 | [`licenses/`](licenses/) | third-party licence texts |
 
@@ -66,13 +66,14 @@ The launcher lists every jar in `build/dev-install/mods/`. A mod of another repo
 
 The user package holds the launcher, the runtime, the demo and a Java runtime and starts with `SC4J.exe` on Windows (or `SC4J.bat`) and `SC4J` on Linux; `userdata/` is created at the first start.
 
-The launcher updates itself from the GitHub releases of SC4J and installs a mod from the latest release of a GitHub repository (`owner/name`, typed or chosen from the catalog of [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods)); `userdata/` and `mods/` stay.
+The launcher updates itself from the GitHub releases of SC4J and installs a mod from the latest release of a GitHub repository (`owner/name`, typed or chosen from the catalog of [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods)). An update also replaces the mod jars the package ships (listed in `launcher/package-mods.txt`); `userdata/` and the other jars of `mods/` stay, and a shipped jar the player deleted is not added again.
 
 ## Documentation
 
 | Guide | Topic |
 |---|---|
 | [Mod author guide](docs/mod-guide.md) | making a mod |
+| [Mod template](https://github.com/fogofwarlabs/sc4j-mod-template) | a mod that builds, runs and installs, to start from |
 | [Engine API policy](docs/api-policy.md) | API scope, versions, internal elements |
 | [Beacon.Link protocol](docs/beaconlink/protocol.md) | wire protocol and files |
 | [Beacon.Link operator guide](docs/beaconlink/operator.md) | running a public peer |

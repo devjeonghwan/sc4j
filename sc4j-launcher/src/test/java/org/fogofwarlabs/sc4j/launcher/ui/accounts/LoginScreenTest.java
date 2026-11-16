@@ -41,7 +41,7 @@ final class LoginScreenTest {
     private static final double SCENE_WIDTH = 1280;
     private static final double SCENE_HEIGHT = 800;
     private static final double PERCENT_SCALE = 100;
-    private static final @NotNull String PASSWORD = "zerg rush";
+    private static final @NotNull String PASSWORD = "quiet harbor";
     private static final long ALICE_USE_MILLIS = Instant.parse("2026-11-10T18:30:00Z").toEpochMilli();
     private static final long RAYNOR_USE_MILLIS = Instant.parse("2026-11-08T20:00:00Z").toEpochMilli();
     /**

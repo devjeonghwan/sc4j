@@ -5,6 +5,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -44,7 +45,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests the launcher window's content at display scales of 100%, 150% and 200%: the layout keeps its logical size, every image is decoded at
  * its logical size times the scale (so it stays sharp), and the window renders at the scale; each rendering is saved as a sample picture.
  * Before the login the app bar shows neither the navigation nor an account; after it, it lists Mods, Run log and Settings (no Accounts tab)
- * and ends with the account button with its status, which opens the account menu, at 100% and 200% in English and Korean.
+ * and ends with the account button with its status, which opens the account menu, at 100% and 200% in English and Korean. In a window of the
+ * launcher's minimum size, a screen taller than the space between the app bar and the status bar scrolls and leaves both bars in the window; a
+ * shorter screen fills that space.
  */
 final class LauncherShellTest {
     private static final @NotNull String MANIFEST = """
@@ -68,6 +71,10 @@ final class LauncherShellTest {
     private static final @NotNull String APP_BAR_SELECTOR = ".app-bar";
     private static final @NotNull String NAVIGATION_SELECTOR = ".nav-button";
     private static final @NotNull String ACCOUNT_SELECTOR = ".account-button";
+    private static final @NotNull String STATUS_BAR_SELECTOR = ".status-bar";
+    private static final double MINIMUM_SCENE_WIDTH = 1100;
+    private static final double MINIMUM_SCENE_HEIGHT = 720;
+    private static final double TALL_SCREEN_HEIGHT = 2000;
     private static final double TOLERANCE = 1;
     private static final long FX_TIMEOUT_SECONDS = 60;
 
@@ -238,5 +245,49 @@ final class LauncherShellTest {
         });
 
         result.get(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void screen_scrolls_between_the_bars_when_it_is_taller_than_the_window(boolean tall, @TempDir @NotNull Path directory) throws Exception {
+        InstallLayout install = InstallLayout.of(directory);
+
+        LauncherFxScenario.run(() -> {
+            LauncherShell shell = new LauncherShell(LauncherTexts.of(UiLanguage.ENGLISH), install, 1, section -> {
+            }, () -> {
+            }, () -> {
+            });
+            Scene scene = new Scene(shell.getRoot(), MINIMUM_SCENE_WIDTH, MINIMUM_SCENE_HEIGHT);
+            Region screen = new Region();
+
+            if (tall) {
+                screen.setMinHeight(TALL_SCREEN_HEIGHT);
+            }
+
+            ThemeUtils.apply(scene, UiLanguage.ENGLISH);
+            shell.show(LauncherShell.Section.SETTINGS, screen);
+            shell.getRoot().applyCss();
+            shell.getRoot().layout();
+
+            Node appBar = shell.getRoot().lookup(APP_BAR_SELECTOR);
+            Node statusBar = shell.getRoot().lookup(STATUS_BAR_SELECTOR);
+            ScrollPane scroll = (ScrollPane) shell.getRoot().lookup(".scroll-pane");
+
+            Assertions.assertEquals(0, appBar.localToScene(appBar.getBoundsInLocal()).getMinY(), TOLERANCE, "the app bar starts at the top");
+            Assertions.assertEquals(MINIMUM_SCENE_HEIGHT, statusBar.localToScene(statusBar.getBoundsInLocal()).getMaxY(), TOLERANCE,
+                                    "the status bar ends at the bottom");
+            Assertions.assertNotNull(scroll);
+
+            double viewport = scroll.getViewportBounds().getHeight();
+            double content = scroll.getContent().getLayoutBounds().getHeight();
+
+            if (tall) {
+                Assertions.assertTrue(content > viewport + TOLERANCE, "a taller screen scrolls");
+            } else {
+                Assertions.assertEquals(viewport, content, TOLERANCE, "a shorter screen fills the space");
+            }
+
+            return null;
+        });
     }
 }

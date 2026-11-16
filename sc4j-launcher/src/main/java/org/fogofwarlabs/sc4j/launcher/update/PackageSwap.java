@@ -3,8 +3,10 @@ package org.fogofwarlabs.sc4j.launcher.update;
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -14,8 +16,14 @@ import java.util.List;
 /**
  * Replaces the programs of an install with those of an unpacked user package: the items {@link #ITEMS}, that is {@code java/},
  * {@code launcher/}, {@code runtime/}, the start program {@code SC4J.exe} with its folder {@code app/}, the start files, {@code LICENSE},
- * {@code NOTICE} and {@code licenses/}. {@code userdata/}, {@code mods/} and every other file of the install stay as they are. Only the
- * Windows package has the items {@link #WINDOWS_ITEMS}; an install updated from a package without them loses its own.
+ * {@code NOTICE} and {@code licenses/}. Only the Windows package has the items {@link #WINDOWS_ITEMS}; an install updated from a package without
+ * them loses its own.
+ * <p>
+ * The mod jars the package ships, listed in its file {@link #PACKAGE_MODS_FILE}, are updated too, compared with the same list of the install:
+ * a listed jar the install has is replaced when the install's list names it too, a listed jar the install's list does not name is added when
+ * the install has no such jar, and a jar only the install's list names is removed. So a shipped jar the player deleted stays deleted, and the
+ * jars the player installed are not touched. An install without the list has every listed jar replaced or added. {@code userdata/} and
+ * every other file of the install stay as they are.
  * <p>
  * Each item of the install is moved into the backup folder first, then the package's item is copied into its place; the package itself is
  * not changed, so the updater can run from it. When a step fails, the items replaced so far are removed and their backups moved back, so the
@@ -60,10 +68,18 @@ public final class PackageSwap {
     public static final @NotNull List<@NotNull String> WINDOWS_ITEMS = List.of(WINDOWS_PROGRAM, WINDOWS_PROGRAM_FOLDER);
 
     /**
-     * Checks that an unpacked user package holds every item an update replaces, the {@link #WINDOWS_ITEMS} aside.
+     * The file of a package, kept in the install, that lists the jars of {@code mods/} the package ships, one file name per line.
+     */
+    public static final @NotNull String PACKAGE_MODS_FILE = InstallLayout.LAUNCHER_FOLDER + "/package-mods.txt";
+
+    private static final @NotNull String JAR_EXTENSION = ".jar";
+
+    /**
+     * Checks that an unpacked user package holds every item an update replaces, the {@link #WINDOWS_ITEMS} aside, and every mod jar its
+     * {@link #PACKAGE_MODS_FILE} lists.
      *
      * @param packageRoot the package's folder
-     * @throws IOException if an item is missing
+     * @throws IOException if an item or a listed mod jar is missing or the list cannot be read
      */
     public static void checkPackage(@NotNull Path packageRoot) throws IOException {
         for (String item : ITEMS) {
@@ -71,6 +87,50 @@ public final class PackageSwap {
                 throw Exceptions.newIOException("The package {0} has no {1}.", packageRoot, item);
             }
         }
+
+        List<String> packageMods = readPackageMods(packageRoot);
+
+        if (packageMods != null) {
+            for (String jar : packageMods) {
+                if (!Files.isRegularFile(packageRoot.resolve(InstallLayout.MODS_FOLDER).resolve(jar), LinkOption.NOFOLLOW_LINKS)) {
+                    throw Exceptions.newIOException("The package {0} has no {1}/{2}.", packageRoot, InstallLayout.MODS_FOLDER, jar);
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads the jars of {@code mods/} that a package ships, or that the package an install came from shipped, from its
+     * {@link #PACKAGE_MODS_FILE}. Blank lines are skipped.
+     *
+     * @param root the package's or the install's folder
+     * @return the jar file names, or {@code null} when the folder has no such file
+     * @throws IOException if the file cannot be read or a line is not the file name of a jar
+     */
+    public static @Nullable List<@NotNull String> readPackageMods(@NotNull Path root) throws IOException {
+        Path file = root.resolve(PACKAGE_MODS_FILE);
+
+        if (!Files.isRegularFile(file)) {
+            return null;
+        }
+
+        List<String> jars = new ArrayList<>();
+
+        for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
+            String jar = line.strip();
+
+            if (jar.isEmpty()) {
+                continue;
+            }
+
+            if (!jar.endsWith(JAR_EXTENSION) || jar.contains("/") || jar.contains("\\") || jar.contains(":")) {
+                throw Exceptions.newIOException("{0} names {1}, which is not the file name of a jar.", file, jar);
+            }
+
+            jars.add(jar);
+        }
+
+        return jars;
     }
 
 
@@ -98,29 +158,36 @@ public final class PackageSwap {
     }
 
     /**
-     * Replaces the items of the install with those of the package. On a failure the old items are restored before the failure is thrown.
+     * Replaces the items of the install and the mod jars the package ships with those of the package. On a failure the old items are restored
+     * before the failure is thrown.
      *
-     * @throws IOException if the package lacks an item or an item cannot be replaced; the install then has its old items again unless the
-     *                     message says that they could not all be restored
+     * @throws IOException if the package lacks an item, a list of mod jars cannot be read or an item cannot be replaced; the install then has
+     *                     its old items again unless the message says that they could not all be restored
      */
     public void apply() throws IOException {
+        List<String> items = new ArrayList<>(ITEMS);
         List<String> replaced = new ArrayList<>();
 
         checkPackage(this.packageRoot);
+        items.addAll(this.findModItems());
         Files.createDirectories(this.backupRoot);
 
         try {
-            for (String item : ITEMS) {
+            for (String item : items) {
                 Path installed = this.installRoot.resolve(item);
                 Path packaged = this.packageRoot.resolve(item);
 
                 if (Files.exists(installed, LinkOption.NOFOLLOW_LINKS)) {
-                    this.move(installed, this.backupRoot.resolve(item));
+                    Path backup = this.backupRoot.resolve(item);
+
+                    Files.createDirectories(backup.getParent());
+                    this.move(installed, backup);
                 }
 
                 replaced.add(item);
 
                 if (Files.exists(packaged, LinkOption.NOFOLLOW_LINKS)) {
+                    Files.createDirectories(installed.getParent());
                     FileTreeUtils.copy(packaged, installed);
                 }
             }
@@ -136,6 +203,34 @@ public final class PackageSwap {
 
             throw exception;
         }
+    }
+
+    private @NotNull List<@NotNull String> findModItems() throws IOException {
+        List<String> installedMods = readPackageMods(this.installRoot);
+        List<String> packageMods = readPackageMods(this.packageRoot);
+        List<String> items = new ArrayList<>();
+
+        if (packageMods != null) {
+            for (String jar : packageMods) {
+                boolean shipped = installedMods != null && installedMods.contains(jar);
+                boolean present = Files.exists(this.installRoot.resolve(InstallLayout.MODS_FOLDER).resolve(jar), LinkOption.NOFOLLOW_LINKS);
+
+                // A present jar the install's list does not name is the player's; an absent jar it names was deleted by the player.
+                if (installedMods == null || present == shipped) {
+                    items.add(InstallLayout.MODS_FOLDER + "/" + jar);
+                }
+            }
+        }
+
+        if (installedMods != null) {
+            for (String jar : installedMods) {
+                if (packageMods == null || !packageMods.contains(jar)) {
+                    items.add(InstallLayout.MODS_FOLDER + "/" + jar);
+                }
+            }
+        }
+
+        return items;
     }
 
     private void restore(@NotNull List<@NotNull String> replaced) throws IOException {

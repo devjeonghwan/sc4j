@@ -22,8 +22,6 @@
 # Ignore Build Directory
 build/
 
-# Ignore crash logs and caches of runs started from the repository
+# Ignore crash logs
 hs_err_pid*.log
 replay_pid*.log
-/.cache/
-/.lwjgl/

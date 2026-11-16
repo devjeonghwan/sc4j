@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+    id 'org.fogofwarlabs.sc4j.java'
+}
+
+// The Windows program tool of the user package: the UTF-8 active code page in the manifest of SC4J.exe and of the Java runtime's programs,
+// through the resource functions of kernel32. The root build runs it on Windows; no dependency beyond the JDK and the engine base.
+dependencies {
+    implementation project(':sc4j-base')
+}
+
+tasks.named('test') {
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+}

@@ -1,13 +1,7 @@
 package org.fogofwarlabs.sc4j.launcher.update;
 
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
-import org.fogofwarlabs.sc4j.launcher.release.Release;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseAsset;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseClient;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseException;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseProblem;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseRepository;
-import org.fogofwarlabs.sc4j.launcher.release.ReleaseVersion;
+import org.fogofwarlabs.sc4j.launcher.release.*;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

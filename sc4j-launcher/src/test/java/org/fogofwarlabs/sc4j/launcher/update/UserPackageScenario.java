@@ -13,7 +13,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Makes the files of small user packages for the update tests: the programs an update replaces, written as a folder or zipped.
+ * Makes the files of small user packages for the update tests: the programs an update replaces and the mod jars a package ships, written as
+ * a folder or zipped.
  */
 final class UserPackageScenario {
     /**
@@ -35,6 +36,25 @@ final class UserPackageScenario {
         files.put("LICENSE", text);
         files.put("NOTICE", text);
         files.put("licenses/example.txt", text);
+
+        return files;
+    }
+
+    /**
+     * Gives the files of the mod jars a user package ships: the jars in {@code mods/} and their list {@link PackageSwap#PACKAGE_MODS_FILE}.
+     *
+     * @param text the contents of every jar
+     * @param jars the jar file names
+     * @return the files by their path in the package
+     */
+    static @NotNull Map<@NotNull String, @NotNull String> createModFiles(@NotNull String text, @NotNull String @NotNull ... jars) {
+        Map<String, String> files = new LinkedHashMap<>();
+
+        files.put(PackageSwap.PACKAGE_MODS_FILE, String.join("\n", jars) + "\n");
+
+        for (String jar : jars) {
+            files.put("mods/" + jar, text);
+        }
 
         return files;
     }

@@ -44,6 +44,9 @@ final class WalkClearance {
     private final int neighbourCount;
     private final int sampleDistance;
 
+    private final int @NotNull [] neighbourCells;
+    private final int @NotNull [] centerX;
+    private final int @NotNull [] centerY;
     private final boolean @NotNull [] terrainBlocked;
     private final int @NotNull [] structureCounts;
     private final byte @NotNull [] clearances;
@@ -69,6 +72,9 @@ final class WalkClearance {
         this.neighbourCount = walkCells.getNeighbourCount();
         this.sampleDistance = Math.max(1, Math.min(walkCells.getCellWidth(), walkCells.getCellHeight()) / SAMPLES_PER_CELL);
 
+        this.neighbourCells  = new int[count * this.neighbourCount];
+        this.centerX         = new int[count];
+        this.centerY         = new int[count];
         this.terrainBlocked  = new boolean[count];
         this.structureCounts = new int[count];
         this.clearances      = new byte[count];
@@ -80,7 +86,21 @@ final class WalkClearance {
         this.changed = true;
 
         for (int cell = 0; cell < count; cell++) {
-            this.terrainBlocked[cell] = !terrain.isWalkable(this.getColumn(cell), this.getRow(cell));
+            int column = this.getColumn(cell);
+            int row = this.getRow(cell);
+
+            for (int neighbour = 0; neighbour < this.neighbourCount; neighbour++) {
+                int neighbourColumn = walkCells.getNeighbourColumn(column, row, neighbour);
+                int neighbourRow = walkCells.getNeighbourRow(column, row, neighbour);
+
+                this.neighbourCells[cell * this.neighbourCount + neighbour] = walkCells.contains(neighbourColumn, neighbourRow)
+                                                                              ? neighbourRow * this.columnCount + neighbourColumn
+                                                                              : OUTSIDE;
+            }
+
+            this.centerX[cell]        = walkCells.getCenterX(column, row);
+            this.centerY[cell]        = walkCells.getCenterY(column, row);
+            this.terrainBlocked[cell] = !terrain.isWalkable(column, row);
         }
 
         this.update();
@@ -126,7 +146,7 @@ final class WalkClearance {
      * @return the world x of the cell's centre
      */
     int getCenterX(int cell) {
-        return this.cells.getCenterX(this.getColumn(cell), this.getRow(cell));
+        return this.centerX[cell];
     }
 
     /**
@@ -134,7 +154,7 @@ final class WalkClearance {
      * @return the world y of the cell's centre
      */
     int getCenterY(int cell) {
-        return this.cells.getCenterY(this.getColumn(cell), this.getRow(cell));
+        return this.centerY[cell];
     }
 
     /**
@@ -145,12 +165,7 @@ final class WalkClearance {
      * @return the neighbour's cell index, or {@link #OUTSIDE} if it lies outside the grid
      */
     int getNeighbour(int cell, int neighbour) {
-        int column = this.getColumn(cell);
-        int row = this.getRow(cell);
-        int neighbourColumn = this.cells.getNeighbourColumn(column, row, neighbour);
-        int neighbourRow = this.cells.getNeighbourRow(column, row, neighbour);
-
-        return this.cells.contains(neighbourColumn, neighbourRow) ? neighbourRow * this.columnCount + neighbourColumn : OUTSIDE;
+        return this.neighbourCells[cell * this.neighbourCount + neighbour];
     }
 
     /**

@@ -47,7 +47,9 @@ Follow the surrounding code and these rules.
 
 ## Commits and pull requests
 
-- One topic per commit; a short English summary line, a body with what changed and why.
+- One topic per commit. The subject is a short imperative English sentence with identifiers in backticks (``Fix `ReplayReader` for empty files``); a body, when needed, lists the parts as `* ` lines.
+- A version change is ``Bump version to `X.Y.Z` ``.
+- Pull requests go into `develop` and are squash-merged; the pull request title is the commit subject.
 - `.\gradlew.bat build` passes before a pull request; name the tests you ran.
 - An API change commits its regenerated `.api` files and states its version effect in the commit message.
 - Behaviour changes come with tests. No build output, local paths or game data.
@@ -56,7 +58,7 @@ Follow the surrounding code and these rules.
 
 ## Releases
 
-`develop` holds `X.Y.Z-SNAPSHOT` and publishes snapshots to the Central Portal. A release is a pull request from `develop` into `main` that sets `version=X.Y.Z` in `gradle.properties`. Each push to `main` publishes to Maven Central and creates the tag and GitHub release `vX.Y.Z` with `SC4J-X.Y.Z.zip` and `SC4J-X.Y.Z.zip.sha256`.
+`develop` holds `X.Y.Z-SNAPSHOT` and publishes snapshots to the Central Portal. A release sets `version=X.Y.Z` in `gradle.properties` on `develop` and opens a pull request from `develop` into `main` titled ``Release version `X.Y.Z` ``, merged with a merge commit. Each push to `main` publishes to Maven Central and creates the tag and GitHub release `vX.Y.Z` with `SC4J-X.Y.Z.zip` and `SC4J-X.Y.Z.zip.sha256`.
 
 ## Licence of contributions
 

@@ -16,6 +16,7 @@ import org.fogofwarlabs.sc4j.runtime.cli.ExitCode;
 import org.fogofwarlabs.sc4j.testmod.BeaconLinkMod;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,8 +41,9 @@ import java.util.zip.ZipFile;
 
 /**
  * Tests the built user package as a user unpacks it on a fresh computer without Java: it holds the start of the launcher, its own Java
- * runtime, the launcher with the shipped seed list, the runtime, mods and the licence files but no user data and no cache; the launcher,
- * started from the package root, lists the mods with the package's Java; and its runtime, started headless with no user data and no Java of
+ * runtime, the launcher with the shipped seed list and its empty JVM temporary folder, the runtime, mods and the licence files but no user
+ * data and no cache file; the launcher, started from the package root by the start file and on Windows by {@code SC4J.exe}, lists the mods
+ * with the package's Java without a JVM warning; and its runtime, started headless with no user data and no Java of
  * the computer and with the Beacon.Link options the launcher passes a fresh install (the shipped seed list, here naming a node on 127.0.0.1,
  * and the install's peers file), opens a Beacon.Link session and keeps the node in the peers file without writing a node list of the user.
  */
@@ -56,6 +58,9 @@ final class DistributionTest {
     private static final @NotNull String UNIX_SCRIPT = "sc4j-runtime";
     private static final @NotNull String WINDOWS_START = "SC4J.bat";
     private static final @NotNull String UNIX_START = "SC4J";
+    private static final @NotNull String WINDOWS_PROGRAM = "SC4J.exe";
+    private static final @NotNull String LIST_OPTION = "--list";
+    private static final @NotNull String TEMPORARY_DIRECTORY_PROPERTY = "java.io.tmpdir";
     private static final @NotNull String JAVA_HOME_VARIABLE = "JAVA_HOME";
     private static final @NotNull String PATH_VARIABLE = "PATH";
     private static final @NotNull List<@NotNull String> JAVA_COMMANDS = List.of("java.exe", "java");
@@ -65,6 +70,7 @@ final class DistributionTest {
     private static final @NotNull String WINDOWS_NAME_PREFIX = "windows";
     private static final @NotNull String NATIVE_ENCODING_PROPERTY = "native.encoding";
     private static final @NotNull String CACHE_FOLDER = ".cache";
+    private static final @NotNull String LAUNCHER_TEMPORARY_FOLDER = "launcher/.cache/tmp";
     private static final long NODE_POLL_MILLIS = 20L;
     private static final long RUN_SECONDS = 150L;
     private static final long STOP_SECONDS = 10L;
@@ -156,55 +162,14 @@ final class DistributionTest {
         process.waitFor(STOP_SECONDS, TimeUnit.SECONDS);
     }
 
-    @Test
-    void user_package_holds_the_programs_mods_and_licences_without_user_data(@TempDir @NotNull Path directory) throws IOException,
-                                                                                                                      ManifestException {
-        InstallLayout install = unpack(directory);
-        Path root = install.getRoot();
-        List<Path> modJars;
-        List<Path> caches;
-
-        for (String file : List.of("LICENSE", "NOTICE", "licenses", WINDOWS_START, UNIX_START, "launcher/bin/sc4j-launcher",
-                                   "launcher/bin/sc4j-launcher.bat", "runtime/bin/" + UNIX_SCRIPT, "runtime/bin/" + WINDOWS_SCRIPT,
-                                   "runtime/lib/natives", JAVA_RELEASE_FILE, "java/legal")) {
-            Assertions.assertTrue(Files.exists(root.resolve(file)), file);
-        }
-
-        Assertions.assertTrue(Files.readString(root.resolve(JAVA_RELEASE_FILE), StandardCharsets.UTF_8).contains(JAVA_VERSION),
-                              "the package's Java runs the class files of this build");
-
-        try (Stream<Path> listed = Files.list(install.getModsDirectory())) {
-            modJars = listed.toList();
-        }
-
-        try (Stream<Path> walked = Files.walk(root)) {
-            caches = walked.filter(path -> path.getFileName().toString().equals(CACHE_FOLDER)).toList();
-        }
-
-        NodeListReading seeds = new NodeListFile(install.getSeedsFile()).read();
-
-        Assertions.assertNull(seeds.getProblem());
-        Assertions.assertFalse(seeds.getNodes().isEmpty(), "the shipped seed list names a node");
-        Assertions.assertFalse(Files.exists(install.getUserDataDirectory()));
-        Assertions.assertEquals(List.of(), caches);
-        Assertions.assertFalse(modJars.isEmpty(), "the package holds mods");
-
-        for (Path jar : modJars) {
-            Assertions.assertEquals(jar.getFileName().toString(), ModManifestReader.read(jar).getManifest().getId() + ".jar");
-        }
-    }
-
-    @Test
-    @Timeout(TEST_SECONDS)
-    void the_start_of_the_package_lists_the_mods_with_the_package_java(@TempDir @NotNull Path directory) throws IOException, InterruptedException {
-        InstallLayout install = unpack(directory);
-        Path start = install.getRoot().resolve(isWindows() ? WINDOWS_START : UNIX_START);
+    /**
+     * Runs a start of the package with {@code --list} and checks that it lists the mods of the package without a JVM warning about its
+     * temporary folder.
+     */
+    private static void listMods(@NotNull Path directory, @NotNull InstallLayout install, @NotNull Path start) throws IOException,
+                                                                                                                       InterruptedException {
         Path output = directory.resolve("launcher-output.txt");
-
-        makeExecutable(start);
-        makeExecutable(install.getLauncherDirectory().resolve("bin").resolve("sc4j-launcher"));
-
-        ProcessBuilder builder = new ProcessBuilder(start.toString(), "--list");
+        ProcessBuilder builder = new ProcessBuilder(start.toString(), LIST_OPTION);
 
         builder.directory(directory.toFile());
         builder.redirectErrorStream(true);
@@ -224,12 +189,81 @@ final class DistributionTest {
 
         Assertions.assertEquals(0, launcher.exitValue(), text);
         Assertions.assertTrue(text.contains("Mods in " + install.getModsDirectory()), text);
+        Assertions.assertFalse(text.contains(TEMPORARY_DIRECTORY_PROPERTY), text);
 
         try (Stream<Path> listed = Files.list(install.getModsDirectory())) {
             for (Path jar : listed.toList()) {
                 Assertions.assertTrue(text.contains(jar.getFileName().toString()), text);
             }
         }
+    }
+
+    @Test
+    void user_package_holds_the_programs_mods_and_licences_without_user_data(@TempDir @NotNull Path directory) throws IOException,
+                                                                                                                      ManifestException {
+        InstallLayout install = unpack(directory);
+        Path root = install.getRoot();
+        Path temporaryFolder = root.resolve(LAUNCHER_TEMPORARY_FOLDER);
+        List<Path> modJars;
+        List<Path> caches;
+        List<Path> launcherCache;
+
+        for (String file : List.of("LICENSE", "NOTICE", "licenses", WINDOWS_START, UNIX_START, "launcher/bin/sc4j-launcher",
+                                   "launcher/bin/sc4j-launcher.bat", "runtime/bin/" + UNIX_SCRIPT, "runtime/bin/" + WINDOWS_SCRIPT,
+                                   "runtime/lib/natives", JAVA_RELEASE_FILE, "java/legal")) {
+            Assertions.assertTrue(Files.exists(root.resolve(file)), file);
+        }
+
+        Assertions.assertTrue(Files.readString(root.resolve(JAVA_RELEASE_FILE), StandardCharsets.UTF_8).contains(JAVA_VERSION),
+                              "the package's Java runs the class files of this build");
+
+        try (Stream<Path> listed = Files.list(install.getModsDirectory())) {
+            modJars = listed.toList();
+        }
+
+        try (Stream<Path> walked = Files.walk(root)) {
+            caches = walked.filter(path -> path.getFileName().toString().equals(CACHE_FOLDER)).toList();
+        }
+
+        try (Stream<Path> walked = Files.walk(temporaryFolder.getParent())) {
+            launcherCache = walked.toList();
+        }
+
+        NodeListReading seeds = new NodeListFile(install.getSeedsFile()).read();
+
+        Assertions.assertNull(seeds.getProblem());
+        Assertions.assertFalse(seeds.getNodes().isEmpty(), "the shipped seed list names a node");
+        Assertions.assertFalse(Files.exists(install.getUserDataDirectory()));
+        Assertions.assertEquals(List.of(temporaryFolder.getParent()), caches);
+        Assertions.assertEquals(List.of(temporaryFolder.getParent(), temporaryFolder), launcherCache,
+                                "the only cache is the empty JVM temporary folder of the launcher");
+        Assertions.assertFalse(modJars.isEmpty(), "the package holds mods");
+
+        for (Path jar : modJars) {
+            Assertions.assertEquals(jar.getFileName().toString(), ModManifestReader.read(jar).getManifest().getId() + ".jar");
+        }
+    }
+
+    @Test
+    @Timeout(TEST_SECONDS)
+    void the_start_of_the_package_lists_the_mods_with_the_package_java(@TempDir @NotNull Path directory) throws IOException, InterruptedException {
+        InstallLayout install = unpack(directory);
+        Path start = install.getRoot().resolve(isWindows() ? WINDOWS_START : UNIX_START);
+
+        makeExecutable(start);
+        makeExecutable(install.getLauncherDirectory().resolve("bin").resolve("sc4j-launcher"));
+        listMods(directory, install, start);
+    }
+
+    @Test
+    @Timeout(TEST_SECONDS)
+    void the_windows_program_of_the_package_lists_the_mods_with_the_package_java(@TempDir @NotNull Path directory) throws IOException,
+                                                                                                                           InterruptedException {
+        Assumptions.assumeTrue(isWindows(), "only the Windows package has " + WINDOWS_PROGRAM);
+
+        InstallLayout install = unpack(directory);
+
+        listMods(directory, install, install.getRoot().resolve(WINDOWS_PROGRAM));
     }
 
     @Test

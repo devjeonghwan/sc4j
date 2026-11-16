@@ -234,7 +234,8 @@ configure((apiModules + publishedTestFixtureModules).unique().collect { name -> 
 // The Java runtime of the user package: an image of the JDK that runs this build, made with that JDK's own jlink, with the modules that the
 // launcher, the runtime and the mods use: what jdeps finds in their jars and in the JavaFX modules (which stay in launcher/lib/javafx), and
 // the charsets and locale data they look up by name. The locale data covers the languages of the mods' texts.
-def javaRuntimeModules = ['java.base', 'java.desktop', 'java.management', 'java.xml', 'jdk.unsupported', 'jdk.charsets', 'jdk.localedata']
+def javaRuntimeModules = ['java.base', 'java.desktop', 'java.management', 'java.net.http', 'java.xml', 'jdk.unsupported', 'jdk.charsets',
+                          'jdk.localedata']
 def javaRuntimeLocales = ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'zh']
 def javaRuntimeHome = providers.systemProperty('java.home').get()
 def javaRuntimeImage = layout.buildDirectory.dir('java-runtime')
@@ -252,6 +253,51 @@ def createJavaRuntime = tasks.register('createJavaRuntime', Exec) {
     // jlink writes only into a folder that does not exist.
     doFirst {
         imageDirectory.deleteDir()
+    }
+}
+
+// Fails when the Java runtime of the user package lacks a JDK module that jdeps finds in the jars of launcher/lib or runtime/lib.
+// The launcher and the runtime are evaluated after this project, so their install folders are read only when the task runs.
+def javaRuntimePrograms = [':sc4j-launcher', ':sc4j-runtime']
+def javaRuntimeProgramJars = { String path ->
+    fileTree(new File(project(path).tasks.named('installDist', Sync).get().destinationDir, 'lib')) { include '*.jar' }.files.sort()
+}
+def checkJavaRuntimeModules = tasks.register('checkJavaRuntimeModules') {
+    description = 'Checks that the Java runtime of the user package has every JDK module that the launcher and runtime jars need.'
+    group = 'verification'
+    dependsOn({ javaRuntimePrograms.collect { path -> project(path).tasks.named('installDist') } })
+    inputs.files({ javaRuntimePrograms.collect { path -> javaRuntimeProgramJars(path) } })
+    inputs.property('modules', javaRuntimeModules)
+    inputs.property('javaHome', javaRuntimeHome)
+    def report = layout.buildDirectory.file('reports/java-runtime-modules.txt')
+    outputs.file(report)
+    doLast {
+        def jdeps = java.util.spi.ToolProvider.findFirst('jdeps').orElseThrow {
+            new GradleException('The JDK ' + javaRuntimeHome + ' has no jdeps.')
+        }
+        def lines = []
+        def problems = []
+        javaRuntimePrograms.each { path ->
+            def output = new StringWriter()
+            def errors = new StringWriter()
+            def arguments = ['--multi-release', JavaVersion.current().majorVersion, '--ignore-missing-deps', '--print-module-deps'] +
+                            javaRuntimeProgramJars(path).collect { jar -> jar.absolutePath }
+            int status = jdeps.run(new PrintWriter(output, true), new PrintWriter(errors, true), arguments as String[])
+            if (status != 0) {
+                throw new GradleException('jdeps failed on the jars of ' + path + ' (' + status + '): ' + errors.toString().trim())
+            }
+            def modules = output.toString().trim().split(',').collect { module -> module.trim() }.findAll { module -> !module.isEmpty() }
+            def missing = modules.findAll { module -> !javaRuntimeModules.contains(module) }
+            lines << path + ': ' + modules.join(',')
+            if (!missing.isEmpty()) {
+                problems << path + ' needs ' + missing.join(', ')
+            }
+        }
+        if (!problems.isEmpty()) {
+            throw new GradleException('The Java runtime of the user package lacks modules: ' + problems.join('; ') +
+                                      '. Add them to javaRuntimeModules.')
+        }
+        report.get().asFile.text = lines.join('\n') + '\n'
     }
 }
 
@@ -494,10 +540,21 @@ def createWindowsProgram = tasks.register('createWindowsProgram', Exec) {
 
 // The user package build/distributions/SC4J-<version>.zip: one folder SC4J-<version> with the programs of an install and the jars of the
 // mods above in mods/ and the Java runtime that the start scripts and SC4J.exe use (java/); on Windows also SC4J.exe with app/. It holds no
-// userdata/ and no cache: a fresh install makes them at its first start.
+// userdata/ and no cache file: a fresh install makes them at its first start. It holds the empty JVM temporary folder of the launcher
+// (launcher/.cache/tmp), which the JVM of SC4J.exe expects at its start.
 // The package is staged in build/user-package first, where the licence check runs, and zipped without file times in a fixed order, so that
 // the same sources give the same zip.
 def userPackageName = 'SC4J-' + version
+def launcherTemporaryOption = '-Djava.io.tmpdir=APP_HOME_PLACEHOLDER/'
+def launcherTemporaryFolder = providers.provider {
+    def option = project(':sc4j-launcher').tasks.named('startScripts').get().defaultJvmOpts.find { option ->
+        option.startsWith(launcherTemporaryOption)
+    }
+    if (option == null) {
+        throw new GradleException('The launcher start scripts name no java.io.tmpdir below the launcher folder.')
+    }
+    return 'launcher/' + option.substring(launcherTemporaryOption.length())
+}
 def stageUserPackage = tasks.register('stageUserPackage', Sync) {
     description = 'Stages the user package in build/user-package/' + userPackageName + ' and checks its licence files.'
     group = 'distribution'
@@ -508,7 +565,13 @@ def stageUserPackage = tasks.register('stageUserPackage', Sync) {
     if (platformOperatingSystem == 'windows') {
         from(createWindowsProgram)
     }
+    inputs.property('launcherTemporaryFolder', launcherTemporaryFolder)
+    dependsOn checkJavaRuntimeModules
     doLast {
+        def temporaryFolder = new File(destinationDir, launcherTemporaryFolder.get())
+        if (!temporaryFolder.isDirectory() && !temporaryFolder.mkdirs()) {
+            throw new GradleException('Cannot create the folder ' + temporaryFolder + '.')
+        }
         checkDistributionLicenses(destinationDir)
     }
 }

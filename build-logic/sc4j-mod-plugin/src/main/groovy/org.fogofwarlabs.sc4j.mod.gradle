@@ -34,7 +34,28 @@ def modVersion = provider { project.version.toString() }
 // The manifest sc4j-mod.json of the mod's resources gets "version" (the project version) and "engine" (the engine API version of the
 // plugin) after its opening brace; the source manifest leaves both out and names a "format" that the plugin's engine reads.
 def manifestName = 'sc4j-mod.json'
-def writeManifestVersions = { File manifestFile, String version ->
+def modSourceSets = { ([mainSourceSet] + mod.sourceSets.get()).unique { first, second -> first.is(second) ? 0 : 1 } }
+def hasModId = { manifest -> manifest instanceof Map && manifest.id instanceof String && !manifest.id.isEmpty() }
+// The mod id: sc4jMod.id when set, else the "id" of the source manifest in the resource folders of the mod's source sets.
+def readSourceModId = {
+    def manifests = modSourceSets().collectMany { sourceSet ->
+        sourceSet.resources.srcDirs.collect { directory -> new File(directory, manifestName) }
+    }.findAll { file -> file.isFile() }.unique()
+    if (manifests.isEmpty()) {
+        throw new GradleException('The mod project ' + project.name + ' has no manifest ' + manifestName + ' in its resources.')
+    }
+    if (manifests.size() > 1) {
+        throw new GradleException('The mod project ' + project.name + ' has more than one manifest ' + manifestName + ': ' + manifests.join(', ') +
+                                  '.')
+    }
+    def manifest = new JsonSlurper().parse(manifests.first(), 'UTF-8')
+    if (!hasModId(manifest)) {
+        throw new GradleException('The manifest ' + manifests.first() + ' has no "id".')
+    }
+    return manifest.id
+}
+def modId = mod.id.orElse(provider { readSourceModId() })
+def writeManifestVersions = { File manifestFile, String version, String configuredId ->
     if (version == Project.DEFAULT_VERSION) {
         throw new GradleException('The mod project ' + project.name + ' has no version: set version in its build.gradle or gradle.properties.')
     }
@@ -42,6 +63,12 @@ def writeManifestVersions = { File manifestFile, String version ->
     def manifest = new JsonSlurper().parseText(text)
     if (!(manifest instanceof Map)) {
         throw new GradleException('The manifest ' + manifestName + ' is not a JSON object.')
+    }
+    if (!hasModId(manifest)) {
+        throw new GradleException('The manifest ' + manifestName + ' has no "id".')
+    }
+    if (!configuredId.isEmpty() && manifest.id != configuredId) {
+        throw new GradleException('The manifest ' + manifestName + ' has the id ' + manifest.id + ' but sc4jMod.id is ' + configuredId + '.')
     }
     if (!manifest.containsKey('format')) {
         throw new GradleException('The manifest ' + manifestName + ' has no "format": set it to ' + manifestFormat + '.')
@@ -61,19 +88,21 @@ def writeManifestVersions = { File manifestFile, String version ->
     def inserted = fields.collect { field -> lineStart + field + (lineStart.isEmpty() ? ', ' : ',') }.join('')
     manifestFile.setText(text.substring(0, start) + inserted + text.substring(start), 'UTF-8')
 }
+def configuredModId = mod.id.orElse('')
 afterEvaluate {
     // A source set container finds source sets by name, so the owner of each source set is found by identity.
-    ([mainSourceSet] + mod.sourceSets.get()).unique { first, second -> first.is(second) ? 0 : 1 }.each { sourceSet ->
+    modSourceSets().each { sourceSet ->
         def owner = rootProject.allprojects.find { candidate ->
             candidate.extensions.findByType(SourceSetContainer)?.any { candidateSourceSet -> candidateSourceSet.is(sourceSet) }
         }
         owner.tasks.named(sourceSet.processResourcesTaskName, ProcessResources) { task ->
             task.inputs.property('sc4jModVersion', modVersion)
             task.inputs.property('sc4jEngineApiVersion', engineApiVersion)
+            task.inputs.property('sc4jModId', configuredModId)
             task.doLast {
                 def manifestFile = new File(task.destinationDir, manifestName)
                 if (manifestFile.isFile()) {
-                    writeManifestVersions(manifestFile, modVersion.get())
+                    writeManifestVersions(manifestFile, modVersion.get(), configuredModId.get())
                 }
             }
         }
@@ -129,7 +158,7 @@ def checkModJar = { File jar, String id, String version, List<String> licenseNam
 def jar = tasks.named('jar', Jar) {
     description = 'Builds the mod jar build/libs/<id>.jar.'
     group = 'sc4j'
-    archiveFileName = mod.id.map { id -> id + '.jar' }
+    archiveFileName = modId.map { id -> id + '.jar' }
     preserveFileTimestamps = false
     reproducibleFileOrder = true
     duplicatesStrategy = DuplicatesStrategy.FAIL
@@ -138,7 +167,6 @@ def jar = tasks.named('jar', Jar) {
     metaInf {
         from(mod.licenses)
     }
-    def modId = mod.id
     def licenses = mod.licenses
     doLast {
         checkModJar(archiveFile.get().asFile, modId.get(), modVersion.get(), licenses.files.collect { file -> file.name })

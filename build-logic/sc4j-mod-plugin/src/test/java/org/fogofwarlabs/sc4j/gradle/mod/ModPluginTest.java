@@ -3,6 +3,7 @@ package org.fogofwarlabs.sc4j.gradle.mod;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -15,8 +16,8 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 /**
- * Tests the manifest handling of the mod plugin on a throwaway mod: the versions it writes into {@code sc4j-mod.json} and the source
- * manifests it refuses.
+ * Tests the manifest handling of the mod plugin on a throwaway mod: the mod id it reads from {@code sc4j-mod.json}, the versions it writes
+ * into it and the source manifests it refuses.
  */
 final class ModPluginTest {
     private static final @NotNull String MOD_VERSION = "1.2.0-SNAPSHOT";
@@ -29,11 +30,22 @@ final class ModPluginTest {
                                                         }
 
                                                         version = '%s'
-
-                                                        sc4jMod {
-                                                            id = 'test-mod'
+                                                        %s
+                                                        tasks.register('printJarName') {
+                                                            def jarName = tasks.named('jar', Jar).flatMap { task -> task.archiveFileName }
+                                                            doLast {
+                                                                println('Mod jar: ' + jarName.get())
+                                                            }
                                                         }
                                                         """;
+    private static final @NotNull String MOD_ID_BLOCK = """
+
+                                                        sc4jMod {
+                                                            id = '%s'
+                                                        }
+                                                        """;
+    private static final @NotNull String PRINT_JAR_NAME_TASK = "printJarName";
+    private static final @NotNull String PROCESS_RESOURCES_TASK = "processResources";
 
     @Test
     void engine_api_version_should_be_the_major_and_minor_version_of_the_engine_version() throws IOException {
@@ -103,6 +115,48 @@ final class ModPluginTest {
         Assertions.assertTrue(result.getOutput().contains("The mod project test-mod has no version"), result.getOutput());
     }
 
+    @Test
+    void jar_should_be_named_after_the_id_of_the_source_manifest(@TempDir @NotNull Path project) throws IOException {
+        writeProject(project, MOD_VERSION, null, "{\n  \"format\": 1,\n  \"id\": \"other-mod\"\n}\n");
+        BuildResult result = createRunner(project, PRINT_JAR_NAME_TASK).build();
+
+        Assertions.assertTrue(result.getOutput().contains("Mod jar: other-mod.jar"), result.getOutput());
+    }
+
+    @Test
+    void mod_id_should_be_refused_when_it_is_not_the_id_of_the_manifest(@TempDir @NotNull Path project) throws IOException {
+        String manifest = "{\n  \"format\": 1,\n  \"id\": \"test-mod\"\n}\n";
+
+        writeProject(project, MOD_VERSION, "test-mod", manifest);
+        BuildResult same = createRunner(project, PRINT_JAR_NAME_TASK, PROCESS_RESOURCES_TASK).build();
+
+        writeProject(project, MOD_VERSION, "other-mod", manifest);
+        BuildResult other = createRunner(project, PROCESS_RESOURCES_TASK).buildAndFail();
+
+        Assertions.assertTrue(same.getOutput().contains("Mod jar: test-mod.jar"), same.getOutput());
+        Assertions.assertTrue(other.getOutput().contains("The manifest sc4j-mod.json has the id test-mod but sc4jMod.id is other-mod."),
+                              other.getOutput());
+    }
+
+    @Test
+    void a_mod_without_a_manifest_or_a_manifest_id_should_fail_the_build(@TempDir @NotNull Path project) throws IOException {
+        String manifestWithoutId = "{\n  \"format\": 1\n}\n";
+
+        writeProject(project, MOD_VERSION, null, null);
+        BuildResult missing = createRunner(project, PRINT_JAR_NAME_TASK).buildAndFail();
+
+        writeProject(project, MOD_VERSION, null, manifestWithoutId);
+        BuildResult withoutId = createRunner(project, PRINT_JAR_NAME_TASK).buildAndFail();
+
+        writeProject(project, MOD_VERSION, "test-mod", manifestWithoutId);
+        BuildResult withoutIdButModId = createRunner(project, PROCESS_RESOURCES_TASK).buildAndFail();
+
+        Assertions.assertTrue(missing.getOutput().contains("The mod project test-mod has no manifest sc4j-mod.json in its resources."),
+                              missing.getOutput());
+        Assertions.assertTrue(withoutId.getOutput().contains("sc4j-mod.json has no \"id\"."), withoutId.getOutput());
+        Assertions.assertTrue(withoutIdButModId.getOutput().contains("The manifest sc4j-mod.json has no \"id\"."), withoutIdButModId.getOutput());
+    }
+
     private static @NotNull Properties readEngineProperties() throws IOException {
         Properties properties = new Properties();
 
@@ -115,15 +169,30 @@ final class ModPluginTest {
     }
 
     private static void writeProject(@NotNull Path project, @NotNull String version, @NotNull String manifest) throws IOException {
+        writeProject(project, version, null, manifest);
+    }
+
+    private static void writeProject(@NotNull Path project, @NotNull String version, @Nullable String modId, @Nullable String manifest)
+            throws IOException {
         Path manifestFile = project.resolve(SOURCE_MANIFEST);
+        String modIdBlock = modId == null ? "" : MOD_ID_BLOCK.formatted(modId);
 
         Files.createDirectories(manifestFile.getParent());
         Files.writeString(project.resolve("settings.gradle"), SETTINGS_SCRIPT, StandardCharsets.UTF_8);
-        Files.writeString(project.resolve("build.gradle"), BUILD_SCRIPT.formatted(version), StandardCharsets.UTF_8);
-        Files.writeString(manifestFile, manifest, StandardCharsets.UTF_8);
+        Files.writeString(project.resolve("build.gradle"), BUILD_SCRIPT.formatted(version, modIdBlock), StandardCharsets.UTF_8);
+
+        if (manifest == null) {
+            Files.deleteIfExists(manifestFile);
+        } else {
+            Files.writeString(manifestFile, manifest, StandardCharsets.UTF_8);
+        }
     }
 
     private static @NotNull GradleRunner createRunner(@NotNull Path project) {
-        return GradleRunner.create().withProjectDir(project.toFile()).withPluginClasspath().withArguments("processResources");
+        return createRunner(project, PROCESS_RESOURCES_TASK);
+    }
+
+    private static @NotNull GradleRunner createRunner(@NotNull Path project, @NotNull String @NotNull ... tasks) {
+        return GradleRunner.create().withProjectDir(project.toFile()).withPluginClasspath().withArguments(tasks);
     }
 }

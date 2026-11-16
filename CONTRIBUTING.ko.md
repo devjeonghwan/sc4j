@@ -47,7 +47,9 @@
 
 ## 커밋과 풀 리퀘스트
 
-- 커밋 하나에 주제 하나. 짧은 영어 요약 줄과, 무엇을 왜 바꿨는지 적은 본문.
+- 커밋 하나에 주제 하나. 제목은 식별자를 백틱으로 감싼 짧은 영어 명령문입니다(``Fix `ReplayReader` for empty files``). 본문이 필요하면 바뀐 부분을 `* ` 줄로 적습니다.
+- 버전 변경 커밋은 ``Bump version to `X.Y.Z` ``입니다.
+- 풀 리퀘스트는 `develop`으로 보내며 squash로 병합합니다. 풀 리퀘스트 제목이 커밋 제목이 됩니다.
 - 풀 리퀘스트 전에 `.\gradlew.bat build`가 통과해야 하며, 실행한 테스트를 적습니다.
 - API 변경 커밋에는 다시 생성한 `.api` 파일을 넣고 버전 영향을 커밋 메시지에 적습니다.
 - 동작 변경에는 테스트를 함께 넣습니다. 빌드 결과물, 로컬 경로, 게임 데이터는 넣지 않습니다.
@@ -56,7 +58,7 @@
 
 ## 릴리스
 
-`develop`은 `X.Y.Z-SNAPSHOT`을 가지며 Central Portal에 스냅샷을 게시합니다. 릴리스는 `gradle.properties`에 `version=X.Y.Z`를 정하는 `develop`에서 `main`으로의 풀 리퀘스트입니다. `main`에 푸시할 때마다 Maven Central에 게시하고, `SC4J-X.Y.Z.zip`과 `SC4J-X.Y.Z.zip.sha256`이 붙은 태그와 GitHub 릴리스 `vX.Y.Z`를 만듭니다.
+`develop`은 `X.Y.Z-SNAPSHOT`을 가지며 Central Portal에 스냅샷을 게시합니다. 릴리스는 `develop`에서 `gradle.properties`에 `version=X.Y.Z`를 정한 뒤, `develop`에서 `main`으로 ``Release version `X.Y.Z` `` 제목의 풀 리퀘스트를 열어 merge commit으로 병합합니다. `main`에 푸시할 때마다 Maven Central에 게시하고, `SC4J-X.Y.Z.zip`과 `SC4J-X.Y.Z.zip.sha256`이 붙은 태그와 GitHub 릴리스 `vX.Y.Z`를 만듭니다.
 
 ## 기여물의 라이선스
 

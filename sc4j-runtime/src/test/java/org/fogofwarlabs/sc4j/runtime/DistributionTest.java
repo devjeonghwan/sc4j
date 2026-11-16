@@ -215,7 +215,7 @@ final class DistributionTest {
 
         for (String file : List.of("LICENSE", "NOTICE", "licenses", WINDOWS_START, UNIX_START, "launcher/bin/sc4j-launcher",
                                    "launcher/bin/sc4j-launcher.bat", "runtime/bin/" + UNIX_SCRIPT, "runtime/bin/" + WINDOWS_SCRIPT,
-                                   "runtime/lib/natives", JAVA_RELEASE_FILE, "java/legal")) {
+                                   "runtime/bin/sc4j-runtime.launch", "runtime/lib/natives", JAVA_RELEASE_FILE, "java/legal")) {
             Assertions.assertTrue(Files.exists(root.resolve(file)), file);
         }
 

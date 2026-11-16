@@ -12,15 +12,35 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Tests the runtime command line that the launcher builds: every install path of the mod and the Beacon.Link account folder, seeds by the one
- * seed rule and the shared peers file.
+ * Tests the runtime command line that the launcher builds: the Java program with the runtime's launch file, every install path of the mod and
+ * the Beacon.Link account folder, seeds by the one seed rule, the shared peers file and the program files the install lacks.
  */
 final class RuntimeCommandLineTest {
     private static final @NotNull String ACCOUNT_ID = "0123456789abcdef";
     private static final @NotNull String NODE_LIST = "{\"format\": 1, \"nodes\": []}";
+    private static final @NotNull String LAUNCH_TEXT = """
+                                                       -XX:-UsePerfData
+                                                       -Djava.io.tmpdir=${APP_HOME}/.cache/tmp
+
+                                                       -cp
+                                                       ${APP_HOME}/lib/*
+                                                       main.Main
+                                                       """;
 
     private static @NotNull Path getAccountDirectory(@NotNull InstallLayout install) {
         return install.getBeaconLinkDirectory().resolve("accounts").resolve(ACCOUNT_ID);
+    }
+
+    private static @NotNull Path writePrograms(@NotNull InstallLayout install, @NotNull Path javaHome, @NotNull String javaName) throws IOException {
+        Path java = javaHome.resolve("bin").resolve(javaName);
+
+        Files.createDirectories(java.getParent());
+        Files.writeString(java, "");
+        Files.createDirectories(install.getRuntimeDirectory().resolve("lib"));
+        Files.createDirectories(install.getRuntimeDirectory().resolve("bin"));
+        Files.writeString(install.getRuntimeDirectory().resolve("bin").resolve(RuntimeCommandLine.LAUNCH_FILE), LAUNCH_TEXT);
+
+        return java;
     }
 
     @Test
@@ -29,13 +49,16 @@ final class RuntimeCommandLineTest {
         InstallLayout install = InstallLayout.of(root);
         Path jar = root.resolve("mods").resolve("my mod.jar");
         Path userData = root.resolve("userdata");
+        Path runtime = root.resolve("runtime");
+        Path java = writePrograms(install, root.resolve("java"), "java.exe");
 
         Files.createDirectories(install.getSeedsFile().getParent());
         Files.writeString(install.getSeedsFile(), NODE_LIST);
 
-        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "my-mod", jar, getAccountDirectory(install), true);
+        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "my-mod", jar, getAccountDirectory(install), root.resolve("java"), true);
 
-        Assertions.assertEquals(List.of(root.resolve("runtime").resolve("bin").resolve("sc4j-runtime.bat").toString(),
+        Assertions.assertEquals(List.of(java.toString(),
+                                        "-XX:-UsePerfData", "-Djava.io.tmpdir=" + runtime + "/.cache/tmp", "-cp", runtime + "/lib/*", "main.Main",
                                         "--install", root.toString(),
                                         "--mod", jar.toString(),
                                         "--settings", userData.resolve("settings").resolve("my-mod.json").toString(),
@@ -48,6 +71,8 @@ final class RuntimeCommandLineTest {
         Assertions.assertEquals(root, commandLine.getWorkingDirectory());
         Assertions.assertEquals(userData.resolve("settings").resolve("my-mod.json"), commandLine.getSettingsFile());
         Assertions.assertEquals(userData.resolve("logs").resolve("my-mod"), commandLine.getLogDirectory());
+        Assertions.assertNull(commandLine.getMissingProgram());
+        Assertions.assertEquals(Path.of(runtime + "/.cache/tmp"), commandLine.getTemporaryDirectory());
     }
 
     @Test
@@ -55,24 +80,50 @@ final class RuntimeCommandLineTest {
         InstallLayout install = InstallLayout.of(directory);
         Path jar = directory.resolve("mods").resolve("demo.jar");
 
-        Assertions.assertFalse(RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true).getArguments().contains("--seeds"),
+        Assertions.assertFalse(RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), directory, true).getArguments()
+                                                 .contains("--seeds"),
                                "without a list the peers file is the only seed source");
 
         Files.createDirectories(install.getNodesFile().getParent());
         Files.writeString(install.getNodesFile(), NODE_LIST);
 
-        List<String> arguments = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true).getArguments();
+        List<String> arguments = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), directory, true).getArguments();
 
         Assertions.assertEquals(install.getNodesFile().toString(), arguments.get(arguments.indexOf("--seeds") + 1));
     }
 
     @Test
-    void create_should_use_the_unix_start_script_outside_windows(@TempDir @NotNull Path directory) {
+    void create_should_use_the_unix_java_program_outside_windows(@TempDir @NotNull Path directory) throws IOException {
         Path jar = directory.resolve("mods").resolve("demo.jar");
         InstallLayout install = InstallLayout.of(directory);
-        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), false);
+        Path java = writePrograms(install, directory.resolve("jdk"), "java");
+        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), directory.resolve("jdk"),
+                                                                   false);
 
-        Assertions.assertEquals(directory.resolve("runtime").resolve("bin").resolve("sc4j-runtime"), commandLine.getScript());
+        Assertions.assertEquals(java, commandLine.getProgram());
+        Assertions.assertNull(commandLine.getMissingProgram());
+    }
+
+    @Test
+    void create_should_report_each_missing_program_file(@TempDir @NotNull Path directory) throws IOException {
+        Path jar = directory.resolve("mods").resolve("demo.jar");
+        InstallLayout install = InstallLayout.of(directory);
+        Path javaHome = directory.resolve("java");
+        Path java = writePrograms(install, javaHome, "java.exe");
+        Path launchFile = install.getRuntimeDirectory().resolve("bin").resolve(RuntimeCommandLine.LAUNCH_FILE);
+        Path libraries = install.getRuntimeDirectory().resolve("lib");
+
+        Files.delete(libraries);
+        Assertions.assertEquals(libraries, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), javaHome, true)
+                                                             .getMissingProgram());
+
+        Files.delete(launchFile);
+        Assertions.assertEquals(launchFile, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), javaHome, true)
+                                                              .getMissingProgram());
+
+        Files.delete(java);
+        Assertions.assertEquals(java, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), javaHome, true)
+                                                        .getMissingProgram());
     }
 
     @Test
@@ -80,11 +131,11 @@ final class RuntimeCommandLineTest {
         Path root = directory.resolve("SC4J Install");
         Path jar = root.resolve("mods").resolve("my-mod.jar");
         InstallLayout install = InstallLayout.of(root);
-        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "my-mod", jar, getAccountDirectory(install), true);
+        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "my-mod", jar, getAccountDirectory(install), root.resolve("java"), true);
         String text = commandLine.describe();
-        String script = root.resolve("runtime").resolve("bin").resolve("sc4j-runtime.bat").toString();
+        String java = root.resolve("java").resolve("bin").resolve("java.exe").toString();
 
-        Assertions.assertTrue(text.startsWith("\"" + script + "\" --install \"" + root + "\" --mod "), text);
+        Assertions.assertTrue(text.startsWith("\"" + java + "\" --install \"" + root + "\" --mod "), text);
         Assertions.assertEquals(15, commandLine.getArguments().size());
     }
 }

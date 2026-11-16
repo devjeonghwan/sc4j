@@ -24,11 +24,15 @@ application {
     mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
 }
 
-// The start scripts put every jar of lib/ on the class path.
+// The start scripts put every jar of lib/ on the class path. bin/sc4j-runtime.launch holds their Java arguments, one per line, with
+// ${APP_HOME} for the distribution folder.
 tasks.named('startScripts') {
     doLast {
         windowsScript.text = windowsScript.text.replaceFirst(/(?m)^set CLASSPATH=.*$/, 'set CLASSPATH=%APP_HOME%\\\\lib\\\\*')
         unixScript.text = unixScript.text.replaceFirst(/(?m)^CLASSPATH=.*$/, 'CLASSPATH=\\$APP_HOME/lib/*')
+        def launchArguments = defaultJvmOpts.collect { it.replace('APP_HOME_PLACEHOLDER', '${APP_HOME}') } +
+                              ['-cp', '${APP_HOME}/lib/*', mainClass.get()]
+        new File(outputDir, applicationName + '.launch').setText(launchArguments.join('\n') + '\n', 'UTF-8')
     }
 }
 

@@ -4,7 +4,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
 import org.fogofwarlabs.sc4j.launcher.ui.ComponentUtils;
@@ -12,8 +11,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Shows the update part of the Settings screen's launcher panel in one row: the update source (the GitHub repository whose releases update
- * the install), Check now, the running version over the result of the last check, and Update when a newer version is available.
+ * Shows the update part of the Settings screen's launcher panel: the update source, Check now, the running version over the result of the
+ * last check, and Update when a newer version is available.
  */
 public final class UpdateView {
     private static final double SOURCE_WIDTH = 260;
@@ -41,7 +40,7 @@ public final class UpdateView {
     private final @NotNull Button check;
     private final @NotNull Label status;
     private final @NotNull Button update;
-    private final @NotNull HBox root;
+    private final @NotNull VBox root;
 
     /**
      * Creates a {@link UpdateView} instance.
@@ -66,9 +65,12 @@ public final class UpdateView {
 
         state     = ComponentUtils.column(ComponentUtils.Spacing.XS, ComponentUtils.label(texts.format("update.version", version), "text-caption"),
                                           this.status);
-        this.root = ComponentUtils.row(ComponentUtils.Spacing.M, ComponentUtils.field(texts.get("update.source"), this.source), this.check, state,
-                                       this.update);
-        this.root.setAlignment(Pos.BOTTOM_LEFT);
+        // The status lines take the row's height instead of setting it.
+        state.setMinHeight(0);
+        state.setPrefHeight(0);
+        state.setAlignment(Pos.CENTER_LEFT);
+        this.root = ComponentUtils.field(texts.get("update.source"),
+                                         ComponentUtils.row(ComponentUtils.Spacing.M, this.source, this.check, state, this.update));
 
         this.showStatus(null, ComponentUtils.Tone.NEUTRAL, false);
     }
@@ -76,7 +78,7 @@ public final class UpdateView {
     /**
      * @return the view's root node
      */
-    public @NotNull HBox getRoot() {
+    public @NotNull VBox getRoot() {
         return this.root;
     }
 

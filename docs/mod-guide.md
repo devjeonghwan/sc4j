@@ -2,61 +2,38 @@
 
 **English** | [한국어](mod-guide.ko.md)
 
-This guide shows how to make a game for the SC4J engine: a mod. Chapter 2 takes you from nothing to a first mod that builds, installs and runs; the chapters after it explain each part of a mod and name the classes of the demo that implement it. The demo ([`mods/demo/`](../mods/demo/), mod id `demo`, "SC4J Demo: Dawnhold and Cindermaw") is a small real-time strategy game made only of the engine, with art, sound, menus, computer players, replays, saved games and network play.
-
-The root [README](../README.md) lists every mod of this repository.
-
-Apart from short examples, the guide links to sources instead of copying them; the Javadoc of each class is its contract. Commands run in PowerShell from the repository root unless the step says otherwise; on Linux or macOS use `./gradlew` and the start scripts without `.bat`.
-
-**Contents**
-
-| Getting started | The parts of a mod | Going further |
-|---|---|---|
-| [1. What a mod is](#1-what-a-mod-is) | [5. Content](#5-content-the-standard-data-pack) | [13. Replays and saved games](#13-replays-and-saved-games) |
-| [2. Your first mod](#2-your-first-mod) | [6. Rules](#6-rules-the-game-definition-systems-orders-and-commands) | [14. Network play](#14-network-play) |
-| [3. Manifest and identity](#3-manifest-and-identity) | [7. The build and the jar](#7-the-build-and-the-jar) | [15. Building, installing and running](#15-building-installing-and-running) |
-| [4. The entry](#4-the-entry-initialize-register-close) | [8. Maps and first-run content](#8-maps-and-first-run-content) | [16. API and versions](#16-api-and-versions) |
-| | [9. The headless runner](#9-the-headless-runner) | [17. Licences for assets](#17-licences-for-assets) |
-| | [10. Client screens](#10-client-screens) | [18. Clone an existing mod](#18-clone-an-existing-mod) |
-| | [11. Computer players](#11-computer-players) | [19. Testing your mod](#19-testing-your-mod) |
-| | [12. Determinism](#12-determinism) | [20. Two ways a mod runs](#20-two-ways-a-mod-runs) |
+How to make a game (a mod) for the SC4J engine. Each chapter names the demo classes ([`mods/demo/`](../mods/demo/)) that implement its part.
 
 ## 1. What a mod is
 
-A mod is **one jar**. At its root lies the manifest `sc4j-mod.json`, which names the mod (its id, name, version), the engine API version it was built against and its entry class. The engine and its libraries are not in the jar: the runtime of an SC4J install provides them.
+A mod is **one jar** with the manifest `sc4j-mod.json` at its root (id, name, version, engine API version, entry class). The runtime of an SC4J install provides the engine and its libraries.
 
-- One mod runs per runtime session, in its own class loader, so two mods never meet, even with equal package names.
-- The **mod id** names everything the mod owns in an install: its settings file `userdata/settings/<id>.json`, its storage folder `userdata/mods/<id>/` (replays, saves, maps, options; `ModStorage`) and its log folder `userdata/logs/<id>/`.
-- The **mod identity** (`ModIdentity`) is the engine API version, the mod id and version, the digest of the jar's content and the digest of the data the mod adds itself. Two machines play together, and a replay plays back, only with equal identities: every change of the jar is a new identity.
-- The runtime creates the entry class (a public constructor without arguments), calls `Mod.initialize(ModContext)`, then `Mod.register(ModRegistration)`, then runs what the mod registered, and calls `Mod.close()` at the end.
+- One mod runs per runtime session, in its own class loader.
+- The **mod id** names the mod's settings file `userdata/settings/<id>.json`, storage folder `userdata/mods/<id>/` (`ModStorage`: replays, saves, maps, options) and log folder `userdata/logs/<id>/`.
+- The **mod identity** (`ModIdentity`) is the engine API version, the mod id and version, the digest of the jar's content and the digest of the identity data the mod adds. Machines play together, and replays play back, only with equal identities.
+- The runtime creates the entry class (public no-argument constructor), calls `Mod.initialize(ModContext)`, `Mod.register(ModRegistration)`, runs what was registered, and calls `Mod.close()`.
 
-What you need: the JDK the repository builds with (JDK 25), this repository (for its Gradle wrapper and the dev install) and nothing else; the mod itself lives in a folder of its own and builds with the SC4J mod plugin (section 7.1).
+You need JDK 25 and this repository (its Gradle wrapper and development install).
 
 ## 2. Your first mod
 
 ### 2.1 An SC4J install
 
-A mod is installed into the `mods/` folder of an SC4J install. The repository's development install is `build/dev-install/` (launcher, runtime and the repository's mods):
-
-```powershell
-.\gradlew.bat devInstall
-```
-
-Any other SC4J install works the same way: its folder holds `launcher/`, `runtime/`, `mods/` and, once used, `userdata/`.
+Mods go into `mods/` of an install. `.\gradlew.bat devInstall` makes the development install `build/dev-install/`; any install holds `launcher/`, `runtime/`, `mods/` and, once used, `userdata/`.
 
 ### 2.2 The mod's files
 
-A mod is a Gradle project of its own. Here it is the folder `my-mod` next to the repository folder:
+A mod is its own Gradle project, here `my-mod` next to the repository folder:
 
-| File | What |
+| File | Content |
 |---|---|
-| `settings.gradle` | the repositories and the project name (section 7.1) |
-| `build.gradle` | the mod plugin and the mod id (section 7.1) |
-| `gradle.properties` | `sc4j.install=<install>`: the install the build installs into (a Windows path with forward slashes) |
-| `src/main/resources/sc4j-mod.json` | the manifest (section 3) |
-| `src/main/java/com/example/mymod/` | the mod's classes: the entry `MyMod` and the screen `FirstScene` |
+| `settings.gradle` | repositories and project name (section 7.1) |
+| `build.gradle` | mod plugin and mod id (section 7.1) |
+| `gradle.properties` | `sc4j.install=<install>` (Windows path with forward slashes) |
+| `src/main/resources/sc4j-mod.json` | manifest (chapter 3) |
+| `src/main/java/com/example/mymod/` | `MyMod` (entry) and `FirstScene` (screen) |
 
-The mod id is lower case letters and digits in groups joined by single hyphens (`my-mod`); pick an id nobody else uses. The manifest:
+A mod id is lower-case letters and digits in groups joined by single hyphens (`my-mod`), unique. The manifest:
 
 ```json
 {
@@ -69,7 +46,7 @@ The mod id is lower case letters and digits in groups joined by single hyphens (
 }
 ```
 
-The entry registers a headless runner that logs one line, and the first screen of the window run (chapter 4):
+The entry registers a headless runner that logs one line and the first screen of the window run:
 
 ```java
 package com.example.mymod;
@@ -102,7 +79,7 @@ public final class MyMod implements Mod {
 }
 ```
 
-The screen fills the window with one colour (packed `0xAARRGGBB`) and ends the run on Escape (chapter 10):
+The screen fills the window with one colour (`0xAARRGGBB`) and ends the run on Escape:
 
 ```java
 package com.example.mymod;
@@ -154,13 +131,11 @@ final class FirstScene implements ClientScene {
 
 ### 2.3 Build and install
 
-The repository's Gradle wrapper builds the mod's folder:
-
 ```powershell
 .\gradlew.bat -p ..\my-mod installMod
 ```
 
-builds `..\my-mod\build\libs\my-mod.jar` and copies it into `<install>/mods/`. `jar` instead of `installMod` only builds the jar.
+builds `..\my-mod\build\libs\my-mod.jar` and copies it into `<install>/mods/`; `jar` only builds it.
 
 ### 2.4 Run headless
 
@@ -168,7 +143,7 @@ builds `..\my-mod\build\libs\my-mod.jar` and copies it into `<install>/mods/`. `
 <install>\runtime\bin\sc4j-runtime.bat --mod <install>\mods\my-mod.jar --headless
 ```
 
-runs the mod's headless runner and ends with exit code 0. The runtime prints its log; the last lines are
+ends with exit code 0; the last log lines are:
 
 ```text
 ... INFO  [main] RuntimeSession - IDENTITY: my-mod 0.1.0 (engine 0.1, content ..., data ...)
@@ -176,110 +151,96 @@ runs the mod's headless runner and ends with exit code 0. The runtime prints its
 ... INFO  [main] RuntimeSession - RUNTIME END: exit code 0 (SUCCESS)
 ```
 
-The start scripts run the JDK named by `JAVA_HOME` (or `java` on the `PATH`): JDK 25. The mod's own arguments come after `--` (`ModContext.getArguments()`, chapter 9).
+The start scripts use the JDK of `JAVA_HOME` (or `java` on the `PATH`), JDK 25. Mod arguments follow `--` (`ModContext.getArguments()`).
 
 ### 2.5 Run from the launcher
 
-```text
-<install>\launcher\bin\sc4j-launcher.bat --list
-```
-
-prints every jar of `mods/` with its status; the new mod has no pre-run settings, so it is `READY`:
+`<install>\launcher\bin\sc4j-launcher.bat --list` prints the mods and their status:
 
 ```text
 Mods in <install>\mods
 READY   my-mod               my-mod.jar
 ```
 
-`<install>\launcher\bin\sc4j-launcher.bat` opens the launcher window; choose "My Mod" and start it. The runtime opens a window with `FirstScene` in one colour; Escape ends the run.
+`<install>\launcher\bin\sc4j-launcher.bat` opens the launcher; starting "My Mod" shows `FirstScene`.
 
-Players install a released mod with Install mod on the Mods screen: the latest GitHub release of the mod's repository carries `<id>.jar` and its checksum file `<id>.jar.sha256`, and the launcher installs the jar only when its checks pass. The catalog `mods.json` of [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods) lists mods by name.
-
-The launcher offers a newer release of a mod installed this way as an update in the mod's details.
-
-From here on, turn the mod into your game. Section 2.6 lists the parts of a small game in the usual order; the rest of this guide explains each part.
+Players install a released mod from the launcher: the latest GitHub release of the mod's repository carries `<id>.jar` and `<id>.jar.sha256`. The catalog [`fogofwarlabs/sc4j-mods`](https://github.com/fogofwarlabs/sc4j-mods) lists mods by name.
 
 ### 2.6 Make it a game
 
-A small game needs units that move and fight, a building that trains them and a way to win:
-
-1. **Content** (chapter 5): a standard data pack under `src/main/resources/<id>/pack/` (`pack.json`, `content.json`). `initialize` opens it with `StandardPack.openResources(MyMod.class.getClassLoader(), "my-mod/pack")` and reads it with `readContent`; `register` adds its types to the game's content (`PackContent.register(registration.getContent())`) and registers the pack as the resource provider.
-2. **Rules** (chapter 6): the game definition `registration.getSimulation()` with the engine default systems and their frame phases.
-3. **Map** (chapter 8): a map of the engine map format under `src/main/resources/<id>/seed/maps/`, copied into the storage at the first run, with `"victory": "annihilation"` (a player without units loses) or `"elimination"` (a player without buildings loses).
-4. **Units** in `content.json` (chapter 5): a building with `"traits": ["building"]`, `placementWidth`, `placementHeight` and a `collision` box; the faction's `townHall` is placed at the start location of each player of the faction, its `startUnits` next to it. Fighters get a `groundWeapon` (a `weapons` entry), a `targetAcquisitionRange`, a `buildTime` (game loops) and `"idleOrders": {"human": "guard", "computer": "guard"}`. A `cost` needs `resourceKinds` and a start amount (`game.getEconomy().setAmount` after `Game.create`), `supplyRequired` a unit with `supplyProvided`. A `requirements` entry such as `"spearman": [{"actor": "keep"}]` lets the building train the unit. The spatial index (`StandardSpatialIndex`) is created with the width and height of the largest unit: it finds no unit larger than that.
-5. **Orders** (chapter 6): the order types the idle orders and your commands name (`guard`, `attack`, `attack-move`) go to `readContent`, their behaviors to the order system: `GuardBehavior`, `AttackBehavior` and `AttackMoveBehavior` over `(StandardCombatSystem) game.getCombat()`.
-6. **Training.** Register a `TrainUnitCommandType` in the command registry under the next id (the registry's size is the highest id plus one). A controller or a scene sends `train.create(game, building, type)` through its `CommandSink`; the production queue `StandardProductionSystem` runs it (`new StandardProductionSystem.Builder(capacity)` with `StandardProductionSystem.addColumns(builder, capacity)`).
-7. **Winning.** Run the map's triggers (`StandardTriggerSystem` over `StandardMapData.getTriggers()`) as the last frame phase: `((StandardTriggerSystem) game.getTriggers()).isGameOver()` tells when the game is decided and `getOutcome(player)` gives `VICTORY` or `DEFEAT`. Stop the headless runner's loop and the scene's game loops there.
-8. **Screen and headless runner** (chapters 9 and 10): a scene that shows the game in a session, a headless runner that plays it with computer players and records its replay.
-9. **Check** (chapter 12): two headless runs of the same game and the playback of its replay give the same state hash after every game loop.
+1. **Content** (chapter 5): a standard data pack in `src/main/resources/<id>/pack/` (`pack.json`, `content.json`). `initialize` opens it with `StandardPack.openResources(MyMod.class.getClassLoader(), "my-mod/pack")` and `readContent`; `register` calls `PackContent.register(registration.getContent())` and registers the pack as resource provider.
+2. **Rules** (chapter 6): engine default systems and frame phases in `registration.getSimulation()`.
+3. **Map** (chapter 8): a map in `src/main/resources/<id>/seed/maps/`, copied into the storage at the first run, with `"victory": "annihilation"` (no units loses) or `"elimination"` (no buildings loses).
+4. **Units** in `content.json`: a building has `"traits": ["building"]`, `placementWidth`, `placementHeight` and a `collision` box; a faction's `townHall` is placed at each of its players' start locations, its `startUnits` beside it. Fighters get a `groundWeapon` (a `weapons` entry), `targetAcquisitionRange`, `buildTime` (game loops) and `"idleOrders": {"human": "guard", "computer": "guard"}`. A `cost` needs `resourceKinds` and a start amount (`game.getEconomy().setAmount` after `Game.create`); `supplyRequired` needs a unit with `supplyProvided`. `requirements` such as `"spearman": [{"actor": "keep"}]` let a building train a unit. Create `StandardSpatialIndex` with the width and height of the largest unit; it finds no larger unit.
+5. **Orders**: the order types that idle orders and commands name (`guard`, `attack`, `attack-move`) go to `readContent`; `GuardBehavior`, `AttackBehavior` and `AttackMoveBehavior` over `(StandardCombatSystem) game.getCombat()` go to the order system.
+6. **Training**: register a `TrainUnitCommandType` under the next id (registry size = highest id + 1); send `train.create(game, building, type)` through a `CommandSink`. `StandardProductionSystem` runs it (`new StandardProductionSystem.Builder(capacity)`, `StandardProductionSystem.addColumns(builder, capacity)`).
+7. **Winning**: `StandardTriggerSystem` over `StandardMapData.getTriggers()` as the last frame phase; `((StandardTriggerSystem) game.getTriggers()).isGameOver()` and `getOutcome(player)` (`VICTORY`, `DEFEAT`) end the loops.
+8. **Screen and headless runner** (chapters 9, 10).
+9. **Check** (chapter 12): two headless runs and the replay give the same state hash after every game loop.
 
 ## 3. Manifest and identity
 
-`sc4j-mod.json` at the jar root (section 2.2, [the demo](../mods/demo/src/main/resources/sc4j-mod.json)). The launcher and the runtime read it without loading a class (`ModManifestReader`); a problem makes the mod `ERROR` in the launcher.
+`sc4j-mod.json` at the jar root ([demo](../mods/demo/src/main/resources/sc4j-mod.json)), read without loading a class (`ModManifestReader`); a problem makes the mod `ERROR` in the launcher.
 
 | Field | Required | Value |
 |---|---|---|
 | `format` | yes | `1` |
-| `id` | yes | the mod id (section 2.2) |
+| `id` | yes | mod id |
 | `name` | yes | per language: `{"en": "My Mod", "ko": "..."}` |
-| `version` | yes | the mod's version, part of its identity |
-| `engine` | yes | the engine API version built against, `MAJOR.MINOR`; the runtime runs the mod when the majors are equal and the mod's minor is not higher (`EngineVersion.CURRENT`, [API policy 3.1](api-policy.md#31-the-engine-api-version)) |
-| `entry` | yes | the fully qualified entry class |
-| `description`, `authors`, `website`, `license` | no | shown in the launcher's mod details; `license` is the place for the notation that the licences of your assets ask for (chapter 17) |
-| `notices` | no | short legal notices, each per language like `name`: `[{"en": "Example Game is a trademark of Example Company.", "ko": "..."}]`; the launcher's About box lists them under the mod's name, in the display language or else English |
-| `images` | no | `icon`, `banner`, `screenshots`: PNG paths in the jar, shown by the launcher |
-| `settings` | no | the pre-run settings the launcher asks for before a start (below) |
+| `version` | yes | mod version, part of the identity |
+| `engine` | yes | engine API version `MAJOR.MINOR`; runs when the majors are equal and the mod's minor is not higher ([API policy 3.1](api-policy.md#31-the-engine-api-version)) |
+| `entry` | yes | fully qualified entry class |
+| `description`, `authors`, `website`, `license` | no | launcher mod details; `license` holds the notation your asset licences ask for |
+| `notices` | no | short legal notices per language like `name`: `[{"en": "Example Game is a trademark of Example Company.", "ko": "..."}]`; the About box lists them under the mod name, in the display language or English |
+| `images` | no | `icon`, `banner`, `screenshots`: PNG paths in the jar |
+| `settings` | no | pre-run settings (below) |
 
-**Pre-run settings.** A mod that needs something before it starts (an external data folder, a language) declares it in `settings`: entries with `key`, `type` (`directory`, `file`, `choice`, `integer`, `string`, `boolean`), `label`, `description`, `required`, `default`, `message` and the fields of the type (`SettingsSchema` in `sc4j-mod-manifest`). The launcher shows the form, validates the values and saves them to `userdata/settings/<id>.json`; the mod reads them with `ModContext.getSettings()`. A `choice` of locales with `"systemDefault": true` defaults to the option of the operating system's locale (`koKR` for Korean in Korea), else to its `default`. A mod with required settings is `WARNING` until they are saved. The first mod of chapter 2 has none.
+**Pre-run settings**: entries with `key`, `type` (`directory`, `file`, `choice`, `integer`, `string`, `boolean`), `label`, `description`, `required`, `default`, `message` and type fields (`SettingsSchema`). The launcher validates them and saves `userdata/settings/<id>.json`; the mod reads `ModContext.getSettings()`. A locale `choice` with `"systemDefault": true` defaults to the operating system's locale option (`koKR` for Korean in Korea), else `default`. Missing required settings make the mod `WARNING`.
 
-**Directory settings.** A `directory` setting has a folder picker in the form and three optional fields:
+**Directory settings** have a folder picker and three optional fields:
 
-- `check.contains`: relative paths the folder must hold; `message` is shown when it does not.
-- `detect`: where a folder of this kind is usually recorded: the names of its uninstall entries (`uninstallEntries`) and its folder names below the program folders (`programFolders`). While the setting has no value, the launcher (and the runtime) looks there, read-only, and saves the first folder that passes `check`.
-- `shared`: a name under which mods share one value, such as the folder of a game that several mods read. The value is saved once in `userdata/shared-settings.json` and every mod that declares the same name shows and uses it. Without `shared` the value is the mod's own.
+- `check.contains`: relative paths the folder must hold; else `message` is shown.
+- `detect`: uninstall entry names (`uninstallEntries`) and folder names below the program folders (`programFolders`); while the setting is empty, the launcher and the runtime look there read-only and save the first folder that passes `check`.
+- `shared`: a name under which mods share one value, saved in `userdata/shared-settings.json`.
 
-The mod reads the folder like any setting, with `ModContext.getSettings().getDirectory(key)`. A mod that reads the data of another game's installation declares that game's folder this way, with `detect` and `shared`.
+The mod reads it with `ModContext.getSettings().getDirectory(key)`.
 
-**Identity data.** A mod that reads external data adds that data's version or digest with `ModRegistration.addIdentityData`, so two machines with different external data do not play together.
+**Identity data**: a mod that reads external data adds its version or digest with `ModRegistration.addIdentityData`.
 
 ## 4. The entry: initialize, register, close
 
-`MyMod` (section 2.2), [`DemoMod`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/DemoMod.java).
+[`DemoMod`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/DemoMod.java).
 
-- `initialize(ModContext)`: open and check what the mod needs; throw `ModException` to refuse the run. `ModContext` gives the manifest, the saved settings, the storage (`ModStorage`), the install folder, the mod's own command line arguments (after `--`) and the logger. Read your resources through your own class loader (`MyMod.class.getClassLoader()`).
-- `register(ModRegistration)`: tell the engine what the mod adds. The registration closes when the method returns.
+- `initialize(ModContext)`: open and check what the mod needs; `ModException` refuses the run. `ModContext` gives the manifest, settings, storage, install folder, mod arguments and logger. Read resources through the mod's class loader.
+- `register(ModRegistration)`: the registration closes when it returns.
+- `close()`: release in reverse order.
 
-| Registration | What | First mod | The demo |
-|---|---|---|---|
-| `getSimulation()` | the game definition: limits, systems, frame phases, columns, hooks (chapter 6) | - | `DemoRules.define` |
-| `getContent()` | the content registry: types and definitions (chapter 5) | - | `DemoContent.register` |
-| `registerResourceProvider` | the pack, the resources of the client | - | the pack |
-| `registerReplayFormat`, `registerSaveFormat` | the formats of replays and saves (chapter 13) | - | engine formats |
-| `registerHeadlessRunner` | the `--headless` run (chapter 9) | a lambda that logs one line | `DemoHeadlessRunner` |
-| `registerFirstScene` | the first screen of the window run (chapter 10) | `FirstScene` | `MainMenuScene` |
-| `addIdentityData` | data that joins the identity | - | - |
-
-- `close()`: release what `initialize` opened, in reverse order.
-
-A mod registers either a first scene and a headless runner (as the first mod and the demo do) or a `ModApplication` that runs its own frames; not both. Chapter 20 compares the two.
+| Registration | What | Demo |
+|---|---|---|
+| `getSimulation()` | game definition (chapter 6) | `DemoRules.define` |
+| `getContent()` | content registry (chapter 5) | `DemoContent.register` |
+| `registerResourceProvider` | client resources | the pack |
+| `registerReplayFormat`, `registerSaveFormat` | chapter 13 | engine formats |
+| `registerHeadlessRunner` | `--headless` run (chapter 9) | `DemoHeadlessRunner` |
+| `registerFirstScene` | first screen (chapter 10) | `MainMenuScene` |
+| `registerApplication` | own frame loop (chapter 20) | - |
+| `addIdentityData` | identity data | - |
 
 ## 5. Content: the standard data pack
 
-An engine-only mod keeps its data in the engine standard data pack: JSON definitions, PNG pictures and WAV sounds under one folder of the jar, opened with `StandardPack.openResources(loader, root)`. The pack format (`pack.json`, sprite sheets, animations, tilesets, fonts, dialogs, pictures) is the Javadoc of the package `org.fogofwarlabs.sc4j.engine.pack` ([package-info](../sc4j-engine-sim/src/main/java/org/fogofwarlabs/sc4j/engine/pack/package-info.java)).
+JSON definitions, PNG pictures and WAV sounds under one jar folder, opened with `StandardPack.openResources(loader, root)`. The format (`pack.json`, sprite sheets, animations, tilesets, fonts, dialogs, pictures) is the Javadoc of package `org.fogofwarlabs.sc4j.engine.pack` ([package-info](../sc4j-engine-sim/src/main/java/org/fogofwarlabs/sc4j/engine/pack/package-info.java)).
 
-`content.json` defines the content types: `resourceKinds`, `motionProfiles` (how units move: top speed, acceleration, stopping distance, turn rate), `weapons`, `factions` (worker, town hall, supply provider, resource kinds, start units), `units` (faction, motion profile, hit points, armor, sight, weapons, cost, build time, supply, collision box, placement size, traits, idle orders) and `requirements`. `StandardPack.readContent` reads it into a `PackContent`; the mod registers its types in the game's content (`PackContent.register`).
+`content.json` holds `resourceKinds`, `motionProfiles` (top speed, acceleration, stopping distance, turn rate), `weapons`, `factions` (worker, town hall, supply provider, resource kinds, start units), `units` (faction, motion profile, hit points, armor, sight, weapons, cost, build time, supply, collision box, placement size, traits, idle orders) and `requirements`. `StandardPack.readContent` reads it into a `PackContent`; `PackContent.register` adds its types.
 
-The demo ([pack](../mods/demo/src/main/resources/demo/pack/), [`DemoContent`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/content/DemoContent.java)): two factions with workers, buildings, fighters and gold; sprite sheets, tilesets, a font, dialogs, sounds, pictures.
-
-To add a unit: add it to `content.json` (and to a faction's `startUnits`, or place it on the map with `units`), and give it orders it understands (chapter 6).
+Demo: [pack](../mods/demo/src/main/resources/demo/pack/), [`DemoContent`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/content/DemoContent.java).
 
 ## 6. Rules: the game definition, systems, orders and commands
 
-**Game definition.** `ModRegistration.getSimulation()` is a `GameDefinition.Builder`. The mod sets the entity limits (`EngineLimits`), chooses a system for each slot with `useSystem(KEY, factory)` (the engine defaults are the `Standard*` classes: spatial index, path finding, movement, collision, visibility, economy, harvest, requirements, combat, projectiles, production, orders, triggers, computer players), adds the extension columns the defaults need (`StandardCombatSystem.addColumns`, ...), hooks (`addHook`) and the frame phases in their order (`addFramePhase`). A factory runs per game, so a system can read the game's map. A mod may replace any system with its own class of the same interface.
+**Game definition**: `ModRegistration.getSimulation()` is a `GameDefinition.Builder`: entity limits (`EngineLimits`), one system per slot with `useSystem(KEY, factory)` (defaults are the `Standard*` classes: spatial index, path finding, movement, collision, visibility, economy, harvest, requirements, combat, projectiles, production, orders, triggers, computer players; any can be replaced by a class of the same interface), extension columns (`StandardCombatSystem.addColumns`, ...), hooks (`addHook`) and frame phases in order (`addFramePhase`). A factory runs per game.
 
-The settings of the defaults are neutral, so a mod declares the values of its game: the motion model of the movement and projectile systems (`new MotionModel.Builder(directionCount)`: directions per turn, instant stop speed, braking before a turn), the queue capacity of the production system (`new StandardProductionSystem.Builder(capacity)`; refunds are the whole cost and a building starts with its full hit points unless the mod sets shares), and the splash shares and minimum damage of the combat system (`StandardCombatSystem.Builder`; without them every unit a splash reaches takes the whole damage and a hit may deal nothing).
+The defaults are neutral; the mod sets its values: `new MotionModel.Builder(directionCount)` for movement and projectiles (directions per turn, instant stop speed, braking before a turn), `new StandardProductionSystem.Builder(capacity)` (without shares: full refunds, buildings start at full hit points), `StandardCombatSystem.Builder` (without splash shares and minimum damage: every unit a splash reaches takes full damage, and a hit may deal nothing).
 
-A unit that is placed, sees, finds its path and moves needs the unit bounds (`TableUnitBounds`), the spatial index, path finding, movement, collision and visibility, with the frame phases orders, movement, collision and visibility. Each slot takes a factory, each phase the system's frame step:
+Units that are placed, see, find paths and move need `TableUnitBounds`, spatial index, path finding, movement, collision and visibility, with the phases orders, movement, collision, visibility:
 
 ```java
 registration.getSimulation()
@@ -287,25 +248,26 @@ registration.getSimulation()
         .addFramePhase(MovementSystem.KEY, system -> (StandardMovementSystem) system);
 ```
 
-The demo: [`DemoRules`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/rules/DemoRules.java): every default system, harvest, combat, production, triggers and computer players.
+Demo: [`DemoRules`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/rules/DemoRules.java).
 
-**New games.** A `GameSetup` names the map (`MapReference`), the player slots (`PlayerSlot`: slot, controller kind, team, colour, faction) and the seed. `Game.create(definition, setup)` creates the game, `MapPlacementUtils.placeUnits` places the map's units. The demo: [`DemoGames`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/game/DemoGames.java).
+**New games**: `GameSetup` (map `MapReference`, `PlayerSlot`s with slot, controller kind, team, colour, faction, seed); `Game.create(definition, setup)`; `MapPlacementUtils.placeUnits`. Demo: [`DemoGames`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/game/DemoGames.java).
 
-**Orders.** An order type (`OrderType`) is content; its behavior (`MoveBehavior`, `AttackBehavior`, `GatherBehavior`, `BuildBehavior`, ..., or your own `OrderBehavior`) is registered per game in the order system, which takes the registration as a function: `new StandardOrderSystem((game, behaviors) -> behaviors.register(move, new MoveBehavior(16)))` gives the order type `move` its behavior with an arrival distance of 16 world pixels. The demo: eleven orders ([`DemoOrders`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/order/DemoOrders.java)).
+**Orders**: an `OrderType` is content; its `OrderBehavior` (`MoveBehavior`, `AttackBehavior`, `GatherBehavior`, `BuildBehavior`, ...) is registered per game: `new StandardOrderSystem((game, behaviors) -> behaviors.register(move, new MoveBehavior(16)))` (arrival distance 16 world pixels). Demo: [`DemoOrders`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/order/DemoOrders.java).
 
-**Commands.** Everything a player does reaches the game as a command of the mod's command stream (`CommandRegistry` of `CommandType`s with fixed ids: `IssueOrderCommandType`, `TrainUnitCommandType`, `ConstructBuildingCommandType`, or your own). Commands go through a `CommandSink`; the frame's `ControllerCommandSource` applies them before the frame's phases. Replays and network turns carry exactly these commands, so the ids and the command encoding are part of your formats: change them only with a new mod version.
+**Commands**: every player action is a command of a `CommandRegistry` of `CommandType`s with fixed ids (`IssueOrderCommandType`, `TrainUnitCommandType`, `ConstructBuildingCommandType`, own types), sent through a `CommandSink` and applied by `ControllerCommandSource` before the frame phases. Replays and network turns carry them: change ids or encoding only with a new mod version.
 
-**Mechanics of your own.** The engine holds the parts that most real-time strategy games share; a mechanic of one game lives in its mod and plugs into these points:
-- a value that upgrades or effects change: register a `Stat` of your own after the engine stats (`ContentRegistry.getStats().register(new Stat("..."))`) and attach a `StatModifier` to it (`ContentRegistry.addModifier`);
-- a per-type value: an extension column of the type table (`ContentRegistry.addColumn`); a per-unit value: an extension column of the unit pool, or a field of your own `Unit` subclass when the mod pools its units itself;
-- a layer that takes damage before the hit points (shields, a barrier, armour plates): a `DamageLayer` with its own points and rules, added to the chain of each unit type that has it while the game is created (`GameContent.addDamageLayer` in a system's `attach`); the standard combat system asks the layers in chain order, and the HUD shows a bar per layer under its name;
-- a movement rule: your own movement code over the engine `MotionModel` or your own motion algorithm over the same `MovingEntity` fields, which may move the prospective `MotionStep` before it is applied (such as air units that push each other apart), or your own system for the movement slot (`useSystem`).
+**Mechanics of your own** plug in here:
+
+- values changed by upgrades or effects: a `Stat` registered after the engine stats (`ContentRegistry.getStats().register(new Stat("..."))`) with `StatModifier`s (`ContentRegistry.addModifier`);
+- per-type values: `ContentRegistry.addColumn`; per-unit values: a unit pool extension column or a field of an own `Unit` subclass;
+- damage layers before hit points (shields, armour plates): a `DamageLayer` added per unit type with `GameContent.addDamageLayer` in a system's `attach`; the standard combat system asks layers in chain order, the HUD shows a bar per layer;
+- movement: own code over `MotionModel`, an own algorithm over the `MovingEntity` fields that may move the prospective `MotionStep`, or an own movement system.
 
 ## 7. The build and the jar
 
 ### 7.1 The mod's own build
 
-A mod builds with the SC4J mod plugin `org.fogofwarlabs.sc4j.mod`, released on Maven Central with the engine under the same version. The `settings.gradle` of a mod outside this repository:
+The mod plugin `org.fogofwarlabs.sc4j.mod` is on Maven Central with the engine, same version. `settings.gradle`:
 
 ```groovy
 pluginManagement {
@@ -323,7 +285,7 @@ dependencyResolutionManagement {
 rootProject.name = 'my-mod'
 ```
 
-Its `build.gradle`, with the SC4J version the mod is made for:
+`build.gradle`:
 
 ```groovy
 plugins {
@@ -335,26 +297,27 @@ sc4jMod {
 }
 ```
 
-- The plugin compiles the mod against the engine API of its own version (`org.fogofwarlabs.sc4j:sc4j-engine` with `sc4j-base`, `sc4j-mod-manifest` and the engine modules). The runtime provides it, so it is not in the jar.
-- `jar` packs the classes and resources of the main source set into `build/libs/<id>.jar` reproducibly (no timestamps, fixed order, duplicates fail), with `LICENSE` and `NOTICE` of the project folder in `META-INF/`. It fails when `sc4j-mod.json` names another id or an entry class that the jar lacks. The same sources give the same jar, so the same identity.
-- `run` runs the jar in the engine runtime of the plugin's version, with the user data of the install or of `build/sc4j-run`: `run --args=--headless` runs it headless, `--debug-jvm` waits for a debugger.
-- `installMod` copies the jar into `<install>/mods/`; the install is the Gradle property `sc4j.install`.
-- `jar`, `run` and `installMod` make up the task group `sc4j`.
-- `sc4jMod` also takes `sourceSets` (more source sets for the jar besides `main`), `install` and `licenses` (the files of `META-INF/`). `tasks.named('jar') { from(...) }` adds more files to the jar.
+| Task or setting | Effect |
+|---|---|
+| compile | against the engine API of the plugin's version (`org.fogofwarlabs.sc4j:sc4j-engine` with `sc4j-base`, `sc4j-mod-manifest`, engine modules); not packed |
+| `jar` | `build/libs/<id>.jar`, reproducible (no timestamps, fixed order, duplicates fail), `LICENSE` and `NOTICE` in `META-INF/`; fails when `sc4j-mod.json` names another id or a missing entry class |
+| `run` | runs the jar in the plugin's engine runtime with the install's user data (or `build/sc4j-run`); `--args=--headless`, `--debug-jvm` |
+| `installMod` | copies the jar into `<install>/mods/` (Gradle property `sc4j.install`) |
+| `sc4jMod` | `id`, `sourceSets` (more source sets in the jar), `install`, `licenses` (files of `META-INF/`) |
 
-A library your mod needs at run time must go into the jar (or come with the install: the runtime's `lib/` carries the engine's libraries such as LWJGL and FFmpeg). Check its licence first (chapter 17).
+The tasks form the group `sc4j`; `tasks.named('jar') { from(...) }` adds files. A run-time library goes into the jar unless the runtime's `lib/` has it (LWJGL, FFmpeg, ...); check its licence (chapter 17).
 
 ### 7.2 A mod inside this repository
 
-The demo is a project of the repository build ([`mods/demo/build.gradle`](../mods/demo/build.gradle)) with the same plugin: inside the repository build the plugin's engine dependency is the engine projects, its install is `build/dev-install/`, and the repository's `devInstall` assembles that install with `demo.jar` in `mods/`. Its own checks: `checkModBoundary` and `checkDemoNames` (the demo names no other game), and `determinismCheck` (chapter 12). Its tests run the jar through the runtime (`DemoModTest`) and the client offscreen (`DemoClientScenario`).
+The demo uses the same plugin ([`mods/demo/build.gradle`](../mods/demo/build.gradle)); inside the repository the engine dependency is the engine projects and the install is `build/dev-install/`. Its checks: `checkModBoundary`, `checkDemoNames` (names no other game), `determinismCheck` (chapter 12); its tests run the jar (`DemoModTest`) and the client offscreen (`DemoClientScenario`).
 
 ## 8. Maps and first-run content
 
-**Map format.** The engine map format is one JSON file (`"format": "sc4j-map"`, version 1): name, tileset name, tile and walk cell size, size in tiles, terrain as rows of one-character codes with a legend (walkable, buildable, elevation), the neutral slot, start locations, preplaced units, resource containers, locations, the victory rule and triggers. The full field list is the Javadoc of `JsonMapLoader` ([source](../sc4j-engine-sim/src/main/java/org/fogofwarlabs/sc4j/engine/map/JsonMapLoader.java)). The mod reads maps with `new JsonMapLoader(unitTypes, resourceKinds)` and keeps them in a `MapCatalog`, which gives each map its `MapReference` (name and digest). The victory rule and the triggers take effect only in a game with a trigger system: the mod registers `StandardTriggerSystem` over the triggers of the game's map (`new StandardTriggerSystem.Builder().addTriggers(data.getTriggers()).build()` with the map's `StandardMapData`, the victory rule first) as the last frame phase.
+**Map format**: one JSON file (`"format": "sc4j-map"`, version 1): name, tileset, tile and walk cell size, size in tiles, terrain rows of one-character codes with a legend (walkable, buildable, elevation), neutral slot, start locations, units, resource containers, locations, victory rule, triggers. Fields: Javadoc of [`JsonMapLoader`](../sc4j-engine-sim/src/main/java/org/fogofwarlabs/sc4j/engine/map/JsonMapLoader.java). Read maps with `new JsonMapLoader(unitTypes, resourceKinds)` into a `MapCatalog` (gives each map its `MapReference`: name and digest). The victory rule and triggers need `StandardTriggerSystem` as the last frame phase: `new StandardTriggerSystem.Builder().addTriggers(data.getTriggers()).build()` with the map's `StandardMapData`, victory rule first.
 
-**Grids and projection.** The simulation works in world pixels on a square grid of walk cells (`TerrainGrid`). How the client shows it is the client's projection: `SquareProjection` (from above) or `IsometricProjection` (diamonds; the demo, [`DemoWorldUtils`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/DemoWorldUtils.java)). Hexagonal or staggered grids are not part of the engine today; the grid and projection interfaces leave room for them.
+**Grids and projection**: the simulation works in world pixels on a square grid of walk cells (`TerrainGrid`); the client projects it with `SquareProjection` or `IsometricProjection` (demo: [`DemoWorldUtils`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/DemoWorldUtils.java)).
 
-**First-run content.** The storage of a new install is empty. A mod that keeps its maps in the storage (where players add their own) must put its own maps there itself, or its first start finds none (a clone, chapter 18, starts with an empty map list for this reason). The general way: the jar carries the maps under `<id>/seed/`, and `initialize` copies every listed seed file into the storage **only when the storage has no file of that path**:
+**First-run content**: a new install's storage is empty. A mod that keeps maps in the storage ships them under `<id>/seed/` and copies each listed file in `initialize` **only when the storage has no file of that path**:
 
 ```java
 for (String file : List.of("maps/first-field.json")) {
@@ -375,135 +338,126 @@ for (String file : List.of("maps/first-field.json")) {
 }
 ```
 
-A new install starts with the mod's maps, a player's own maps sit next to them, and a map the player changed is never overwritten (a deleted one comes back at the next start). Then the mod reads every `*.json` of `maps/` in file name order and leaves out, with a warning, a file that is no valid map. To ship another map, put it under `src/main/resources/<id>/seed/maps/` with a `name` no other map has, add its path relative to `<id>/seed/` (`"maps/second-field.json"`) to the list, rebuild and reinstall (`installMod`); the next start copies it into the storage. Seed any other first-run file (options, a tutorial replay) the same way. A seed map you change or remove in the jar does not change the copy an earlier run left in the storage: while you work on a map, delete that copy (or run with another `--storage`).
-
-The demo reads its built-in maps straight from the jar ([`DemoMaps`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/map/DemoMaps.java)) and keeps the maps a network host sent it next to them; both ways are fine.
+Changed maps are never overwritten; deleted ones come back. Then read every `*.json` of `maps/` in file name order, skipping invalid maps with a warning. A new map gets a unique `name`, goes under `src/main/resources/<id>/seed/maps/` and into the list (`"maps/second-field.json"`). A changed seed does not replace an existing copy: delete it or run with another `--storage`. The demo reads its maps from the jar ([`DemoMaps`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/map/DemoMaps.java)) and keeps received maps beside them.
 
 ## 9. The headless runner
 
-`HeadlessRunner.run(ModLaunch)` is the `--headless` run: no window, audio or input; for tests, servers and research. `ModLaunch` says whether a replay (`getReplay()`, `getReplayFormat()`) or a game to join (`getJoin()`) was asked for, and holds the identity, the game definition, the resource provider, the replay and save formats and the run's Beacon.Link. The mod's own arguments are `ModContext.getArguments()`.
+`HeadlessRunner.run(ModLaunch)` runs `--headless` (no window, audio or input). `ModLaunch` gives the requested replay (`getReplay()`, `getReplayFormat()`) or game to join (`getJoin()`), the identity, game definition, resource provider, formats and Beacon.Link.
 
-The demo: [`DemoHeadlessRunner`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/DemoHeadlessRunner.java) plays a game of two computer players on `--map` to its end and records its replay, or plays `--replay` back and fails on a state hash checkpoint that differs; `--frame-hashes` writes one hash per game loop. It also plays network games on 127.0.0.1 (`--host`, the runtime's `--join`) and over Beacon.Link (`--beaconlink-host`, `--beaconlink-join`, with the runtime's `--seed <host:port>`).
+Demo: [`DemoHeadlessRunner`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/DemoHeadlessRunner.java): `--map` plays two computer players and records the replay; `--replay` plays back and fails on a differing checkpoint; `--frame-hashes` writes one hash per game loop; `--host` with the runtime's `--join`, and `--beaconlink-host`, `--beaconlink-join` with `--seed <host:port>`, play network games.
 
 ## 10. Client screens
 
-The runtime opens the window, the audio and the input, creates the mod's first scene with its `FirstSceneFactory` and runs the frames on a `SceneClient` (chapter 20). A screen is a `ClientScene` (`open`, `update`, `draw`, `handleInput`, `close`); a scene switches to the next one with `client.getScenes().replace(...)` and opens popups with `pushModal`; `client.requestQuit()` ends the run. The `SceneClient` gives the launch request, the storage, the `Canvas`, the `AudioMixer` and the cursor surface.
+The runtime opens window, audio and input, creates the first scene with the `FirstSceneFactory` and runs frames on a `SceneClient` (launch request, storage, `Canvas`, `AudioMixer`, cursor surface). A screen is a `ClientScene` (`open`, `update`, `draw`, `handleInput`, `close`); switch with `client.getScenes().replace(...)`, open popups with `pushModal`, end with `client.requestQuit()`.
 
-**Showing a game.** `GameSessionFactory` connects a `Game` to the client: `createLocal` (a person and computer players), `createReplay`, `createNetwork`. The session's `GameView` is the read-only view the client draws from; the person's commands go to the session's `CommandSink`. A `CameraScroll` scrolls the `Camera` by keys and screen edges, continuous (`ContinuousScrollRate`) or in table steps per tick (`SteppedScrollRate`). The world is a `WorldView` of `WorldLayer`s through the `Camera` and a projection:
+**Showing a game**:
 
-- without art: `TerrainLayer` (plain colours of `TerrainColors`) and `UnitLayer` (unit footprints in team colours);
-- with art: `TilesetLayer` and `UnitSpriteLayer` over the pack's tilesets and sprite sheets; on a scaled display they draw from the pack's detail versions `<id>-2x` up to `<id>-4x` (`DetailUtils`; detail sprite sheets are listed under `spriteSheetDetails`);
-- `GameScreen`: the engine default in-game screen with selection, command card, minimap, resource bar, selection panel and fog, in a HUD skin; it needs a font from the pack.
+- `GameSessionFactory.createLocal`, `createReplay`, `createNetwork`; draw from the session's `GameView`, send commands to its `CommandSink`.
+- `CameraScroll` scrolls the `Camera` (`ContinuousScrollRate`, `SteppedScrollRate`).
+- `WorldView` of `WorldLayer`s: `TerrainLayer` and `UnitLayer` without art; `TilesetLayer` and `UnitSpriteLayer` with the pack's art (detail versions `<id>-2x` to `<id>-4x` on scaled displays, `DetailUtils`, `spriteSheetDetails`).
+- `GameScreen`: default in-game screen (selection, command card, minimap, resource bar, selection panel, fog) in a HUD skin; needs a pack font.
+- Slash commands and key bindings: `ConsoleCommandRegistry`, `KeyBindingTable`.
 
-The demo's client ([package](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/)): `DemoClient` (shared services: font, sprites, skin, sounds, cursors), `MainMenuScene` and `DemoMenuScene` (pack dialogs as menus), `GameSetupScene`, `LoadingScene`, `DemoGameScene` and `DemoGameScreen` (the `GameScreen` with the command card and the demo's smart right press `DemoSmartAction`), `ReplayViewerScene` (the engine's stored-game list `GameFileListScene`), `OutcomeScene`, `NetworkScene`, `NetworkRoomScene`, `BeaconLinkScene`, `DemoSkin`, `DemoSprites`, `DemoSounds`, `DemoNotifications`.
+Demo: [client package](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/) (`MainMenuScene`, `GameSetupScene`, `DemoGameScene`, `DemoGameScreen`, `ReplayViewerScene` over `GameFileListScene`, `NetworkScene`, `BeaconLinkScene`, ...).
 
-**Testing screens without a window.** An `ImageCanvas` is a `Canvas` in memory: create a `SceneClient` over it with a silent audio device, start the first scene, send input with `client.handleInput` and run frames with `client.runFrame`; the demo's `DemoClientScenario` does so. The runtime has no offscreen mode, so a mod outside this repository does the same from its own build: a source set with a main class whose class path holds the mod's classes and every jar of `<install>/runtime/lib`; a `ModStorage` over a scratch folder (`getRoot` and `resolve`; the runtime's own implementation is not API); a `ModLaunch` with `ModIdentity.create(EngineVersion.CURRENT, manifest, digest, List.of())` and a game definition the mod built as in `register`; and `ImageIO.write(canvas.getImage(), "png", file)` for a picture. Slash commands and key bindings of the client are the mod's choice (`ConsoleCommandRegistry`, `KeyBindingTable`).
+**Offscreen tests**: a `SceneClient` over an `ImageCanvas` with a silent audio device; send input with `client.handleInput`, run `client.runFrame` (demo: `DemoClientScenario`). Outside this repository: a source set whose class path holds the mod and every jar of `<install>/runtime/lib`, a `ModStorage` of your own over a scratch folder (`getRoot`, `resolve`; the runtime's implementation is not API), a `ModLaunch` with `ModIdentity.create(EngineVersion.CURRENT, manifest, digest, List.of())` and the mod's game definition; `ImageIO.write(canvas.getImage(), "png", file)` saves a picture.
 
 ## 11. Computer players
 
-A computer player is a `PlayerController` whose commands depend only on the game. The engine default is a system: `StandardComputerPlayerSystem` with `StandardComputerController` (workers gather, buildings and fighters are made, attack waves go out; `ComputerSettings`), used by `DemoRules`. Slots of `ControllerKind.COMPUTER` run on every machine of a network game alike.
+A `PlayerController` whose commands depend only on the game. Default: `StandardComputerPlayerSystem` with `StandardComputerController` (`ComputerSettings`). `ControllerKind.COMPUTER` slots run on every machine of a network game.
 
 ## 12. Determinism
 
-Lockstep network games and replays need the same simulation results from the same commands on every machine. The engine's own simulation packages are checked for this (`checkSimulationDeterminism` in the root `build.gradle`); your simulation code (systems, behaviors, controllers, anything that changes the game) must follow the same rules:
+The same commands must give the same simulation results on every machine. `checkSimulationDeterminism` checks the engine's simulation packages; mod simulation code (systems, behaviors, controllers) follows the same rules:
 
-- no `Math.random`, no clock (`System.currentTimeMillis`, `System.nanoTime`, `java.time`), no `java.util` random generator (`Random`, `SecureRandom`, `SplittableRandom`, `ThreadLocalRandom`): randomness comes from the game's random generator, seeded by the setup;
-- no hash-ordered collection (`HashMap`, `HashSet`, `Hashtable`, `IdentityHashMap`, `WeakHashMap`, `ConcurrentHashMap`) whose order the simulation sees, no identity hash code: use lists, arrays, `LinkedHashMap`, or the entity pools in slot order;
-- no floating point (`float`, `double`): positions, speeds and damage are integers or engine fixed-point values;
-- the game changes only through commands applied at frame start and the systems' frame phases; never from a scene, an input handler or another thread directly;
-- the order of everything is fixed: systems and phases in registration order, controllers in list order, commands in submission order.
+- no `Math.random`, clock (`System.currentTimeMillis`, `System.nanoTime`, `java.time`) or `java.util` random generator (`Random`, `SecureRandom`, `SplittableRandom`, `ThreadLocalRandom`); use the game's seeded random generator;
+- no hash-ordered collection (`HashMap`, `HashSet`, `Hashtable`, `IdentityHashMap`, `WeakHashMap`, `ConcurrentHashMap`) whose order the simulation sees, no identity hash code; use lists, arrays, `LinkedHashMap` or the entity pools;
+- no `float` or `double`: integers or engine fixed-point values;
+- the game changes only through commands and frame phases, never from scenes, input handlers or other threads;
+- fixed order: systems and phases by registration, controllers by list, commands by submission.
 
-The client (drawing, sound, menus) may use anything. Check it the way the demo's `determinismCheck` does: play the same game twice and compare the state hash after every game loop (`Game.computeStateHash`, `--frame-hashes`), and play the replay back to the same hashes.
+The client may use anything. Check like `determinismCheck`: two runs and the replay give the same `Game.computeStateHash` after every game loop (`--frame-hashes`).
 
 ## 13. Replays and saved games
 
-`EngineReplayFormat` (`.sc4r`, magic `SC4R`) records the setup and every command with a state hash checkpoint every n game loops (`createRecorder`, set on the `ControllerCommandSource`); `read` and `createController` play it back and count checkpoint mismatches. `EngineSaveFormat` (magic `SC4S`) stores a game's state. Both are created with the run's identity and load only with an equal identity: the same engine API version, mod id, version and jar. A mod with its own formats implements `ReplayFormat` / `SaveFormat`. Keep them in the storage (`replays/`, `saves/`); the engine's `GameFileListScene` lists them. The demo: replay viewer and saves in its client, replays in its headless runner.
+`EngineReplayFormat` (`.sc4r`, magic `SC4R`) records the setup and every command with a state hash checkpoint every n game loops (`createRecorder`, set on the `ControllerCommandSource`); `read` and `createController` play it back and count mismatches. `EngineSaveFormat` (magic `SC4S`) stores a game's state. Both load only with an equal identity. Own formats implement `ReplayFormat` and `SaveFormat`. Keep files in the storage (`replays/`, `saves/`); `GameFileListScene` lists them.
 
 ## 14. Network play
 
-The engine's network layer (`sc4j-engine-net`) runs lockstep games: every machine runs the same simulation and exchanges only commands in turns.
+`sc4j-engine-net` runs lockstep games: every machine runs the simulation and exchanges commands in turns.
 
-- `NetworkLobby`: the room before the start: members, slots, factions, ready flags, map transfer (the mod's `LobbyMaps`; the default `FolderLobbyMaps` over `ModStorage.getMapFolders()` finds a map by digest in `maps/` and saves a received one in `maps/downloads/`), the start (`NetworkGameStart` with the setup); the lobby compares identities and refuses another mod or version.
-- `DatagramLockstepTransport` and `LockstepSession`: the turns of the running game; `GameSessionFactory.createNetwork` shows it.
-- `LanRoomDiscovery`: rooms on the local network.
-- Beacon.Link (`ModLaunch.getBeaconLink()`): rooms, games and the community over the Internet, through the peers every SC4J runs (sections 14.1 and 14.2).
+- `NetworkLobby`: members, slots, factions, ready flags, map transfer (`LobbyMaps`; default `FolderLobbyMaps` over `ModStorage.getMapFolders()` finds maps by digest in `maps/` and saves received ones in `maps/downloads/`), start (`NetworkGameStart`); refuses other identities.
+- `DatagramLockstepTransport`, `LockstepSession`: the turns; `GameSessionFactory.createNetwork` shows the game.
+- `LanRoomDiscovery`: LAN rooms.
+- Beacon.Link (`ModLaunch.getBeaconLink()`): Internet rooms and community.
 
-The demo uses all of these: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java), [`DemoNetworkGame`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkGame.java), [`DemoNetworkSettings`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkSettings.java), its network scenes and its headless network runs. Test network code on 127.0.0.1 only, as the demo's tests and `determinismCheck` do.
+Demo: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java), [`DemoNetworkGame`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkGame.java), [`DemoNetworkSettings`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoNetworkSettings.java). Test network code on 127.0.0.1 only.
 
 ### 14.1 Beacon.Link rooms
 
-`ModLaunch.getBeaconLink()` is the run's `BeaconLink`, or `null` when the run offers none. A run offers it only when its command line names a seed source (`--seeds <file>`, `--seed <host:port>` or `--peers <file>`); `--account <dir>` names the account, and without it the run plays as a guest named `Guest` (`BeaconLink.GUEST_NAME`). The launcher passes them all. Nothing opens before `BeaconLink.open()`, which returns a `BeaconLinkSession`: one connection of the account (`getParticipant()`, a `LinkParticipant`: the player and the connection number). Every call only starts work: the session's thread calls `poll()` from its loop, and `close()` at the end. `getFailure()` (`LinkFailure`) tells why no node is reachable, `getNodes()` gives the state of each node.
+`ModLaunch.getBeaconLink()` is `null` unless the command line names a seed source (`--seeds <file>`, `--seed <host:port>`, `--peers <file>`); `--account <dir>` names the account, else the run is the guest `Guest` (`BeaconLink.GUEST_NAME`). The launcher passes all of them. `BeaconLink.open()` returns a `BeaconLinkSession`, one connection of the account (`getParticipant()`: `LinkParticipant`, player and connection number). Calls only start work; the session's thread calls `poll()` in its loop and `close()` at the end. `getFailure()` (`LinkFailure`) says why no node is reachable; `getNodes()` gives each node's state.
 
-- **Host.** `publishRoom(settings, password)` publishes a room (an empty password makes it public) and returns a `HostedRoom`: `getState()` (`PUBLISHING`, `PUBLISHED`, `WITHDRAWN`, `FAILED`), `update(settings)` when players come and go, `acceptChannel()` for each joiner that passed the join check, `withdraw()`. `RoomSettings` holds the room name and the map name (at most 48 UTF-8 bytes each), the players, the capacity, whether the game started, and up to 64 bytes of mod data that the mod defines and reads back from the rooms it finds (the demo: its turn rate).
-- **Search.** `searchRooms()` returns a `RoomSearch`: `getRooms()` are the rooms of the run's own mod identity, `getOtherRooms()` the rooms of the mod's other versions with the refusal their hosts would give (`FoundRoom.getJoinRefusal()`), and `isComplete()` turns true once every node answered or failed. A `FoundRoom` gives the host, the settings, `isJoinable()`, `isPrivate()`, the mod id and version and `getLatencyEstimate()` (`LatencyClass`: `GOOD` up to 100 ms, `FAIR` up to 200 ms, `POOR`, `UNKNOWN`).
-- **Join.** `joinRoom(room, password)` opens a `ParticipantChannel` to the host: `CONNECTING`, then `OPEN`, or `CLOSED` with a `ChannelFailure`; `JOIN_REFUSED` comes with the `JoinRefusal` (another engine version or mod identity, a full room, a started game, a wrong password).
-- **Play.** `getOverlay()` returns the session's `LinkOverlay`, which carries datagrams by participant over the channels (at most 1023 bytes, not reliable). Port 1 (`LOBBY_PORT`) is the engine's `NetworkLobby`, port 2 (`GAME_PORT`) its lockstep transport (`LinkLockstepTransport`); ports 16 to 255 (from `FIRST_MOD_PORT`) are free for the mod's own protocols. `NetworkLobby.host(room, overlay, ...)` and `NetworkLobby.join(channel, overlay, ...)` give the same lobby and lockstep game as on the local network.
+- **Host**: `publishRoom(settings, password)` (empty password: public) returns a `HostedRoom`: `getState()` (`PUBLISHING`, `PUBLISHED`, `WITHDRAWN`, `FAILED`), `update(settings)`, `acceptChannel()` per checked joiner, `withdraw()`. `RoomSettings`: room and map name (at most 48 UTF-8 bytes each), players, capacity, started flag, up to 64 bytes of mod data (demo: turn rate).
+- **Search**: `searchRooms()` returns a `RoomSearch`: `getRooms()` (own identity), `getOtherRooms()` (other versions, with `FoundRoom.getJoinRefusal()`), `isComplete()`. A `FoundRoom` gives host, settings, `isJoinable()`, `isPrivate()`, mod id and version, `getLatencyEstimate()` (`LatencyClass`: `GOOD` up to 100 ms, `FAIR` up to 200 ms, `POOR`, `UNKNOWN`).
+- **Join**: `joinRoom(room, password)` opens a `ParticipantChannel`: `CONNECTING`, then `OPEN`, or `CLOSED` with a `ChannelFailure`; `JOIN_REFUSED` carries the `JoinRefusal`.
+- **Play**: `getOverlay()` gives the `LinkOverlay` (datagrams by participant, at most 1023 bytes, unreliable). Port 1 (`LOBBY_PORT`) is `NetworkLobby`, port 2 (`GAME_PORT`) `LinkLockstepTransport`, ports 16 to 255 (`FIRST_MOD_PORT`) are the mod's. `NetworkLobby.host(room, overlay, ...)` and `NetworkLobby.join(channel, overlay, ...)` give the LAN lobby and game.
 
-The demo: [`DemoLobby`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/net/DemoLobby.java) (host, join and the game over the overlay), [`BeaconLinkScene`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/BeaconLinkScene.java) (the room list, host, join and chat) and `DemoHeadlessRunner` (`--beaconlink-host`, `--beaconlink-join`).
+Demo: `DemoLobby`, [`BeaconLinkScene`](../mods/demo/src/main/java/org/fogofwarlabs/sc4j/demo/client/BeaconLinkScene.java), `DemoHeadlessRunner`.
 
 ### 14.2 Beacon.Link community
 
-`BeaconLinkSession.getCommunity()` returns the session's `CommunitySession`, created at the first call:
+`BeaconLinkSession.getCommunity()` returns the `CommunitySession`:
 
-- **Presence.** `getSelf()`, `setStatus(PlayerStatus)` (`AVAILABLE`, `AWAY`, `IN_ROOM`, `IN_GAME`), `setAwayText` (at most 32 UTF-8 bytes) and `setAppearOffline`. `getPresence(player)` gives the player's `PlayerPresence`, merged over its connections (the launcher, a game, another computer): name and tag, status, mod id and version, `canPlayTogether()`, channel, away text, latency estimate and device count.
-- **Chat.** `joinChannel(name)` (at most 4 channels at once; channels are shared by every mod) returns a `ChatChannel`: `say` and `emote` (at most 255 UTF-8 bytes; one line per second after a burst of five), `getLines()`, `getMembers()` and `leave()`. `listChannels()` lists the known channels with their member counts.
-- **Whispers.** `whisper(player, text)` sends a whisper; the outcome (`DELIVERED`, `NOT_ONLINE`) comes to the listeners.
-- **Friends and ignored players.** `addFriend`, `removeFriend` (at most 16 friends), `ignore`, `unignore`, `isIgnored`: the ignore list belongs to the account. Lines and whispers of ignored players are not handed out; the mod hides their rooms.
-- **Listeners.** `addListener(CommunityListener)`: `onChatLine`, `onMembersChanged`, `onWhisper` and `onWhisperResult`, called inside `poll()`.
+- **Presence**: `getSelf()`, `setStatus(PlayerStatus)` (`AVAILABLE`, `AWAY`, `IN_ROOM`, `IN_GAME`), `setAwayText` (at most 32 UTF-8 bytes), `setAppearOffline`; `getPresence(player)` gives a `PlayerPresence` merged over the player's connections: name and tag, status, mod id and version, `canPlayTogether()`, channel, away text, latency estimate, device count.
+- **Chat**: `joinChannel(name)` (at most 4 at once, shared by all mods) returns a `ChatChannel`: `say`, `emote` (at most 255 UTF-8 bytes; one line per second after a burst of five), `getLines()`, `getMembers()`, `leave()`; `listChannels()`.
+- **Whispers**: `whisper(player, text)`; the outcome (`DELIVERED`, `NOT_ONLINE`) goes to the listeners.
+- **Friends and ignored players**: `addFriend`, `removeFriend` (at most 16 friends), `ignore`, `unignore`, `isIgnored`; the account owns the list; ignored players' lines and whispers are dropped, the mod hides their rooms.
+- **Listeners**: `addListener(CommunityListener)`: `onChatLine`, `onMembersChanged`, `onWhisper`, `onWhisperResult`, called inside `poll()`.
 
-`BeaconLinkSession.signOutOtherDevices()` ends the account's other connections. The package `engine.client.community` of `sc4j-engine` holds the default parts of community screens: `ChannelChat` (the channel chat with its slash commands, friends and blocked players), `RoomFilter`, `ChatLogBox`, `TableBox` and their texts; the demo's `BeaconLinkScene` uses them. The wire protocol is in the [Beacon.Link protocol reference](beaconlink/protocol.md); running a peer for other players is in the [Beacon.Link operator guide](beaconlink/operator.md).
+`BeaconLinkSession.signOutOtherDevices()` ends the account's other connections. `engine.client.community` (`sc4j-engine`) holds community screen parts: `ChannelChat`, `RoomFilter`, `ChatLogBox`, `TableBox`. Wire: [protocol reference](beaconlink/protocol.md); public peers: [operator guide](beaconlink/operator.md).
 
 ## 15. Building, installing and running
 
-- **Jar**: `sc4j-mod.json` at the root, your classes and resources; no engine jar; reproducible. Every change is a new identity: players need exactly the same jar to play together and to play each other's replays.
-- **Install**: put the jar into `<install>/mods/` (`installMod`, or by hand). The launcher lists every jar there: `READY`, `WARNING` (settings to fix) or `ERROR` (broken jar or manifest, an engine version this runtime cannot run, a missing image, an id another jar has).
-- **Runtime**: `sc4j-runtime --mod <jar> [--install <dir>] [--settings <json>] [--storage <dir>] [--log <dir>] [--account <dir>] [--seeds <file>] [--seed <host:port>]... [--peers <file>] [--headless] [--replay <file>] [--join <address>] [-- <mod arguments>]` (`--help` prints it). Exit codes: 0 normal, 1 run failure, 2 command line or settings error, 3 mod load or validation failure. The log is `<install>/userdata/logs/<id>/sc4j.log`.
-- **Launcher**: lists the mods, asks for their settings, starts the runtime with the mod's settings, storage and log folders.
+- **Install**: put the jar into `<install>/mods/`. The launcher shows `READY`, `WARNING` (settings to fix) or `ERROR` (broken jar or manifest, unsupported engine version, missing image, duplicate id).
+- **Runtime**: `sc4j-runtime --mod <jar> [--install <dir>] [--settings <json>] [--storage <dir>] [--log <dir>] [--account <dir>] [--seeds <file>] [--seed <host:port>]... [--peers <file>] [--headless] [--replay <file>] [--join <address>] [-- <mod arguments>]` (`--help`). Exit codes: 0 normal, 1 run failure, 2 command line or settings error, 3 mod load or validation failure. Log: `<install>/userdata/logs/<id>/sc4j.log`.
+- **Launcher**: starts the runtime with the mod's settings, storage and log folders.
 
 ## 16. API and versions
 
-The policy itself is the [engine API policy](api-policy.md). In short:
+Details: [engine API policy](api-policy.md).
 
-- The API is the public and protected classes and members of `sc4j-base`, `sc4j-mod-manifest`, `sc4j-engine-core`, `-sim`, `-net`, `-client` and `sc4j-engine`, listed in their `api/*.api` files. Their Javadoc is the contract.
-- **Internal**, not API: `engine.mod.loading`, `engine.client.render.gl`, `engine.client.audio.openal`, the GLFW host implementations (`GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface`) and the Windows platform services (`WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock`). They may change or disappear in any version without notice and have no compatibility promise; they carry `@ApiStatus.Internal`, so your IDE marks where you use them. Draw through `engine.client.render` (a renderer of your own creates its GPU canvas and shader programs with `GraphicsDevice.getCurrent()`), play sound through `engine.client.audio` (`AudioDevice.openDefault()`), and run a window of your own through the `engine.client.host` interfaces (`ClientHost.initialize()`): the `HostWindow` serves keys and pointer (`createInput`, `isKeyDown`, `setPointerMode`, `createCursorSurface`), focus, clipboard, dropped files, the fullscreen gamma ramp and the input method (`getTextInputMethod`); `SystemPointerSpeed` and `HostTickClock` are the platform services.
-- The engine API version is `MAJOR.MINOR` (`EngineVersion.CURRENT`, now 0.1); put it into the manifest's `engine` field. A new major version may break your mod; a new minor version adds only. While the API is at 0.x nothing is stable: incompatible changes can happen and are visible as `.api` diffs.
-- A change of simulation results raises at least the minor version. Replays and saves are not compatible across engine versions.
+- The API is the public and protected classes and members of `sc4j-base`, `sc4j-mod-manifest`, `sc4j-engine-core`, `-sim`, `-net`, `-client` and `sc4j-engine`, listed in `api/*.api`. The Javadoc of each class is its contract.
+- Internal, not API (`@ApiStatus.Internal`): `engine.mod.loading`, `engine.client.render.gl`, `engine.client.audio.openal`, `GlfwClientHost`, `GlfwHostWindow`, `GlfwInput`, `GlfwKeyCodes`, `GlfwCursorSurface`, `WindowsTextInputMethod`, `WindowsSystemPointerSpeed`, `WindowsHostTickClock`. Use `engine.client.render` (`GraphicsDevice.getCurrent()`), `engine.client.audio` (`AudioDevice.openDefault()`) and the `engine.client.host` interfaces (`ClientHost.initialize()`; `HostWindow`: `createInput`, `isKeyDown`, `setPointerMode`, `createCursorSurface`, focus, clipboard, dropped files, gamma ramp, `getTextInputMethod`; `SystemPointerSpeed`, `HostTickClock`).
+- Engine API version `MAJOR.MINOR` (`EngineVersion.CURRENT`, 0.1) goes into the manifest's `engine` field. A major may break mods, a minor only adds; at 0.x anything may change, visible as `.api` diffs.
+- Changed simulation results raise at least the minor version; replays and saves do not cross engine versions.
 
 ## 17. Licences for assets
 
-Everything in your jar is given to every player who gets the jar.
-
-- Use your own work, or material whose licence allows it to be redistributed in a mod (public domain such as CC0, or a licence whose conditions you meet). Keep the licence files and a notice with your assets, put them into the jar, and show the notation the licence asks for in the manifest's `license` and `description`.
-- The demo: [`mods/demo/THIRD-PARTY.md`](../mods/demo/THIRD-PARTY.md) names the sources of its pictures and is in `demo.jar`.
-- Art under a licence that asks for a notice: keep its `NOTICE.txt` and `license/` folder with the art, let the build pack them into the jar, and put the notation into the manifest.
-- Never put files of another game's installation (graphics, sounds, data, maps) into your jar or repository. A mod that uses another game's data reads it from the player's own installation at run time, through a directory setting (chapter 3).
+- Use own work or material licensed for redistribution in a mod (CC0, or a licence whose terms you meet). Put the licence files and a notice into the jar and the required notation into the manifest's `license` and `description`. Demo: [`mods/demo/THIRD-PARTY.md`](../mods/demo/THIRD-PARTY.md), packed in `demo.jar`.
+- Never put files of another game's installation into a jar or repository; read them at run time through a directory setting (chapter 3).
 
 ## 18. Clone an existing mod
 
-To change an existing mod instead of starting from nothing, clone it: copy its sources at build time and put your own versions of a few files over them (an overlay of normal, editable files), under your own mod id; a lock stops the build when the cloned mod changes a file you replaced. SC:R Crossover, the clone of the SC:R mod, has its own guide, the [SC:R clone modder guide](https://github.com/fogofwarlabs/sc4j-scr-crossover/blob/main/docs/scr-crossover.md): the clone step, the overlay and its lock, the identity, the content extension, changed values, an added unit with its own graphics, the art licences, building, installing and the launcher.
+A clone copies another mod's sources at build time, overlays a few own files under its own mod id, and a lock stops the build when the original changes a replaced file. Guide: [SC:R clone modder guide](https://github.com/fogofwarlabs/sc4j-scr-crossover/blob/main/docs/scr-crossover.md).
 
-- A clone is another mod: its own id, settings, storage and log folders. Its storage starts empty too: put the maps your players need into it (chapter 8).
-- A clone plays only with players of the same identity (chapter 1). A network protocol of its own that carries no mod id needs a value of the clone's own, such as a version that the host checks on a join.
+- A clone has its own id, settings, storage (empty at first; seed its maps, chapter 8) and log folders.
+- It plays only with equal identities; an own network protocol without a mod id needs a clone-specific value, such as a version the host checks.
 
 ## 19. Testing your mod
 
-- A mod outside this repository tests from its own build: build the jar, install it into a scratch install, run the install's runtime headless twice and once on the replay, and compare the frame hashes (chapter 12).
-- The engine's published test fixtures (`testImplementation testFixtures('org.fogofwarlabs.sc4j:<module>:<version>')`, [API policy](api-policy.md#1-what-the-api-is)) play the community and Beacon.Link by hand (`RecordingCommunitySession`, `RecordingBeaconLink` of `sc4j-engine`), run nodes and clients on 127.0.0.1 behind emulated NATs (`ClientScenario` of `sc4j-beaconlink`) and stand in for the installation records (`FakeInstallationRecords` of `sc4j-mod-manifest`).
-- Inside the repository, run the jar through `RuntimeSession.run` in the test JVM (`DemoModTest`), the client offscreen (`DemoClientScenario`), and two runtime JVMs against each other (`determinismCheck`).
+- Outside this repository: build the jar, install it into a scratch install, run the runtime headless twice and once on the replay, compare the frame hashes.
+- Published test fixtures ([API policy](api-policy.md#1-what-the-api-is)): `RecordingCommunitySession`, `RecordingBeaconLink` (`sc4j-engine`), `ClientScenario` with emulated NATs on 127.0.0.1 (`sc4j-beaconlink`), `FakeInstallationRecords` (`sc4j-mod-manifest`).
+- Inside this repository: `RuntimeSession.run` in the test JVM (`DemoModTest`), the client offscreen (`DemoClientScenario`), two runtime JVMs (`determinismCheck`).
 
 ## 20. Two ways a mod runs
 
-In `register` a mod tells the runtime how it runs. There are two ways, and a mod uses one of them: the registration throws an `IllegalStateException` when a mod registers both.
+A mod registers one of these in `register`; both throw an `IllegalStateException`.
 
 | | Engine scenes | Own application |
 |---|---|---|
-| Registration | `registerFirstScene(FirstSceneFactory)` and `registerHeadlessRunner(HeadlessRunner)` | `registerApplication(ModApplication)` |
-| Window run | the runtime opens the window, the canvas, the audio, the cursor and the input, starts the first scene on a `SceneClient` and runs the frames through `WindowClient` on the engine host (`ClientHost`) | the runtime opens no window and calls `ModApplication.run(ModLaunch)`; the mod opens its window and runs its own frames on the same engine host (`ClientHost.initialize()`, `createWindow`, `ClientHost.run` with a `HostApplication` of its own) |
-| `--headless` run | the `HeadlessRunner` | the same `run`, if `isHeadlessCapable()` returns `true` |
-| Used by | the first mod of chapter 2, the demo | the [SC:R mod](https://github.com/fogofwarlabs/sc4j-scr), for its native frame timing |
+| Registration | `registerFirstScene(FirstSceneFactory)`, `registerHeadlessRunner(HeadlessRunner)` | `registerApplication(ModApplication)` |
+| Window run | the runtime opens window, canvas, audio, cursor and input and runs `WindowClient` (a `HostApplication`: polls events, feeds the scenes, runs the `SceneClient` frame, presents with vertical sync) on `ClientHost` | the runtime calls `ModApplication.run(ModLaunch)`; the mod opens window, canvas, audio and cursor and runs its own `HostApplication` (`runFrame`, `getFrameRateLimit`) with `ClientHost.initialize()`, `createWindow`, `ClientHost.run` |
+| `--headless` | the `HeadlessRunner` | the same `run` if `isHeadlessCapable()` |
+| Used by | the first mod, the demo | the [SC:R mod](https://github.com/fogofwarlabs/sc4j-scr) |
 
-**Engine scenes.** `WindowClient` is a `HostApplication`: every frame the host polls the window events, `WindowClient` hands the input to the scenes, runs the `SceneClient` frame and presents it with vertical sync. The mod writes scenes (chapter 10) and does not see the frame loop.
-
-**Own application.** The mod writes the frame loop itself: its `HostApplication` decides what one frame does (`runFrame`) and the frame rate the host paces to (`getFrameRateLimit`). It also does what `WindowClient` does for engine scenes: it opens and closes the window, the canvas, the audio and the cursor in order.
-
-**Which to choose.** Almost always engine scenes. Choose an own application only when the mod must control the frame loop itself. The rest of a mod is the same for both: the manifest, the content, the simulation, replays and saves, network play and Beacon.Link (`ModLaunch.getBeaconLink()`).
+Use engine scenes unless the mod must own the frame loop.

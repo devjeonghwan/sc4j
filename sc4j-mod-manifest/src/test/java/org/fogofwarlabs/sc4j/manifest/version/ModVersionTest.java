@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Test;
 final class ModVersionTest {
     @Test
     void parse_should_read_releases_and_pre_releases() {
-        ModVersion release = ModVersion.parse("1.23.10");
+        ModVersion release = ModVersion.parse("1.4.12");
         ModVersion preRelease = ModVersion.parse("2.0.0-beta.1");
 
-        Assertions.assertEquals(23, release.getMinor());
-        Assertions.assertEquals(10, release.getPatch());
+        Assertions.assertEquals(4, release.getMinor());
+        Assertions.assertEquals(12, release.getPatch());
         Assertions.assertEquals("", release.getPreRelease());
         Assertions.assertEquals("beta.1", preRelease.getPreRelease());
         Assertions.assertEquals(ModVersion.parse("2.0.0-beta.1"), preRelease);

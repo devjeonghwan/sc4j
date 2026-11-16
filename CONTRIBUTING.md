@@ -2,105 +2,62 @@
 
 **English** | [한국어](CONTRIBUTING.ko.md)
 
-Thank you for helping. This page covers the developer setup, the test tiers, the code style and what a commit and a pull request should look like. The project overview is in the [README](README.md).
-
-- [Setup](#setup)
-- [Build and test](#build-and-test)
-- [Code style](#code-style)
-- [Commits and pull requests](#commits-and-pull-requests)
-- [Releases](#releases)
-- [Licence of contributions](#licence-of-contributions)
+Setup, tests, code style, commits and releases. Commands run as in the [README](README.md#build-and-run).
 
 ## Setup
 
-| Tool | Version |
-|---|---|
-| JDK | 25 |
-| Gradle | 9.1.0, through the wrapper (`gradlew`, `gradlew.bat`); no own installation needed |
-| IDE | any; IntelliJ IDEA works with the Gradle import |
-
-IntelliJ IDEA: open the repository root folder and import its Gradle build. Set the project SDK and the Gradle JVM (Settings, Build Tools, Gradle) to JDK 25.
-
-Commands below run in PowerShell from the repository root. On Linux use `./gradlew`.
+- JDK 25; Gradle 9.1.0 through the wrapper.
+- IntelliJ IDEA: open the repository root, import the Gradle build, set the project SDK and the Gradle JVM (Settings, Build Tools, Gradle) to JDK 25.
 
 ## Build and test
 
-| Command | What runs |
+| Command | Runs |
 |---|---|
-| `.\gradlew.bat build` | compile, unit tests (`test`) and the checks of `check`: API listings, module boundaries, determinism |
-| `.\gradlew.bat :sc4j-runtime:distributionTest` | builds the user package, unpacks it and starts its runtime headless |
-| `.\gradlew.bat :sc4j-beaconlink:simulationTest` | the large Beacon.Link simulations of about a thousand peers (minutes each) |
+| `.\gradlew.bat build` | compile, unit tests (`test`), `check`: API listings, module boundaries, determinism |
+| `.\gradlew.bat :sc4j-runtime:distributionTest` | builds and unpacks the user package, starts its runtime headless |
+| `.\gradlew.bat :sc4j-beaconlink:simulationTest` | Beacon.Link simulations of about a thousand peers (minutes each) |
+| `.\gradlew.bat :sc4j-engine-sim:test` | one module |
+| `.\gradlew.bat :mods:demo:test --tests org.fogofwarlabs.sc4j.demo.DemoModTest` | one test class |
 
-The OpenGL and GLFW checks of the `sc4j-engine-client` tests open a hidden window when the Gradle property `sc4j.render.smoke` is `true` (the default in `gradle.properties`); `-Psc4j.render.smoke=false` turns them off.
-
-A single module or test:
-
-```powershell
-.\gradlew.bat :sc4j-engine-sim:test
-.\gradlew.bat :mods:demo:test --tests org.fogofwarlabs.sc4j.demo.DemoModTest
-```
+The OpenGL and GLFW checks of `sc4j-engine-client` open a hidden window while the Gradle property `sc4j.render.smoke` is `true` (default in `gradle.properties`); `-Psc4j.render.smoke=false` turns them off.
 
 ## Code style
 
-Follow the code around your change first. The rules below are the ones the code base keeps everywhere.
+Follow the surrounding code and these rules.
 
-**Layout**
-
-- Four spaces, no tabs. Lines up to about 150 columns; break long argument lists by meaning, not by length.
-- Braces on every `if`, `else`, `for`, `while` and `do` body, also for a single statement.
-- Blank lines separate groups of statements by meaning. Simple assignments in a row line up their `=`.
-- Class members in this order: constants, static fields, nested types, static methods, instance fields, constructors, instance methods.
-- Keep a file's existing line endings.
-
-**Names and types**
-
-- Full words, no needless abbreviations (`index`, `image`, `packetLength`). `Id` is fine.
-- Methods start with a verb: `get`, `find`, `read` to look up, `set` to change, `is`, `has`, `can` for checks, `create`, `of`, `from`, `parse` to make. Opposite actions use matching names (`readPacket` and `writePacket`).
-- Meaningful numbers are named `static final` constants or enums: sizes, ids, flags, offsets, times. Plain `0`, `1` and `-1` may stay.
-- Implementation classes are `final` unless they are meant to be extended. Helper classes are named `*Utils`, are `final` and have a private constructor. No `record` types: data objects are normal classes with explicit getters.
+- Four spaces, no tabs, lines up to about 150 columns; break long argument lists by meaning.
+- Braces on every `if`, `else`, `for`, `while` and `do` body.
+- Blank lines separate groups of statements; simple assignments in a row align their `=`.
+- Member order: constants, static fields, nested types, static methods, instance fields, constructors, instance methods.
+- Keep a file's line endings.
+- Full words (`index`, `packetLength`); `Id` is fine.
+- Methods start with a verb: `get`, `find`, `read`; `set`; `is`, `has`, `can`; `create`, `of`, `from`, `parse`. Opposites match (`readPacket`, `writePacket`).
+- Meaningful numbers are `static final` constants or enums; plain `0`, `1` and `-1` may stay.
+- Implementation classes are `final` unless meant to be extended. Helpers are `final` `*Utils` classes with a private constructor. No `record` types: data classes have explicit getters.
 - Instance fields are set in the constructor and read through `this.`. Local variables have explicit types (no `var`).
-- Every reference field, parameter and return value carries `@NotNull` or `@Nullable` (JetBrains annotations).
-
-**Exceptions**
-
-New exceptions come from the factory methods of `org.fogofwarlabs.sc4j.base.exception.Exceptions`, with indexed placeholders instead of string concatenation:
-
-```java
-throw Exceptions.newIllegalStateException("Invalid frame index: {0}", index);
-```
-
-**Javadoc and comments**
-
-- Every public class and every public API method and constructor has Javadoc; `javadoc` runs without warnings.
-- Javadoc and comments are in English. A summary starts with a verb in the third person (`Creates`, `Reads`, `Returns`). Use `{@code}` and `{@link}`, not Markdown.
-- Tags in the order `@param`, `@return`, `@throws`; descriptions start in lower case without a final period; `@throws` says `if ...`.
-- Comments explain what the code does and why. They do not tell the history of a change.
-
-**Engine rules**
-
-- The engine-side modules name no mod: the build fails when they mention the packages or types of the SC:R mod (`checkModBoundary`).
-- Simulation code is deterministic: no clock, no `java.util` random generator, no hash-ordered collection the simulation sees, no floating point ([mod author guide, chapter 12](docs/mod-guide.md#12-determinism)).
-- A change of the engine API updates its listings: see the [engine API policy](docs/api-policy.md#6-updating-the-listings).
-
-**Tests**
-
-Test classes are named `<Subject>Test`; test methods use `snake_case` names that say what they check.
+- Every reference field, parameter and return value is `@NotNull` or `@Nullable` (JetBrains annotations).
+- New exceptions come from `org.fogofwarlabs.sc4j.base.exception.Exceptions` with indexed placeholders: `throw Exceptions.newIllegalStateException("Invalid frame index: {0}", index);`
+- Every public class and public API method and constructor has Javadoc; `javadoc` runs without warnings.
+- Javadoc and comments are English. Summaries start with a third-person verb (`Creates`, `Returns`); use `{@code}` and `{@link}`, not Markdown. Tags in the order `@param`, `@return`, `@throws`; descriptions start in lower case without a final period; `@throws` says `if ...`.
+- Comments say what non-obvious code does, not the history of a change.
+- Engine-side modules name no mod; `checkModBoundary` fails on the SC:R mod's packages or types.
+- Simulation code is deterministic ([mod author guide, chapter 12](docs/mod-guide.md#12-determinism)).
+- An engine API change updates its listings ([API policy](docs/api-policy.md#6-updating-the-listings)).
+- Test classes are `<Subject>Test`; test methods have `snake_case` names that say what they check.
 
 ## Commits and pull requests
 
-- One topic per commit. The first line is a short English summary; the body says what changed and why.
-- Before a pull request, `.\gradlew.bat build` passes. Name the tests you ran in the pull request.
-- An API change commits the regenerated `.api` files with the change and states its version effect in the commit message.
-- Behaviour changes come with tests. Do not commit build output, local paths or game data.
-- New art, sound or other assets need a licence that allows redistribution in a mod. Add the licence files and a notice next to them and an entry in [NOTICE](NOTICE).
-- The CI workflow runs the unit tests (`test`) of every pull request into `main` or `develop`; its check `test` must pass before the merge.
+- One topic per commit; a short English summary line, a body with what changed and why.
+- `.\gradlew.bat build` passes before a pull request; name the tests you ran.
+- An API change commits its regenerated `.api` files and states its version effect in the commit message.
+- Behaviour changes come with tests. No build output, local paths or game data.
+- New assets need a licence that allows redistribution in a mod: licence files and a notice next to them and an entry in [NOTICE](NOTICE).
+- CI runs `test` on every pull request into `main` or `develop`; the check `test` must pass before the merge.
 
 ## Releases
 
-`develop` holds the next version as `X.Y.Z-SNAPSHOT` and publishes snapshots to the Central Portal. `main` holds release versions and publishes each push to Maven Central with the tag `vX.Y.Z` and the GitHub release `vX.Y.Z`, which carries the user package `SC4J-X.Y.Z.zip` and its checksum `SC4J-X.Y.Z.zip.sha256`.
-
-A release is a pull request from `develop` into `main` that sets `version=X.Y.Z` in `gradle.properties`.
+`develop` holds `X.Y.Z-SNAPSHOT` and publishes snapshots to the Central Portal. A release is a pull request from `develop` into `main` that sets `version=X.Y.Z` in `gradle.properties`. Each push to `main` publishes to Maven Central and creates the tag and GitHub release `vX.Y.Z` with `SC4J-X.Y.Z.zip` and `SC4J-X.Y.Z.zip.sha256`.
 
 ## Licence of contributions
 
-SC4J is licensed under the [Apache License 2.0](LICENSE). Unless you state otherwise, everything you submit for inclusion is licensed under the same terms (section 5 of the License).
+Unless you state otherwise, a contribution is licensed under the [Apache License 2.0](LICENSE) (section 5).

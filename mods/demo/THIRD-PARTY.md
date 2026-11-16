@@ -4,7 +4,7 @@ The pictures of the demo are made from the material below. `demo.jar` carries th
 
 ## Public domain sources (CC0 1.0)
 
-[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/). Credit is not required by CC0; it is given as courtesy.
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/); credit is given as courtesy.
 
 | Source | Author | Where | Used for |
 |---|---|---|---|

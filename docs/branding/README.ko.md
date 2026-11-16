@@ -10,11 +10,6 @@ Fog of War Labs와 SC4J의 로고, 그리고 데모 모드의 런처 그림(아�
   <img src="fogofwarlabs-logo-512.png" alt="Fog of War Labs logo" width="160">
 </p>
 
-- [파일](#파일)
-- [색](#색)
-- [모드 그림](#모드-그림)
-- [PNG 내보내기](#png-내보내기)
-
 ## 파일
 
 | 파일 | 내용 |
@@ -35,8 +30,6 @@ Fog of War Labs와 SC4J의 로고, 그리고 데모 모드의 런처 그림(아�
 | `mods/demo/src/main/resources/meta/icon.png`와 `banner.png` | `demo-mod/icon.svg`와 `demo-mod/banner.svg` |
 
 ## 색
-
-로고에 쓰는 색:
 
 | 요소 | 색 |
 |---|---|

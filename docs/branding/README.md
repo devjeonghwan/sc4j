@@ -10,11 +10,6 @@ The logos of Fog of War Labs and SC4J, and the launcher art (icon and banner) of
   <img src="fogofwarlabs-logo-512.png" alt="Fog of War Labs logo" width="160">
 </p>
 
-- [Files](#files)
-- [Colours](#colours)
-- [Mod art](#mod-art)
-- [Exporting PNG](#exporting-png)
-
 ## Files
 
 | File | What it is |
@@ -35,8 +30,6 @@ Copies in the build:
 | `mods/demo/src/main/resources/meta/icon.png` and `banner.png` | `demo-mod/icon.svg` and `demo-mod/banner.svg` |
 
 ## Colours
-
-The colours of the logos:
 
 | Element | Colours |
 |---|---|

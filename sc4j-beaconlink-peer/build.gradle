@@ -3,10 +3,10 @@ plugins {
     id 'org.fogofwarlabs.sc4j.java'
 }
 
-// The Beacon.Link peer library: the node roles (registration with address validation, observed addresses, the
-// signed room store, signal relay between registered clients, rate limits, bounded stores and the protocol 2 routing table with FIND_PEERS lookups) on a socket its owner
-// holds or on a socket of its own. The launcher, the runtime's Beacon.Link client and the headless node program run it; it carries no game
-// traffic. It depends on the wire protocol and the generic base only: no engine, no mod, no LWJGL.
+// The Beacon.Link peer library: the node roles (registration with address validation, observed addresses, the signed room store,
+// topics, signal relay between registered clients, rate limits, bounded stores and the Kademlia routing table with FIND_PEERS lookups)
+// on a socket its owner holds or on a socket of its own. The launcher, the runtime's Beacon.Link client and the headless node program run
+// it; it carries no game traffic. It depends on the wire protocol and the generic base only: no engine, no mod, no LWJGL.
 dependencies {
     api project(':sc4j-beaconlink-protocol')
 

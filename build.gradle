@@ -48,19 +48,18 @@ allprojects {
     }
 }
 
-// Engine boundary check: no source, resource or build file of the engine-side root modules names the SC:R mod's packages or an Scr* type.
-// It is a small own check (no ArchUnit); "check" (and so "build") runs it for every engine-side module.
+// Engine boundary check: no source, resource or build file of an engine-side module names the SC:R mod's packages or an Scr* type.
+// "check" (and so "build") runs it for every engine-side module.
 def engineSideModules = ['sc4j-base', 'sc4j-mod-manifest', 'sc4j-engine-core', 'sc4j-engine-sim', 'sc4j-engine-net', 'sc4j-engine-client', 'sc4j-engine', 'sc4j-runtime', 'sc4j-launcher', 'sc4j-beaconlink-protocol',
                          'sc4j-beaconlink-peer', 'sc4j-beaconlink-node', 'sc4j-beaconlink']
 def modPackagePattern = ~/org[.\/]fogofwarlabs[.\/]sc4j[.\/]scr\b/
-// SC:R type names (ScrUnits, ScrNativeIds ...) belong to the mod; an engine-side module names none, not even in a comment.
+// SC:R type names (ScrUnits, ScrNativeIds ...), also in comments.
 def scrTypeNamePattern = ~/\bScr[A-Z]\w*/
-// The EUD layer is SC:R mod code over the engine's public index accessors: an engine-side module names no EUD concept and
-// no native SC:R image address (0x14xxxxxxx), not even in a comment.
+// EUD names and native SC:R image addresses (0x14xxxxxxx), also in comments.
 def eudNamePattern = ~/(?i)\beuds?\b/
 def nativeAddressPattern = ~/\b0x14[0-9A-Fa-f]{7}\b/
 
-// The demo (mods/demo) proves that the engine stands without SC:R, so the same check runs on it.
+// The demo (mods/demo) runs the same check.
 def modBoundaryModules = engineSideModules + ['mods:demo']
 
 configure(modBoundaryModules.collect { name -> project(':' + name) }) { module ->
@@ -99,8 +98,7 @@ configure(modBoundaryModules.collect { name -> project(':' + name) }) { module -
 }
 
 // Engine simulation determinism check: the simulation packages of the engine core and simulation modules use no source of
-// nondeterminism. Comments, string and character literals are blanked first, so only code is checked. A small own check
-// like checkModBoundary; "check" (and so "build") runs it.
+// nondeterminism. Comments, string and character literals are blanked first, so only code is checked. "check" (and so "build") runs it.
 def simulationPackages = ['random', 'math', 'game', 'entity', 'state', 'animation', 'content', 'hook', 'movement', 'path', 'collision',
                           'spatial', 'visibility', 'combat', 'economy', 'production', 'order', 'player', 'lifecycle', 'command', 'controller',
                           'trigger', 'computer', 'terrain', 'map', 'projectile', 'lockstep', 'replay', 'save']
@@ -159,8 +157,8 @@ configure([project(':sc4j-engine-core'), project(':sc4j-engine-sim')]) { module 
 // Public API list (docs/api-policy.md): the API of an engine module is every public or protected class, constructor,
 // method and field of its main classes outside the internal elements: the packages and classes annotated ApiStatus.Internal, which stay
 // public for the engine's own modules and the runtime. apiDump writes it with the JDK's javap to api/<module>.api
-// (checked in); apiCheck, which "check" (and so "build") runs, fails when the compiled classes differ from that file, so every API change is
-// a visible diff of an .api file in the same commit. The base and the manifest are listed too: mods compile against them through the engine.
+// (checked in); apiCheck, which "check" (and so "build") runs, fails when the compiled classes differ from that file. The base and the
+// manifest are listed too: mods compile against them through the engine.
 def apiModules = ['sc4j-base', 'sc4j-mod-manifest', 'sc4j-engine-core', 'sc4j-engine-sim', 'sc4j-engine-net', 'sc4j-engine-client', 'sc4j-engine']
 def apiToolMainClass = 'org.fogofwarlabs.sc4j.tools.api.ApiTool'
 def createApiToolConfiguration = { module ->

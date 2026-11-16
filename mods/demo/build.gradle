@@ -107,8 +107,8 @@ tasks.withType(Test).configureEach {
     systemProperty 'sc4j.demo.jar', modJar.get().archiveFile.get().asFile.absolutePath
 }
 
-// The demo is original work: no source, resource or build file names another game, its factions or its publisher (the pattern below).
-// A small own check like the engine's checkModBoundary, which also runs on the demo; "check" (and so "build") runs it.
+// No source, resource or build file of the demo names another game, its factions or its publisher (the pattern below).
+// "check" (and so "build") runs it.
 def otherGameNamePattern = ~/(?i)\b(star\s*craft|terran|zerg|protoss|brood\s*war|blizzard|war\s*craft|battle\.net)\b/
 def demoFiles = files(buildFile, file('THIRD-PARTY.md'), fileTree(file('src')) {
     include '**/*.java', '**/*.gradle', '**/*.json', '**/*.properties', '**/*.txt', '**/*.md', '**/*.svg'
@@ -141,8 +141,7 @@ def checkDemoNames = tasks.register('checkDemoNames') {
 // network game on 127.0.0.1; their per-loop state hash files, outcomes and (network) replays must be equal, the people's orders of the
 // network game must change it (its hashes leave the local game's), and a fifth JVM plays the host's replay back to the same hashes. Then
 // a host and a joiner JVM play the same network game over Beacon.Link with a node on 127.0.0.1 in the harness JVM: equal hashes, outcomes
-// and replays, and the network game's hashes. Report: build/determinism/determinism-report.txt. It runs in under a minute, so "check" runs
-// it.
+// and replays, and the network game's hashes. Report: build/determinism/determinism-report.txt. "check" runs it.
 def determinismCheck = tasks.register('determinismCheck', JavaExec) {
     description = 'Plays the same demo games in two runtime JVMs, local and over the loopback network, and compares their state hashes.'
     group = 'verification'

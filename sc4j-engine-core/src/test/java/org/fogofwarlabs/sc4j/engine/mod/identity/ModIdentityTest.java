@@ -74,13 +74,13 @@ final class ModIdentityTest {
         Path original = writeJar(directory.resolve("original.jar"), false, "units");
         Path changed = writeJar(directory.resolve("changed.jar"), false, "units!");
         ModIdentity identity = createIdentity(original, List.of());
-        ModIdentity withData = createIdentity(original, List.of("1.23.10.13515".getBytes(StandardCharsets.UTF_8)));
+        ModIdentity withData = createIdentity(original, List.of("data 7".getBytes(StandardCharsets.UTF_8)));
 
         Assertions.assertNotEquals(identity, createIdentity(changed, List.of()));
         Assertions.assertNotEquals(identity, withData);
         Assertions.assertArrayEquals(identity.getContentDigest(), withData.getContentDigest());
         Assertions.assertFalse(Arrays.equals(identity.getDataDigest(), withData.getDataDigest()));
-        Assertions.assertEquals(withData, createIdentity(original, List.of("1.23.10.13515".getBytes(StandardCharsets.UTF_8))));
+        Assertions.assertEquals(withData, createIdentity(original, List.of("data 7".getBytes(StandardCharsets.UTF_8))));
     }
 
     @Test

@@ -489,6 +489,67 @@ public final class ComponentUtils {
     }
 
     /**
+     * Creates a read-only text area of wrapped plain text in the body font, of a fixed height that scrolls, for longer text such as release
+     * notes.
+     *
+     * @param text   the text
+     * @param height the height in pixels
+     * @return the created text area
+     */
+    public static @NotNull TextArea textArea(@NotNull String text, double height) {
+        TextArea area = new TextArea(text);
+
+        area.setEditable(false);
+        area.setWrapText(true);
+        area.setMinHeight(height);
+        area.setPrefHeight(height);
+        area.setMaxHeight(height);
+
+        return area;
+    }
+
+    /**
+     * Creates an empty key/value metadata grid in a sunken frame; {@link #addMetaRow} adds its rows.
+     *
+     * @return the created grid
+     */
+    public static @NotNull GridPane metaGrid() {
+        GridPane grid = new GridPane();
+
+        grid.getStyleClass().addAll("panel-sunken", "spacing-s");
+
+        return grid;
+    }
+
+    /**
+     * Adds a row of text to a metadata grid ({@link #metaGrid}); a long value wraps.
+     *
+     * @param grid  the grid
+     * @param key   the key, in the faint colour
+     * @param value the value
+     */
+    public static void addMetaRow(@NotNull GridPane grid, @NotNull String key, @NotNull String value) {
+        Label valueLabel = label(value, "meta-value");
+
+        valueLabel.setWrapText(true);
+        addMetaRow(grid, key, valueLabel);
+    }
+
+    /**
+     * Adds a row to a metadata grid ({@link #metaGrid}) under its last row.
+     *
+     * @param grid  the grid
+     * @param key   the key, in the faint colour
+     * @param value the value node, such as a link
+     */
+    public static void addMetaRow(@NotNull GridPane grid, @NotNull String key, @NotNull Node value) {
+        Label keyLabel = label(key, "meta-key");
+
+        keyLabel.setMinWidth(Region.USE_PREF_SIZE);
+        grid.addRow(grid.getRowCount(), keyLabel, value);
+    }
+
+    /**
      * Sets a rich cell graphic that spans the cell width (inside its border and padding), so trailing badges align.
      *
      * @param cell    the list cell

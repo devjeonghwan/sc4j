@@ -3,96 +3,206 @@ package org.fogofwarlabs.sc4j.launcher.ui;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
 import org.fogofwarlabs.sc4j.launcher.launch.RuntimeCommandLine;
 import org.fogofwarlabs.sc4j.launcher.release.ReleaseException;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseNotesUtils;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherRelease;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherUpdater;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Shows the Update dialog of a newer launcher version: Download fetches the user package with the dialog's progress, checks it and unpacks
- * it; Restart then starts the updater and closes the launcher, which the updater starts again once the programs are replaced. Restart waits
- * while a game runs, as the update replaces the runtime the game uses.
+ * Shows the Update dialog of a newer launcher version. The offer shows the SC4J logo, the running and the new version, the release date, the
+ * download size, the release notes as plain text in a scrolling area (left out when the release has none) and that the launcher closes and
+ * starts again; its buttons are Skip this version, Later and Update.
+ * <p>
+ * Update downloads the user package with its size and progress, checks it and unpacks it; Cancel stops the download and returns to the
+ * offer. Then Restart starts the updater and closes the launcher, which the updater starts again once the programs are replaced. Restart
+ * waits while a game runs, as the update replaces the runtime the game uses. A failed download shows its reason with Retry.
  */
 public final class LauncherUpdateDialog {
+    private static final double DIALOG_WIDTH = 560;
+    private static final double LOGO_SIZE = 56;
+    private static final double NOTES_HEIGHT = 168;
+
     private final @NotNull LauncherShell shell;
     private final @NotNull LauncherTexts texts;
     private final @NotNull LauncherUpdater updater;
     private final @NotNull LauncherRelease release;
     private final @NotNull ObservableBooleanValue running;
+    private final @NotNull Runnable skip;
     private final @NotNull Runnable close;
+
+    private final @NotNull ModalDialog dialog;
+    private final @NotNull Label note;
+    private @NotNull AtomicBoolean cancelled;
+    private @Nullable Thread work;
 
     /**
      * Creates a {@link LauncherUpdateDialog} instance.
      *
-     * @param shell   shows the dialog
-     * @param texts   the launcher texts of the display language
-     * @param updater downloads, unpacks and applies the update
-     * @param release the newer version
-     * @param running {@code true} while a game runs
-     * @param close   closes the launcher once the updater runs
+     * @param shell          shows the dialog
+     * @param texts          the launcher texts of the display language
+     * @param imageScale     the screen pixels per logical unit the logo is decoded for
+     * @param updater        downloads, unpacks and applies the update
+     * @param release        the newer version
+     * @param runningVersion the running launcher's version
+     * @param running        {@code true} while a game runs
+     * @param skip           called after Skip this version closed the dialog, to save the skipped version
+     * @param close          closes the launcher once the updater runs
      */
-    public LauncherUpdateDialog(@NotNull LauncherShell shell, @NotNull LauncherTexts texts, @NotNull LauncherUpdater updater,
-                                @NotNull LauncherRelease release, @NotNull ObservableBooleanValue running, @NotNull Runnable close) {
+    public LauncherUpdateDialog(@NotNull LauncherShell shell, @NotNull LauncherTexts texts, double imageScale,
+                                @NotNull LauncherUpdater updater, @NotNull LauncherRelease release, @NotNull String runningVersion,
+                                @NotNull ObservableBooleanValue running, @NotNull Runnable skip, @NotNull Runnable close) {
+        Label title = ComponentUtils.label(texts.get("update.offer"), "text-title");
+        Label versions = ComponentUtils.label(texts.format("update.versions", runningVersion, release.getVersion()), "text-subtitle");
+        HBox header = ComponentUtils.row(ComponentUtils.Spacing.L,
+                                         ComponentUtils.imageView(ThemeUtils.loadImage(ThemeUtils.SC4J_LOGO, LOGO_SIZE, imageScale), LOGO_SIZE),
+                                         ComponentUtils.column(ComponentUtils.Spacing.XS, title, versions));
+        GridPane facts = ComponentUtils.metaGrid();
+        Instant publishedAt = release.getPublishedAt();
+        long size = release.getPackageFile().getSize();
+        String notes = ReleaseNotesUtils.toPlainText(release.getNotes());
+
         this.shell   = shell;
         this.texts   = texts;
         this.updater = updater;
         this.release = release;
         this.running = running;
+        this.skip    = skip;
         this.close   = close;
+
+        this.dialog    = new ModalDialog(texts.get("update.title"), DIALOG_WIDTH);
+        this.note      = ComponentUtils.paragraph(texts.get("update.note"), "text-caption");
+        this.cancelled = new AtomicBoolean(false);
+        this.work      = null;
+
+        this.dialog.addContent(header);
+
+        if (publishedAt != null) {
+            DateTimeFormatter dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(texts.getLocale());
+
+            ComponentUtils.addMetaRow(facts, texts.get("update.date"), dateFormat.format(publishedAt.atZone(ZoneId.systemDefault())));
+        }
+
+        if (size > 0) {
+            ComponentUtils.addMetaRow(facts, texts.get("update.size"), texts.formatSize(size));
+        }
+
+        if (!facts.getChildren().isEmpty()) {
+            this.dialog.addContent(facts);
+        }
+
+        if (!notes.isEmpty()) {
+            this.dialog.addContent(ComponentUtils.column(ComponentUtils.Spacing.XS, ComponentUtils.label(texts.get("update.notes"), "text-heading"),
+                                                         ComponentUtils.textArea(notes, NOTES_HEIGHT)));
+        }
+
+        this.dialog.addContent(this.note);
     }
 
     /**
-     * Opens the dialog.
+     * Opens the dialog with the offer.
      */
     public void open() {
-        ModalDialog shown = new ModalDialog(this.texts.get("update.title"));
-        Label text = ComponentUtils.paragraph(this.texts.format("update.available", this.release.getVersion()), "text-body");
+        this.showOffer();
+        this.shell.showDialog(this.dialog);
+    }
+
+    private void showOffer() {
+        Button skipButton = ComponentUtils.button(this.texts.get("update.skip"), ComponentUtils.ButtonRole.SECONDARY);
+        Button later = ComponentUtils.button(this.texts.get("update.later"), ComponentUtils.ButtonRole.SECONDARY);
+        Button update = ComponentUtils.button(this.texts.get("update.start"), ComponentUtils.ButtonRole.PRIMARY);
+
+        this.dialog.setButtons(skipButton, later, update);
+        skipButton.setOnAction(event -> {
+            this.shell.closeDialog(this.dialog);
+            this.skip.run();
+        });
+        later.setOnAction(event -> this.shell.closeDialog(this.dialog));
+        update.setOnAction(event -> this.download());
+        update.requestFocus();
+    }
+
+    private void download() {
+        AtomicBoolean downloadCancelled = new AtomicBoolean(false);
         Button cancel = ComponentUtils.button(this.texts.get("update.cancel"), ComponentUtils.ButtonRole.SECONDARY);
-        Button download = ComponentUtils.button(this.texts.get("update.download"), ComponentUtils.ButtonRole.PRIMARY);
-        AtomicBoolean cancelled = new AtomicBoolean(false);
+        long size = this.release.getPackageFile().getSize();
 
-        shown.addContent(text);
-        shown.setButtons(cancel, download);
-        cancel.setOnAction(event -> {
-            cancelled.set(true);
-            this.shell.closeDialog(shown);
-        });
-        download.setOnAction(event -> {
-            download.setDisable(true);
-            shown.runWork(this.texts.get("update.downloading"), cancelled, progress -> this.updater.download(this.release, progress),
-                          packageFile -> this.unpack(shown, text, cancelled, download, packageFile), this::describe, () -> download.setDisable(false));
-        });
-
-        this.shell.showDialog(shown);
-        download.requestFocus();
+        this.cancelled = downloadCancelled;
+        this.dialog.setButtons(cancel, null);
+        cancel.setOnAction(event -> this.cancel());
+        this.work = this.dialog.runWork(share -> this.describeProgress(share, size), downloadCancelled,
+                                        progress -> this.updater.download(this.release, progress),
+                                        packageFile -> this.unpack(downloadCancelled, packageFile), this::describe, this::showRetry);
+        cancel.requestFocus();
     }
 
-    private void unpack(@NotNull ModalDialog shown, @NotNull Label text, @NotNull AtomicBoolean cancelled, @NotNull Button download,
-                        @NotNull Path packageFile) {
-        shown.runWork(this.texts.get("update.unpacking"), cancelled, progress -> this.updater.unpack(this.release, packageFile),
-                      packageRoot -> this.showReady(shown, text, packageRoot), this::describe, () -> download.setDisable(false));
+    private @NotNull String describeProgress(double share, long size) {
+        if (share < 0 || size <= 0) {
+            return this.texts.get("update.downloading");
+        }
+
+        return this.texts.format("update.downloading.size", this.texts.formatSize((long) (share * size)), this.texts.formatSize(size));
     }
 
-    private void showReady(@NotNull ModalDialog shown, @NotNull Label text, @NotNull Path packageRoot) {
+    private void unpack(@NotNull AtomicBoolean unpackCancelled, @NotNull Path packageFile) {
+        this.work = this.dialog.runWork(this.texts.get("update.unpacking"), unpackCancelled,
+                                        progress -> this.updater.unpack(this.release, packageFile),
+                                        this::showReady, this::describe, this::showRetry);
+    }
+
+    private void cancel() {
+        Thread stopped = this.work;
+
+        this.cancelled.set(true);
+        this.work = null;
+
+        if (stopped != null) {
+            stopped.interrupt();
+        }
+
+        this.dialog.showProgress(null, 0);
+        this.showOffer();
+    }
+
+    private void showRetry() {
+        Button later = ComponentUtils.button(this.texts.get("update.later"), ComponentUtils.ButtonRole.SECONDARY);
+        Button retry = ComponentUtils.button(this.texts.get("update.retry"), ComponentUtils.ButtonRole.PRIMARY);
+
+        this.work = null;
+        this.dialog.setButtons(later, retry);
+        later.setOnAction(event -> this.shell.closeDialog(this.dialog));
+        retry.setOnAction(event -> this.download());
+        retry.requestFocus();
+    }
+
+    private void showReady(@NotNull Path packageRoot) {
         Button later = ComponentUtils.button(this.texts.get("update.later"), ComponentUtils.ButtonRole.SECONDARY);
         Button restart = ComponentUtils.button(this.texts.get("update.restart"), ComponentUtils.ButtonRole.PRIMARY);
 
-        text.setText(this.texts.format("update.ready", this.release.getVersion()));
-        shown.setButtons(later, restart);
-        later.setOnAction(event -> this.shell.closeDialog(shown));
-        restart.setOnAction(event -> this.restart(shown, packageRoot));
+        this.work = null;
+        this.note.setText(this.texts.format("update.ready", this.release.getVersion()));
+        this.dialog.setButtons(later, restart);
+        later.setOnAction(event -> this.shell.closeDialog(this.dialog));
+        restart.setOnAction(event -> this.restart(packageRoot));
         restart.requestFocus();
     }
 
-    private void restart(@NotNull ModalDialog shown, @NotNull Path packageRoot) {
+    private void restart(@NotNull Path packageRoot) {
         if (this.running.get()) {
-            shown.showMessage(this.texts.get("update.running"));
+            this.dialog.showMessage(this.texts.get("update.running"));
 
             return;
         }
@@ -100,7 +210,7 @@ public final class LauncherUpdateDialog {
         try {
             this.updater.startUpdater(packageRoot, ProcessHandle.current().pid(), RuntimeCommandLine.isWindows());
         } catch (IOException exception) {
-            shown.showMessage(this.describe(exception));
+            this.dialog.showMessage(this.describe(exception));
 
             return;
         }

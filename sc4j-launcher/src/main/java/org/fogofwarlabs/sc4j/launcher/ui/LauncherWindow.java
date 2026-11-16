@@ -96,8 +96,9 @@ import java.util.function.Function;
  * While the runtime runs, the window is minimized; it comes back when the runtime ends and shows the run's report. Closing
  * the launcher does not stop a running runtime.
  * <p>
- * Updates come from GitHub releases ({@link #startChecks}): a newer launcher version is shown in a notice above every screen and on the
- * Settings screen, which also checks on demand; its Update dialog ({@link LauncherUpdateDialog}) replaces the programs and starts the
+ * Updates come from GitHub releases ({@link #startChecks}): the Update dialog ({@link LauncherUpdateDialog}) of a newer launcher version opens
+ * by itself once per run ({@link #isUpdateOffered}), and the version is shown in a notice above every screen, unless the player skipped it,
+ * and on the Settings screen, which also checks on demand and then always opens the dialog. The dialog replaces the programs and starts the
  * launcher again. Mods are installed, updated and removed from the Mods screen ({@link ModReleaseDialogs}); a newer release of a mod
  * installed from a release is shown in its details.
  * <p>
@@ -230,6 +231,22 @@ public final class LauncherWindow {
                                width, height);
     }
 
+    /**
+     * Tells whether the launcher opens the Update dialog of a newer version by itself: once per run, while an account is logged in and no
+     * game runs, and not for the version the player chose to skip.
+     *
+     * @param update   the newer version the check found, or {@code null} when the launcher is up to date
+     * @param settings the launcher settings, which name the skipped version
+     * @param loggedIn whether an account is logged in
+     * @param running  whether a game runs
+     * @param offered  whether the dialog was opened in this run already
+     * @return {@code true} if the dialog opens, {@code false} otherwise
+     */
+    static boolean isUpdateOffered(@Nullable LauncherRelease update, @NotNull LauncherSettings settings, boolean loggedIn, boolean running,
+                                   boolean offered) {
+        return update != null && loggedIn && !running && !offered && !settings.isSkipped(update.getVersion());
+    }
+
 
     private final @NotNull Stage stage;
     private final @NotNull InstallLayout install;
@@ -261,6 +278,7 @@ public final class LauncherWindow {
     private @Nullable LauncherSessionView session;
 
     private @Nullable LauncherRelease launcherUpdate;
+    private boolean updateOffered;
     private boolean updateChecking;
     private @Nullable String updateStatus;
     private @NotNull ComponentUtils.Tone updateStatusTone;
@@ -325,6 +343,7 @@ public final class LauncherWindow {
         this.session         = null;
 
         this.launcherUpdate   = null;
+        this.updateOffered    = false;
         this.updateChecking   = false;
         this.updateStatus     = null;
         this.updateStatusTone = ComponentUtils.Tone.NEUTRAL;
@@ -562,6 +581,7 @@ public final class LauncherWindow {
         });
         this.showSection(LauncherShell.Section.MODS);
         this.selectLastMod();
+        this.offerLauncherUpdate();
     }
 
     /**
@@ -781,8 +801,9 @@ public final class LauncherWindow {
     }
 
     /**
-     * Looks for a newer launcher version on a thread of its own. A check the user asked for saves the update source and shows its result
-     * on the Settings screen; the check of the start fails quietly.
+     * Looks for a newer launcher version on a thread of its own. A check the user asked for saves the update source, shows its result on the
+     * Settings screen and opens the Update dialog of a newer version; the check of the start fails quietly and offers a newer version
+     * ({@link #isUpdateOffered}).
      */
     private void checkLauncherUpdate(@NotNull String source, boolean asked) {
         ReleaseRepository repository = ReleaseRepository.parse(source);
@@ -831,6 +852,18 @@ public final class LauncherWindow {
 
         this.showUpdateStatus();
         this.updateNotices();
+
+        if (asked && found != null) {
+            this.openLauncherUpdate();
+        } else {
+            this.offerLauncherUpdate();
+        }
+    }
+
+    private void offerLauncherUpdate() {
+        if (isUpdateOffered(this.launcherUpdate, this.settings, this.account != null, this.running.get(), this.updateOffered)) {
+            this.openLauncherUpdate();
+        }
     }
 
     private void showUpdateStatus() {
@@ -853,9 +886,19 @@ public final class LauncherWindow {
     private void openLauncherUpdate() {
         LauncherRelease available = this.launcherUpdate;
 
-        if (available != null) {
-            new LauncherUpdateDialog(this.shell, this.texts, this.launcherUpdater, available, this.running, this::closeForUpdate).open();
+        if (available == null) {
+            return;
         }
+
+        this.updateOffered = true;
+        new LauncherUpdateDialog(this.shell, this.texts, this.imageScale, this.launcherUpdater, available, this.version, this.running,
+                                 () -> this.skipLauncherUpdate(available), this::closeForUpdate).open();
+    }
+
+    private void skipLauncherUpdate(@NotNull LauncherRelease skipped) {
+        this.settings = this.settings.withSkippedVersion(skipped.getVersion());
+        this.saveSettings();
+        this.updateNotices();
     }
 
     /**
@@ -956,8 +999,8 @@ public final class LauncherWindow {
     }
 
     /**
-     * Shows the launcher's notices: a settings file problem, why the last update failed and, once logged in, a newer launcher version with
-     * its Update button and, on the Mods screen, a mods folder problem.
+     * Shows the launcher's notices: a settings file problem, why the last update failed and, once logged in, a newer launcher version that
+     * the player did not skip with its Update button and, on the Mods screen, a mods folder problem.
      */
     private void updateNotices() {
         List<Node> shown = new ArrayList<>();
@@ -972,7 +1015,7 @@ public final class LauncherWindow {
             shown.add(ComponentUtils.notice(ComponentUtils.Tone.DANGER, this.texts.format("notice.update.failed", this.updateFailure)));
         }
 
-        if (available != null && loggedIn) {
+        if (available != null && loggedIn && !this.settings.isSkipped(available.getVersion())) {
             Button update = ComponentUtils.smallButton(this.texts.get("update.start"), ComponentUtils.ButtonRole.PRIMARY);
 
             update.setOnAction(event -> this.openLauncherUpdate());

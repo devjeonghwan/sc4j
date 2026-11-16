@@ -6,6 +6,7 @@ import org.fogofwarlabs.sc4j.base.json.JsonReader;
 import org.fogofwarlabs.sc4j.base.json.JsonWriterUtils;
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
 import org.fogofwarlabs.sc4j.launcher.release.ReleaseRepository;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,11 +26,13 @@ import java.util.Map;
  *   "language": "ko",
  *   "lastMod": "my-mod.jar",
  *   "window": {"x": 120, "y": 80, "width": 1280, "height": 800, "maximized": false},
- *   "updateRepository": "owner/name"
+ *   "updateRepository": "owner/name",
+ *   "skippedVersion": "1.2.0"
  * }
  *}
  * Every field but {@code format} is optional: without {@code language} the launcher follows the operating system's language, without
- * {@code updateRepository} it updates from {@link LauncherSettings#DEFAULT_UPDATE_REPOSITORY}.
+ * {@code updateRepository} it updates from {@link LauncherSettings#DEFAULT_UPDATE_REPOSITORY}, and without {@code skippedVersion} it skips
+ * no version.
  */
 public final class LauncherSettingsFile {
     /**
@@ -47,6 +50,7 @@ public final class LauncherSettingsFile {
     private static final @NotNull String HEIGHT_FIELD = "height";
     private static final @NotNull String MAXIMIZED_FIELD = "maximized";
     private static final @NotNull String UPDATE_REPOSITORY_FIELD = "updateRepository";
+    private static final @NotNull String SKIPPED_VERSION_FIELD = "skippedVersion";
 
     private static @Nullable UiLanguage readLanguage(@NotNull Path path, @Nullable Object value) throws IOException {
         if (value == null) {
@@ -130,8 +134,14 @@ public final class LauncherSettingsFile {
             throw Exceptions.newIOException("Invalid launcher settings file {0}: updateRepository must be owner/name", this.path);
         }
 
+        Object skippedVersion = object.get(SKIPPED_VERSION_FIELD);
+
+        if (skippedVersion != null && (!(skippedVersion instanceof String version) || ReleaseVersion.parse(version) == null)) {
+            throw Exceptions.newIOException("Invalid launcher settings file {0}: skippedVersion must be a version", this.path);
+        }
+
         return new LauncherSettings(readLanguage(this.path, object.get(LANGUAGE_FIELD)), (String) lastMod,
-                                    readWindow(this.path, object.get(WINDOW_FIELD)), (String) updateRepository);
+                                    readWindow(this.path, object.get(WINDOW_FIELD)), (String) updateRepository, (String) skippedVersion);
     }
 
     /**
@@ -168,6 +178,10 @@ public final class LauncherSettingsFile {
 
         if (settings.getSavedUpdateRepository() != null) {
             object.put(UPDATE_REPOSITORY_FIELD, settings.getSavedUpdateRepository());
+        }
+
+        if (settings.getSkippedVersion() != null) {
+            object.put(SKIPPED_VERSION_FIELD, settings.getSkippedVersion());
         }
 
         AtomicFileUtils.write(this.path, JsonWriterUtils.write(object).getBytes(StandardCharsets.UTF_8));

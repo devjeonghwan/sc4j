@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
 
 /**
@@ -143,10 +144,26 @@ public final class ModalDialog {
      * @param action the button that acts, or {@code null} for none
      */
     public void setButtons(@Nullable Button cancel, @Nullable Button action) {
+        this.setButtons(null, cancel, action);
+    }
+
+    /**
+     * Sets the footer buttons from left to right: a button at the left end, then after a spacer the cancel button (Escape) and the action
+     * button (Enter).
+     *
+     * @param leading a button for another choice, such as skipping what the dialog offers, or {@code null} for none
+     * @param cancel  the button that closes the dialog without acting, or {@code null} for none
+     * @param action  the button that acts, or {@code null} for none
+     */
+    public void setButtons(@Nullable Button leading, @Nullable Button cancel, @Nullable Button action) {
         Region spacer = new Region();
 
         HBox.setHgrow(spacer, Priority.ALWAYS);
         this.footer.getChildren().setAll(spacer);
+
+        if (leading != null) {
+            this.footer.getChildren().addFirst(leading);
+        }
 
         if (cancel != null) {
             cancel.setCancelButton(true);
@@ -182,9 +199,7 @@ public final class ModalDialog {
     }
 
     /**
-     * Runs the dialog's work on a thread of its own and shows its progress. The result is passed on on the user interface thread, and only
-     * while the work was not cancelled: Cancel, which runs on that thread too, either comes first and the result is dropped, or the result
-     * was taken already. A failure of the work or of taking its result hides the progress and shows the reason in the message line.
+     * Runs the dialog's work on a thread of its own and shows its progress under a text that does not change.
      *
      * @param progressText the text over the progress bar
      * @param cancelled    set by the dialog's Cancel
@@ -193,18 +208,46 @@ public final class ModalDialog {
      * @param describe     gives the message of a failure
      * @param failed       called after a failure, such as to enable the dialog's inputs again
      * @param <T>          the type of the work's result
+     * @return the started thread of the work, which Cancel may interrupt to stop the work early
      */
-    public <T> void runWork(@NotNull String progressText, @NotNull AtomicBoolean cancelled, @NotNull Work<T> work, @NotNull WorkResult<T> done,
-                            @NotNull Function<@NotNull Exception, @NotNull String> describe, @NotNull Runnable failed) {
+    public <T> @NotNull Thread runWork(@NotNull String progressText, @NotNull AtomicBoolean cancelled, @NotNull Work<T> work,
+                                       @NotNull WorkResult<T> done, @NotNull Function<@NotNull Exception, @NotNull String> describe,
+                                       @NotNull Runnable failed) {
+        return this.runWork(share -> progressText, cancelled, work, done, describe, failed);
+    }
+
+    /**
+     * Runs the dialog's work on a thread of its own and shows its progress. The result is passed on on the user interface thread, and only
+     * while the work was not cancelled: Cancel, which runs on that thread too, either comes first and the result is dropped, or the result
+     * was taken already. A failure of the work or of taking its result hides the progress and shows the reason in the message line, unless
+     * the work was cancelled.
+     *
+     * @param progressText gives the text over the progress bar from the share done, which is {@link ProgressBar#INDETERMINATE_PROGRESS}
+     *                     while it is not known
+     * @param cancelled    set by the dialog's Cancel
+     * @param work         the work
+     * @param done         takes the result
+     * @param describe     gives the message of a failure
+     * @param failed       called after a failure, such as to enable the dialog's inputs again
+     * @param <T>          the type of the work's result
+     * @return the started thread of the work, which Cancel may interrupt to stop the work early
+     */
+    public <T> @NotNull Thread runWork(@NotNull DoubleFunction<@NotNull String> progressText, @NotNull AtomicBoolean cancelled,
+                                       @NotNull Work<T> work, @NotNull WorkResult<T> done,
+                                       @NotNull Function<@NotNull Exception, @NotNull String> describe, @NotNull Runnable failed) {
         AtomicReference<Double> latest = new AtomicReference<>(null);
         Consumer<Exception> fail = exception -> {
+            if (cancelled.get()) {
+                return;
+            }
+
             this.showProgress(null, 0);
             this.showMessage(describe.apply(exception));
             failed.run();
         };
 
         this.showMessage(null);
-        this.showProgress(progressText, ProgressBar.INDETERMINATE_PROGRESS);
+        this.showProgress(progressText.apply(ProgressBar.INDETERMINATE_PROGRESS), ProgressBar.INDETERMINATE_PROGRESS);
 
         DoubleConsumer progress = share -> {
             if (latest.getAndSet(share) == null) {
@@ -212,7 +255,7 @@ public final class ModalDialog {
                     Double value = latest.getAndSet(null);
 
                     if (value != null && !cancelled.get()) {
-                        this.showProgress(progressText, value);
+                        this.showProgress(progressText.apply(value), value);
                     }
                 });
             }
@@ -240,5 +283,7 @@ public final class ModalDialog {
 
         thread.setDaemon(true);
         thread.start();
+
+        return thread;
     }
 }

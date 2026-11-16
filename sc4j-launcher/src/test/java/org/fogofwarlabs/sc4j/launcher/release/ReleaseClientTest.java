@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,8 +17,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * Tests the release client against a local stand-in for GitHub: the latest release with its files, missing repositories, small files, and
- * downloads that are kept only when they match their checksum file.
+ * Tests the release client against a local stand-in for GitHub: the latest release with its publication time, notes and files, missing
+ * repositories, small files, and downloads that are kept only when they match their checksum file.
  */
 final class ReleaseClientTest {
     private static final @NotNull String REPOSITORY = "owner/my-mod";
@@ -40,6 +41,23 @@ final class ReleaseClientTest {
             Assertions.assertNotNull(jar);
             Assertions.assertEquals(JAR_CONTENTS.length, jar.getSize());
             Assertions.assertNull(release.findAsset("other.jar"));
+            Assertions.assertNull(release.getPublishedAt());
+            Assertions.assertEquals("", release.getNotes());
+        }
+    }
+
+    @Test
+    void find_latest_release_should_read_the_publication_time_and_the_notes() throws IOException {
+        try (ReleaseServerScenario server = ReleaseServerScenario.start()) {
+            Instant publishedAt = Instant.parse("2026-11-16T12:30:00Z");
+            String notes = "## Changes\n* Faster start";
+            Release release;
+
+            server.addCheckedRelease(REPOSITORY, TAG, publishedAt, notes, Map.of(JAR, JAR_CONTENTS));
+            release = new ReleaseClient(server.getApi()).findLatestRelease(requireRepository(REPOSITORY));
+
+            Assertions.assertEquals(publishedAt, release.getPublishedAt());
+            Assertions.assertEquals(notes, release.getNotes());
         }
     }
 

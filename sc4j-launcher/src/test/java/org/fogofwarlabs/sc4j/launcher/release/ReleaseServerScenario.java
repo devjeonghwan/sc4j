@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.fogofwarlabs.sc4j.base.json.JsonWriterUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -14,16 +15,20 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Stands in for GitHub on 127.0.0.1: the REST API's latest release of a repository ({@code /api/repos/<owner>/<name>/releases/latest}), the
- * release files, which are served through a redirect as GitHub serves them, and other files such as a mod catalog.
+ * release files, which are served through a redirect as GitHub serves them, and other files such as a mod catalog. A release file can be
+ * paused halfway, so that its download stays in progress until the test resumes it.
  */
 public final class ReleaseServerScenario implements AutoCloseable {
     /**
@@ -40,6 +45,8 @@ public final class ReleaseServerScenario implements AutoCloseable {
     private static final int FOUND_STATUS = 302;
     private static final int NOT_FOUND_STATUS = 404;
     private static final int NO_BODY = -1;
+    private static final int HALF = 2;
+    private static final long PAUSE_TIMEOUT_SECONDS = 60;
 
     /**
      * Starts a server on a free port of 127.0.0.1.
@@ -68,10 +75,23 @@ public final class ReleaseServerScenario implements AutoCloseable {
         }
     }
 
+    private static void awaitResume(@NotNull CountDownLatch resume) throws IOException {
+        try {
+            if (!resume.await(PAUSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                throw Exceptions.newIOException("The paused answer was not resumed in {0} s", PAUSE_TIMEOUT_SECONDS);
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+
+            throw Exceptions.newIOException(exception, "Interrupted while the answer was paused");
+        }
+    }
+
 
     private final @NotNull HttpServer server;
     private final @NotNull Map<@NotNull String, byte @NotNull []> files;
     private final @NotNull Map<@NotNull String, @NotNull String> redirects;
+    private final @NotNull Map<@NotNull String, @NotNull CountDownLatch> pauses;
 
     /**
      * Creates a {@link ReleaseServerScenario} instance and starts the server.
@@ -82,6 +102,7 @@ public final class ReleaseServerScenario implements AutoCloseable {
         this.server    = server;
         this.files     = new ConcurrentHashMap<>();
         this.redirects = new ConcurrentHashMap<>();
+        this.pauses    = new ConcurrentHashMap<>();
 
         this.server.createContext("/", this::answer);
         this.server.start();
@@ -108,13 +129,28 @@ public final class ReleaseServerScenario implements AutoCloseable {
     }
 
     /**
-     * Publishes a release as the latest release of a repository; each release file is served through a redirect.
+     * Publishes a release without publication time and notes as the latest release of a repository; each release file is served through a
+     * redirect.
      *
      * @param repository the repository {@code owner/name}
      * @param tag        the release tag
      * @param assets     the release files by name, in the order the release lists them
      */
     public void addRelease(@NotNull String repository, @NotNull String tag, @NotNull Map<@NotNull String, byte @NotNull []> assets) {
+        this.addRelease(repository, tag, null, "", assets);
+    }
+
+    /**
+     * Publishes a release as the latest release of a repository; each release file is served through a redirect.
+     *
+     * @param repository  the repository {@code owner/name}
+     * @param tag         the release tag
+     * @param publishedAt the publication time, or {@code null} to leave it out
+     * @param notes       the release notes
+     * @param assets      the release files by name, in the order the release lists them
+     */
+    public void addRelease(@NotNull String repository, @NotNull String tag, @Nullable Instant publishedAt, @NotNull String notes,
+                           @NotNull Map<@NotNull String, byte @NotNull []> assets) {
         List<Object> listed = new ArrayList<>();
         Map<String, Object> release = new LinkedHashMap<>();
 
@@ -133,6 +169,12 @@ public final class ReleaseServerScenario implements AutoCloseable {
 
         release.put("tag_name", tag);
         release.put("draft", false);
+        release.put("body", notes);
+
+        if (publishedAt != null) {
+            release.put("published_at", publishedAt.toString());
+        }
+
         release.put("assets", listed);
         this.setLatestRelease(repository, JsonWriterUtils.write(release).getBytes(StandardCharsets.UTF_8));
     }
@@ -148,13 +190,27 @@ public final class ReleaseServerScenario implements AutoCloseable {
     }
 
     /**
-     * Publishes a release with each file and its checksum file {@code <file>.sha256}.
+     * Publishes a release without publication time and notes with each file and its checksum file {@code <file>.sha256}.
      *
      * @param repository the repository {@code owner/name}
      * @param tag        the release tag
      * @param files      the release files by name
      */
     public void addCheckedRelease(@NotNull String repository, @NotNull String tag, @NotNull Map<@NotNull String, byte @NotNull []> files) {
+        this.addCheckedRelease(repository, tag, null, "", files);
+    }
+
+    /**
+     * Publishes a release with each file and its checksum file {@code <file>.sha256}.
+     *
+     * @param repository  the repository {@code owner/name}
+     * @param tag         the release tag
+     * @param publishedAt the publication time, or {@code null} to leave it out
+     * @param notes       the release notes
+     * @param files       the release files by name
+     */
+    public void addCheckedRelease(@NotNull String repository, @NotNull String tag, @Nullable Instant publishedAt, @NotNull String notes,
+                                  @NotNull Map<@NotNull String, byte @NotNull []> files) {
         Map<String, byte[]> assets = new LinkedHashMap<>();
 
         for (Map.Entry<String, byte[]> file : files.entrySet()) {
@@ -162,7 +218,22 @@ public final class ReleaseServerScenario implements AutoCloseable {
             assets.put(file.getKey() + CHECKSUM_EXTENSION, createChecksum(file.getValue(), file.getKey()));
         }
 
-        this.addRelease(repository, tag, assets);
+        this.addRelease(repository, tag, publishedAt, notes, assets);
+    }
+
+    /**
+     * Pauses the next answer for a release file: the server sends the first half of the file and the rest once the returned latch is
+     * counted down.
+     *
+     * @param name the release file's name
+     * @return the latch that resumes the answer
+     */
+    public @NotNull CountDownLatch pauseFile(@NotNull String name) {
+        CountDownLatch resume = new CountDownLatch(1);
+
+        this.pauses.put("/" + name, resume);
+
+        return resume;
     }
 
     private @NotNull URI resolve(@NotNull String path) {
@@ -181,13 +252,34 @@ public final class ReleaseServerScenario implements AutoCloseable {
             } else if (contents == null) {
                 exchange.sendResponseHeaders(NOT_FOUND_STATUS, NO_BODY);
             } else {
+                CountDownLatch pause = this.takePause(path);
+
                 exchange.sendResponseHeaders(OK_STATUS, contents.length == 0 ? NO_BODY : contents.length);
 
                 try (OutputStream output = exchange.getResponseBody()) {
-                    output.write(contents);
+                    if (pause == null) {
+                        output.write(contents);
+                    } else {
+                        output.write(contents, 0, contents.length / HALF);
+                        output.flush();
+                        awaitResume(pause);
+                        output.write(contents, contents.length / HALF, contents.length - contents.length / HALF);
+                    }
                 }
             }
         }
+    }
+
+    private @Nullable CountDownLatch takePause(@NotNull String path) {
+        for (Map.Entry<String, CountDownLatch> pause : this.pauses.entrySet()) {
+            if (path.endsWith(pause.getKey())) {
+                this.pauses.remove(pause.getKey());
+
+                return pause.getValue();
+            }
+        }
+
+        return null;
     }
 
     /**

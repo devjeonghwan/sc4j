@@ -141,7 +141,7 @@ public final class LauncherUpdater {
                                                                                        release.getTag(), packageName));
         }
 
-        return new LauncherRelease(latest, packageFile, checksumFile);
+        return new LauncherRelease(latest, release.getPublishedAt(), release.getNotes(), packageFile, checksumFile);
     }
 
     /**

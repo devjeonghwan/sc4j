@@ -1,6 +1,7 @@
 package org.fogofwarlabs.sc4j.launcher.settings;
 
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseVersion;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,13 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Tests reading and writing the launcher settings file {@code userdata/launcher.json}.
+ * Tests reading and writing the launcher settings file {@code userdata/launcher.json}, with the launcher version the player skipped.
  */
 final class LauncherSettingsFileTest {
     @Test
     void write_and_read_should_keep_every_setting(@TempDir @NotNull Path directory) throws IOException {
         LauncherSettingsFile file = new LauncherSettingsFile(directory.resolve("userdata").resolve("launcher.json"));
-        LauncherSettings settings = new LauncherSettings(UiLanguage.KOREAN, "my-mod.jar", new WindowState(-8, 40, 1280, 800, true), "owner/fork");
+        LauncherSettings settings = new LauncherSettings(UiLanguage.KOREAN, "my-mod.jar", new WindowState(-8, 40, 1280, 800, true), "owner/fork",
+                                                         "1.2.0");
 
         file.write(settings);
 
@@ -34,6 +36,22 @@ final class LauncherSettingsFileTest {
         Assertions.assertEquals(800, window.getHeight());
         Assertions.assertTrue(window.isMaximized());
         Assertions.assertEquals("owner/fork", read.getUpdateRepository());
+        Assertions.assertEquals("1.2.0", read.getSkippedVersion());
+    }
+
+    @Test
+    void with_skipped_version_should_skip_that_version_only(@TempDir @NotNull Path directory) throws IOException {
+        LauncherSettingsFile file = new LauncherSettingsFile(directory.resolve("launcher.json"));
+        LauncherSettings read;
+
+        file.write(LauncherSettings.DEFAULT.withSkippedVersion(requireVersion("v1.2.0")));
+        read = file.read();
+
+        Assertions.assertEquals("{\"format\": 1, \"skippedVersion\": \"1.2.0\"}\n", Files.readString(file.getPath(), StandardCharsets.UTF_8));
+        Assertions.assertTrue(read.isSkipped(requireVersion("1.2.0")));
+        Assertions.assertFalse(read.isSkipped(requireVersion("1.2.1")), "a later release is offered again");
+        Assertions.assertFalse(LauncherSettings.DEFAULT.isSkipped(requireVersion("1.2.0")));
+        Assertions.assertNull(read.withSkippedVersion(null).getSkippedVersion());
     }
 
     @Test
@@ -72,5 +90,17 @@ final class LauncherSettingsFileTest {
         Files.writeString(path, "{\"format\": 1, \"updateRepository\": \"not a repository\"}", StandardCharsets.UTF_8);
 
         Assertions.assertThrows(IOException.class, () -> new LauncherSettingsFile(path).read());
+
+        Files.writeString(path, "{\"format\": 1, \"skippedVersion\": \"latest\"}", StandardCharsets.UTF_8);
+
+        Assertions.assertThrows(IOException.class, () -> new LauncherSettingsFile(path).read());
+    }
+
+    private static @NotNull ReleaseVersion requireVersion(@NotNull String text) {
+        ReleaseVersion version = ReleaseVersion.parse(text);
+
+        Assertions.assertNotNull(version);
+
+        return version;
     }
 }

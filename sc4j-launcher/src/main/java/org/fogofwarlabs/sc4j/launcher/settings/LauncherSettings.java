@@ -1,12 +1,14 @@
 package org.fogofwarlabs.sc4j.launcher.settings;
 
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Holds the launcher's own settings, {@code userdata/launcher.json}: the UI language chosen on the Settings screen, the
- * mod selected last, the window state and the update repository. Instances are immutable; each {@code with} method creates a changed copy.
+ * Holds the launcher's own settings, {@code userdata/launcher.json}: the UI language chosen on the Settings screen, the mod selected last,
+ * the window state, the update repository and the launcher version the player chose to skip. Instances are immutable; each {@code with}
+ * method creates a changed copy.
  */
 public final class LauncherSettings {
     /**
@@ -15,14 +17,16 @@ public final class LauncherSettings {
     public static final @NotNull String DEFAULT_UPDATE_REPOSITORY = "fogofwarlabs/sc4j";
 
     /**
-     * The settings before anything is saved: the system language, no last mod, the default window and the default update repository.
+     * The settings before anything is saved: the system language, no last mod, the default window, the default update repository and no
+     * skipped version.
      */
-    public static final @NotNull LauncherSettings DEFAULT = new LauncherSettings(null, null, null, null);
+    public static final @NotNull LauncherSettings DEFAULT = new LauncherSettings(null, null, null, null, null);
 
     private final @Nullable UiLanguage language;
     private final @Nullable String lastMod;
     private final @Nullable WindowState window;
     private final @Nullable String updateRepository;
+    private final @Nullable String skippedVersion;
 
     /**
      * Creates a {@link LauncherSettings} instance.
@@ -31,12 +35,15 @@ public final class LauncherSettings {
      * @param lastMod          the file name of the mod jar selected last, such as {@code my-mod.jar}, or {@code null}
      * @param window           the window state, or {@code null} for the default window
      * @param updateRepository the update repository {@code owner/name}, or {@code null} for {@link #DEFAULT_UPDATE_REPOSITORY}
+     * @param skippedVersion   the launcher version the player chose to skip, such as {@code 1.2.0}, or {@code null}
      */
-    public LauncherSettings(@Nullable UiLanguage language, @Nullable String lastMod, @Nullable WindowState window, @Nullable String updateRepository) {
+    public LauncherSettings(@Nullable UiLanguage language, @Nullable String lastMod, @Nullable WindowState window, @Nullable String updateRepository,
+                            @Nullable String skippedVersion) {
         this.language         = language;
         this.lastMod          = lastMod;
         this.window           = window;
         this.updateRepository = updateRepository;
+        this.skippedVersion   = skippedVersion;
     }
 
     /**
@@ -75,13 +82,30 @@ public final class LauncherSettings {
     }
 
     /**
+     * @return the launcher version the player chose to skip, such as {@code 1.2.0}, or {@code null}
+     */
+    public @Nullable String getSkippedVersion() {
+        return this.skippedVersion;
+    }
+
+    /**
+     * Tells whether the player chose to skip a launcher version.
+     *
+     * @param version the version
+     * @return {@code true} if the version is the skipped version, {@code false} otherwise
+     */
+    public boolean isSkipped(@NotNull ReleaseVersion version) {
+        return version.toString().equals(this.skippedVersion);
+    }
+
+    /**
      * Creates a copy with another UI language.
      *
      * @param language the UI language, or {@code null} to follow the operating system
      * @return the created {@link LauncherSettings} instance
      */
     public @NotNull LauncherSettings withLanguage(@Nullable UiLanguage language) {
-        return new LauncherSettings(language, this.lastMod, this.window, this.updateRepository);
+        return new LauncherSettings(language, this.lastMod, this.window, this.updateRepository, this.skippedVersion);
     }
 
     /**
@@ -91,7 +115,7 @@ public final class LauncherSettings {
      * @return the created {@link LauncherSettings} instance
      */
     public @NotNull LauncherSettings withLastMod(@Nullable String lastMod) {
-        return new LauncherSettings(this.language, lastMod, this.window, this.updateRepository);
+        return new LauncherSettings(this.language, lastMod, this.window, this.updateRepository, this.skippedVersion);
     }
 
     /**
@@ -101,7 +125,7 @@ public final class LauncherSettings {
      * @return the created {@link LauncherSettings} instance
      */
     public @NotNull LauncherSettings withWindow(@Nullable WindowState window) {
-        return new LauncherSettings(this.language, this.lastMod, window, this.updateRepository);
+        return new LauncherSettings(this.language, this.lastMod, window, this.updateRepository, this.skippedVersion);
     }
 
     /**
@@ -111,7 +135,20 @@ public final class LauncherSettings {
      * @return the created {@link LauncherSettings} instance
      */
     public @NotNull LauncherSettings withUpdateRepository(@Nullable String updateRepository) {
-        return new LauncherSettings(this.language, this.lastMod, this.window,
-                                    DEFAULT_UPDATE_REPOSITORY.equals(updateRepository) ? null : updateRepository);
+        String savedRepository = DEFAULT_UPDATE_REPOSITORY.equals(updateRepository) ? null : updateRepository;
+
+        return new LauncherSettings(this.language, this.lastMod, this.window, savedRepository, this.skippedVersion);
+    }
+
+    /**
+     * Creates a copy with another skipped version.
+     *
+     * @param skippedVersion the launcher version the player chose to skip, or {@code null} for none
+     * @return the created {@link LauncherSettings} instance
+     */
+    public @NotNull LauncherSettings withSkippedVersion(@Nullable ReleaseVersion skippedVersion) {
+        String savedVersion = skippedVersion == null ? null : skippedVersion.toString();
+
+        return new LauncherSettings(this.language, this.lastMod, this.window, this.updateRepository, savedVersion);
     }
 }

@@ -48,6 +48,9 @@ public final class LauncherTexts {
     private static final @NotNull String RANGE_SEPARATOR = " .. ";
     private static final @NotNull String SINGULAR_SUFFIX = ".one";
     private static final @NotNull String PLURAL_SUFFIX = ".other";
+    private static final long KILOBYTE = 1024;
+    private static final long MEGABYTE = KILOBYTE * KILOBYTE;
+    private static final @NotNull String MEGABYTE_NUMBER_FORMAT = "%.1f";
 
     /**
      * Creates a {@link LauncherTexts} instance for a language.
@@ -293,5 +296,20 @@ public final class LauncherTexts {
      */
     public @NotNull String formatCount(@NotNull String key, int count) {
         return this.format(key + (count == 1 ? SINGULAR_SUFFIX : PLURAL_SUFFIX), count);
+    }
+
+    /**
+     * Formats a file size: below one megabyte in whole kilobytes, rounded up, else in megabytes with one decimal (the texts
+     * {@code size.kilobytes} and {@code size.megabytes}); a kilobyte is 1024 bytes.
+     *
+     * @param bytes the size in bytes
+     * @return the formatted size, such as {@code 45.6 MB}
+     */
+    public @NotNull String formatSize(long bytes) {
+        if (bytes < MEGABYTE) {
+            return this.format("size.kilobytes", Long.toString((bytes + KILOBYTE - 1) / KILOBYTE));
+        }
+
+        return this.format("size.megabytes", String.format(this.getLocale(), MEGABYTE_NUMBER_FORMAT, (double) bytes / MEGABYTE));
     }
 }

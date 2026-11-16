@@ -20,6 +20,8 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
@@ -31,9 +33,9 @@ import java.util.regex.Pattern;
 
 /**
  * Reads releases of GitHub repositories with the JDK's HTTP client: the latest release of a repository through the GitHub REST API
- * ({@code GET <api>/repos/<owner>/<name>/releases/latest}, which leaves out drafts and pre-releases), small files such as checksum files and
- * catalogs, and release files. A downloaded file is kept only when its SHA-256 checksum equals the one in the release's checksum file
- * ({@code <file>.sha256}, the {@code sha256sum} output or the bare checksum).
+ * ({@code GET <api>/repos/<owner>/<name>/releases/latest}, which leaves out drafts and pre-releases) with its tag, publication time, notes
+ * and files, small files such as checksum files and catalogs, and release files. A downloaded file is kept only when its SHA-256 checksum
+ * equals the one in the release's checksum file ({@code <file>.sha256}, the {@code sha256sum} output or the bare checksum).
  * <p>
  * Redirects are followed, as GitHub serves release files from another host. Every answer is limited in size, and a download stops when
  * its thread is interrupted.
@@ -61,6 +63,8 @@ public final class ReleaseClient {
     private static final @NotNull Pattern CHECKSUM_PATTERN = Pattern.compile("(?<![0-9A-Fa-f])[0-9A-Fa-f]{64}(?![0-9A-Fa-f])");
     private static final @NotNull String PARTIAL_SUFFIX = ".part";
     private static final @NotNull String TAG_FIELD = "tag_name";
+    private static final @NotNull String PUBLISHED_FIELD = "published_at";
+    private static final @NotNull String NOTES_FIELD = "body";
     private static final @NotNull String ASSETS_FIELD = "assets";
     private static final @NotNull String NAME_FIELD = "name";
     private static final @NotNull String ADDRESS_FIELD = "browser_download_url";
@@ -92,7 +96,20 @@ public final class ReleaseClient {
             }
         }
 
-        return new Release(repository, tag, assets);
+        return new Release(repository, tag, parseTime(release.get(PUBLISHED_FIELD)), release.get(NOTES_FIELD) instanceof String notes ? notes : "",
+                           assets);
+    }
+
+    private static @Nullable Instant parseTime(@Nullable Object value) {
+        if (!(value instanceof String text)) {
+            return null;
+        }
+
+        try {
+            return Instant.parse(text);
+        } catch (DateTimeParseException exception) {
+            return null;
+        }
     }
 
     private static @NotNull String parseChecksum(@NotNull ReleaseAsset checksum, byte @NotNull [] contents) throws ReleaseException {

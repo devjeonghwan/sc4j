@@ -201,41 +201,28 @@ public final class ModDetailView {
 
     private @NotNull VBox createAboutPanel() {
         ModManifest manifest = this.requireManifest();
-        GridPane meta = new GridPane();
+        GridPane meta = ComponentUtils.metaGrid();
         LocalizedText description = manifest.getDescription();
         String website = manifest.getWebsite();
-        List<String[]> rows = new ArrayList<>();
         VBox body;
         VBox panel;
 
-        rows.add(new String[]{this.texts.get("detail.id"), manifest.getId()});
-        rows.add(new String[]{this.texts.get("detail.version"), manifest.getVersion().toString()});
-        rows.add(new String[]{this.texts.get("detail.engine"), manifest.getEngine().toString()});
-        rows.add(new String[]{this.texts.get("detail.authors"), String.join(", ", manifest.getAuthors())});
+        ComponentUtils.addMetaRow(meta, this.texts.get("detail.id"), manifest.getId());
+        ComponentUtils.addMetaRow(meta, this.texts.get("detail.version"), manifest.getVersion().toString());
+        ComponentUtils.addMetaRow(meta, this.texts.get("detail.engine"), manifest.getEngine().toString());
+        ComponentUtils.addMetaRow(meta, this.texts.get("detail.authors"), String.join(", ", manifest.getAuthors()));
 
         if (manifest.getLicense() != null) {
-            rows.add(new String[]{this.texts.get("detail.license"), manifest.getLicense()});
+            ComponentUtils.addMetaRow(meta, this.texts.get("detail.license"), manifest.getLicense());
         }
 
-        rows.add(new String[]{this.texts.get("detail.file"), this.entry.getJarName()});
-        meta.getStyleClass().addAll("panel-sunken", "spacing-s");
-
-        for (int row = 0; row < rows.size(); row++) {
-            Label key = ComponentUtils.label(rows.get(row)[0], "meta-key");
-            Label value = ComponentUtils.label(rows.get(row)[1], "meta-value");
-
-            key.setMinWidth(Region.USE_PREF_SIZE);
-            value.setWrapText(true);
-            meta.addRow(row, key, value);
-        }
+        ComponentUtils.addMetaRow(meta, this.texts.get("detail.file"), this.entry.getJarName());
 
         if (website != null) {
             Hyperlink link = new Hyperlink(website);
-            Label key = ComponentUtils.label(this.texts.get("detail.website"), "meta-key");
 
-            key.setMinWidth(Region.USE_PREF_SIZE);
             link.setOnAction(event -> this.actions.onOpenWebsite(website));
-            meta.addRow(rows.size(), key, link);
+            ComponentUtils.addMetaRow(meta, this.texts.get("detail.website"), link);
         }
 
         body = ComponentUtils.panelBody();

@@ -19,12 +19,18 @@ import org.fogofwarlabs.sc4j.beaconlink.protocol.identity.PlayerStamp;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
 import org.fogofwarlabs.sc4j.launcher.peer.LauncherNodeRunner;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseClient;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseRepository;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseServerScenario;
+import org.fogofwarlabs.sc4j.launcher.release.ReleaseVersion;
 import org.fogofwarlabs.sc4j.launcher.session.LauncherSession;
 import org.fogofwarlabs.sc4j.launcher.session.LauncherSessionScenario;
 import org.fogofwarlabs.sc4j.launcher.session.SessionState;
 import org.fogofwarlabs.sc4j.launcher.settings.LauncherSettings;
 import org.fogofwarlabs.sc4j.launcher.settings.LauncherSettingsFile;
 import org.fogofwarlabs.sc4j.launcher.settings.WindowState;
+import org.fogofwarlabs.sc4j.launcher.update.LauncherRelease;
+import org.fogofwarlabs.sc4j.launcher.update.LauncherUpdater;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.fogofwarlabs.sc4j.manifest.test.TestJarUtils;
 import org.jetbrains.annotations.NotNull;
@@ -56,6 +62,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * at the top right and no Accounts tab and starts the account's session, which connects to the node of the install's node list on
  * 127.0.0.1, and Log out from the account menu closes the session, frees the account and returns to the login step, at 100% and 200% in
  * English and Korean. Open mods folder hands the mods folder to the folder opener, and a mod's website link goes to the document opener.
+ * The Update dialog of a newer launcher version opens by itself once per run, once logged in, while no game runs and not for a skipped
+ * version.
  */
 final class LauncherWindowTest {
     private static final double SCREEN_WIDTH = 1920;
@@ -83,6 +91,7 @@ final class LauncherWindowTest {
     private static final @NotNull String SUCCESS_MARKER = "status-marker-success";
     private static final @NotNull String HYPERLINK_SELECTOR = ".hyperlink";
     private static final @NotNull String MOD_JAR_NAME = "example.jar";
+    private static final @NotNull String UPDATE_REPOSITORY = "owner/sc4j";
     private static final @NotNull String MOD_WEBSITE = "https://example.org/mod";
     private static final @NotNull String MOD_MANIFEST = """
                                                         {
@@ -190,6 +199,34 @@ final class LauncherWindowTest {
         WindowState saved = new WindowState(OFF_SCREEN_X, SAVED_Y, SAVED_WIDTH, SAVED_HEIGHT, false);
 
         Assertions.assertNull(LauncherWindow.findScreen(saved, List.of(createScreen(1))));
+    }
+
+    @Test
+    void is_update_offered_should_open_the_dialog_once_for_a_newer_version_that_is_not_skipped(@TempDir @NotNull Path directory) throws Exception {
+        try (ReleaseServerScenario server = ReleaseServerScenario.start()) {
+            LauncherUpdater updater = new LauncherUpdater(InstallLayout.of(directory), new ReleaseClient(server.getApi()));
+            ReleaseRepository repository = ReleaseRepository.parse(UPDATE_REPOSITORY);
+            ReleaseVersion olderSkipped = ReleaseVersion.parse("1.1.5");
+            LauncherRelease newer;
+            LauncherSettings skipped;
+
+            Assertions.assertNotNull(repository);
+            Assertions.assertNotNull(olderSkipped);
+            server.addCheckedRelease(UPDATE_REPOSITORY, "v1.2.0", Map.of("SC4J-1.2.0.zip", new byte[]{1}));
+            newer = updater.findUpdate(repository, "1.1.0");
+            Assertions.assertNotNull(newer);
+            skipped = LauncherSettings.DEFAULT.withSkippedVersion(newer.getVersion());
+
+            Assertions.assertTrue(LauncherWindow.isUpdateOffered(newer, LauncherSettings.DEFAULT, true, false, false), "newer");
+            Assertions.assertFalse(LauncherWindow.isUpdateOffered(updater.findUpdate(repository, "1.2.0"), LauncherSettings.DEFAULT, true, false, false),
+                                   "same");
+            Assertions.assertFalse(LauncherWindow.isUpdateOffered(newer, skipped, true, false, false), "skipped");
+            Assertions.assertTrue(LauncherWindow.isUpdateOffered(newer, LauncherSettings.DEFAULT.withSkippedVersion(olderSkipped), true, false, false),
+                                  "a release after the skipped one");
+            Assertions.assertFalse(LauncherWindow.isUpdateOffered(newer, LauncherSettings.DEFAULT, true, true, false), "running game");
+            Assertions.assertFalse(LauncherWindow.isUpdateOffered(newer, LauncherSettings.DEFAULT, false, false, false), "login step");
+            Assertions.assertFalse(LauncherWindow.isUpdateOffered(newer, LauncherSettings.DEFAULT, true, false, true), "once per run");
+        }
     }
 
     @Test

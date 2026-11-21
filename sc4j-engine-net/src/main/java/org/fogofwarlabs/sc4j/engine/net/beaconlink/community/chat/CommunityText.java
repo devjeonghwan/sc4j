@@ -6,8 +6,8 @@ import java.util.Locale;
 
 /**
  * Lists the engine's texts of the Beacon.Link community screens, in English and Korean: the notice of a run without an account, player
- * states, the channel chat's notices, errors, input prefix and {@code /help}, the block actions and the room filter's choices. A text with
- * {@code %s} or {@code %d} takes its values through {@link #format}.
+ * states, the channel chat's notices, errors, input prefix and {@code /help}, the block actions, the room filter's choices and the notice of a
+ * join that cannot connect. A text with {@code %s} or {@code %d} takes its values through {@link #format}.
  */
 public enum CommunityText {
     /**
@@ -88,6 +88,11 @@ public enum CommunityText {
      * The notice of an empty room list.
      */
     NO_GAMES("No games", "게임 없음"),
+    /**
+     * The notice of a join whose channel to the host found no path ({@code ChannelFailure.PAIR_CANNOT_CONNECT}).
+     */
+    CANNOT_CONNECT("The two players cannot connect. Let another player create the room.",
+                   "두 플레이어가 서로 연결할 수 없습니다. 다른 플레이어가 방을 만들게 하세요."),
 
     /**
      * The notice of a player who came into the channel.

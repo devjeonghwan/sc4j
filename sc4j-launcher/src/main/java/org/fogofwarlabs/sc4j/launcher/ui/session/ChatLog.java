@@ -20,11 +20,7 @@ import org.fogofwarlabs.sc4j.launcher.ui.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
 
 /**
  * Shows the log of a chat conversation, oldest line first: each line the sender's name, which opens the player's menu, and the text, with a

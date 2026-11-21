@@ -32,11 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Tests the chat log: a press and drag selects across lines and copies one line (name and text) per line, Shift extends, a double press
@@ -304,8 +300,7 @@ final class ChatLogTest {
     }
 
     @Test
-    void shift_extends_a_double_press_selects_a_word_and_a_press_below_the_lines_ends_the_selection(@TempDir @NotNull java.nio.file.Path directory)
-            throws Exception {
+    void shift_extends_a_double_press_selects_a_word_and_a_press_below_the_lines_ends_the_selection(@TempDir @NotNull java.nio.file.Path directory) throws Exception {
         LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
 
         LauncherFxScenario.run(() -> {

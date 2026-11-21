@@ -53,7 +53,7 @@ final class LinkDialogTest {
 
     private static boolean showsAddress(@NotNull Node dialog) {
         return dialog.lookupAll(".text-mono").stream().anyMatch(node -> node instanceof Text text && text.getText().equals(ADDRESS) &&
-                                                                         LauncherFxScenario.isShown(text));
+                                                                        LauncherFxScenario.isShown(text));
     }
 
     private static boolean showsLabel(@NotNull Node dialog, @NotNull String text) {

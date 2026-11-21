@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Tests the Chat screen at display scales of 100% and 200% in English and Korean: the channels with their unread lines, the whisper
+ * Tests the Chat screen at display scales of 100% and 200% in English, Korean and Chinese: the channels with their unread lines, the whisper
  * conversations with their unread whispers, the channels, conversations and members in compact rows, the shown channel's log and members,
  * lines and whispers sent from the input, leaving and joining a channel, a channel the chat joins shown at once, a whisper conversation
  * opened from elsewhere shown with the input focused and kept while the chat joins the shared channel, the player menu on a member and on a
@@ -98,10 +98,6 @@ final class ChatScreenTest {
         Arrays.fill(key, (byte) fill);
 
         return new FriendView(FriendCode.of(key), taggedName, state, modId, awayText, 1, false);
-    }
-
-    private static @NotNull UiLanguage selectLanguage(@NotNull String languageCode) {
-        return languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
     }
 
     private static <T extends Node> @NotNull List<T> find(@NotNull Parent root, @NotNull Class<T> type) {
@@ -307,10 +303,10 @@ final class ChatScreenTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void chat_screen_shows_channels_whispers_members_and_unread_counts_and_sends_from_the_input(double scale, @NotNull String languageCode,
                                                                                                 @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         RecordingLauncherSession session = new RecordingLauncherSession(RAYNOR.getCode(),
@@ -435,10 +431,10 @@ final class ChatScreenTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, ko", "1.0, zh"})
     void whisper_opened_from_elsewhere_stays_shown_with_the_input_focused(double scale, @NotNull String languageCode,
                                                                           @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         RecordingLauncherSession session = new RecordingLauncherSession(RAYNOR.getCode(),
@@ -480,10 +476,10 @@ final class ChatScreenTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void player_menu_on_a_member_or_a_name_in_the_log_runs_the_account_menu_commands(double scale, @NotNull String languageCode,
                                                                                      @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         RecordingLauncherSession session = new RecordingLauncherSession(RAYNOR.getCode(),
@@ -563,10 +559,10 @@ final class ChatScreenTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void chat_screen_says_why_the_session_is_offline(double scale, @NotNull String languageCode,
                                                      @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         RecordingLauncherSession session = new RecordingLauncherSession(RAYNOR.getCode(), new SelfView(SessionState.OFFLINE, SelfStatus.ONLINE, "", 0,

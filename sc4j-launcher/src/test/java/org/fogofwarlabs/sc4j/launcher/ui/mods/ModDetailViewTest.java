@@ -48,7 +48,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * Tests the layout of the selected mod's banner: the icon area and the banner have the same size for a mod with an icon (of any aspect
  * ratio) and a mod without one, and an icon is scaled to fit inside the icon area. Run is disabled while a run is in progress and enabled
- * after it, at 100% and 200% in English and Korean. The update notice centers its text on its Update button.
+ * after it, at 100% and 200% in English, Korean and Chinese. The update notice centers its text on its Update button.
  */
 final class ModDetailViewTest {
     private static final @NotNull String MANIFEST = """
@@ -163,9 +163,9 @@ final class ModDetailViewTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void run_stays_disabled_while_a_run_is_in_progress(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory);
@@ -203,9 +203,9 @@ final class ModDetailViewTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void update_notice_centers_its_text_on_the_update_button(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory);

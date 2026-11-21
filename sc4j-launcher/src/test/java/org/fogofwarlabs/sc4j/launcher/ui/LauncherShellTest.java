@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests the launcher window's content at display scales of 100%, 150% and 200%: the layout keeps its logical size, every image is decoded at
  * its logical size times the scale (so it stays sharp), and the window renders at the scale; each rendering is saved as a sample picture.
  * Before the login the app bar shows neither the navigation nor an account; after it, it lists Mods, Run log, Chat and Settings (no Accounts tab)
- * and ends with the account button with its status, which opens the account menu, at 100% and 200% in English and Korean; every entry's
+ * and ends with the account button with its status, which opens the account menu, at 100% and 200% in English, Korean and Chinese; every entry's
  * text is centred in the entry, and the Chat entry shows its dot over the text's top right corner without moving or widening the entries.
  * In a window of the
  * launcher's minimum size, a screen taller than the space between the app bar and the status bar scrolls and leaves both bars in the window; a
@@ -188,10 +188,10 @@ final class LauncherShellTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void app_bar_has_no_accounts_tab_and_its_account_button_opens_the_account_menu(double scale, @NotNull String languageCode,
                                                                                    @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory);
@@ -374,9 +374,9 @@ final class LauncherShellTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void mods_list_keeps_the_regular_list_item(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         InstallLayout install = InstallLayout.of(directory);
         Map<String, byte[]> entries = new LinkedHashMap<>();
 
@@ -423,9 +423,9 @@ final class LauncherShellTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "1.0, ko"})
+    @CsvSource({"1.0, en", "1.0, ko", "1.0, zh"})
     void empty_mod_list_centres_its_wrapped_text(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         InstallLayout install = InstallLayout.of(directory.resolve(LONG_FOLDER_NAME).resolve(LONG_FOLDER_NAME));
 
         Files.createDirectories(install.getModsDirectory());

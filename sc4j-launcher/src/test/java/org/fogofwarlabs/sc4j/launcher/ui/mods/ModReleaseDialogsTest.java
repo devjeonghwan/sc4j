@@ -101,9 +101,9 @@ final class ModReleaseDialogsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void install_should_list_the_catalog_confirm_the_release_and_add_the_jar(@NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         InstallLayout install = InstallLayout.of(directory.resolve("install"));
         List<String> changed = new CopyOnWriteArrayList<>();
@@ -186,10 +186,10 @@ final class ModReleaseDialogsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void change_version_should_offer_the_releases_newest_first_and_install_the_chosen_one(@NotNull String languageCode,
                                                                                           @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         InstallLayout install = InstallLayout.of(directory.resolve("install"));
         List<String> changed = new CopyOnWriteArrayList<>();

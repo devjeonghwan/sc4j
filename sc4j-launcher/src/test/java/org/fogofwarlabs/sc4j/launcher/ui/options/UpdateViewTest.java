@@ -108,10 +108,10 @@ final class UpdateViewTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void check_should_wait_for_its_result_and_update_should_show_only_when_available(@NotNull String languageCode,
                                                                                      @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         List<String> checked = new ArrayList<>();
 
@@ -159,9 +159,9 @@ final class UpdateViewTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void version_field_should_show_the_result_after_the_version(@NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
 
         LauncherFxScenario.run(() -> {

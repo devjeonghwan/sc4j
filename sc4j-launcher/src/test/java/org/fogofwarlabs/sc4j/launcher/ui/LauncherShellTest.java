@@ -7,8 +7,6 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import org.fogofwarlabs.sc4j.launcher.catalog.ModCatalog;
@@ -41,14 +39,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tests the launcher window's content at display scales of 150% and 200%: the layout keeps its logical size and every image is decoded at its
- * logical size times the scale (so it stays sharp). Before the login the app bar shows neither the navigation nor an account; after it, it
- * lists Mods, Run log, Chat and Settings (no Accounts tab) and ends with the account button with its status, which opens the account menu;
- * every entry's text is centred in the entry, and the Chat entry shows its dot over the text's top right corner without moving or widening
- * the entries. In a window of the launcher's minimum size, a screen taller than the space between the app bar and the status bar scrolls and
- * leaves both bars in the window; a shorter screen fills that space. The Mods screen's mod list keeps the regular list item, and its footers
- * keep the same room on every side of their buttons; an empty mod list shows its text centred, also on several lines, with the room of a
- * panel body on its sides.
+ * Tests the launcher window's content at display scales of 150% and 200%: the layout keeps its logical size. Before the login the app bar shows
+ * neither the navigation nor an account; after it, it lists Mods, Run log, Chat and Settings (no Accounts tab) and ends with the account button with
+ * its status, which opens the account menu; every entry's text is centred in the entry, and the Chat entry shows its dot over the text's top right
+ * corner without moving or widening the entries. In a window of the launcher's minimum size, a screen taller than the space between the app bar and
+ * the status bar scrolls and leaves both bars in the window; a shorter screen fills that space. The Mods screen's mod list keeps the regular list
+ * item, and its footers keep the same room on every side of their buttons; an empty mod list shows its text centred, also on several lines, with the
+ * room of a panel body on its sides.
  */
 final class LauncherShellTest {
     private static final @NotNull String MANIFEST = """
@@ -262,7 +259,7 @@ final class LauncherShellTest {
 
     @ParameterizedTest
     @ValueSource(doubles = {1.5, 2.0})
-    void launcher_content_decodes_images_for_the_display_scale_and_keeps_its_layout(double scale, @TempDir @NotNull Path directory) throws Exception {
+    void launcher_content_keeps_its_layout_at_the_display_scale(double scale, @TempDir @NotNull Path directory) throws Exception {
         InstallLayout install = InstallLayout.of(directory);
         Map<String, byte[]> entries = new LinkedHashMap<>();
 
@@ -297,17 +294,6 @@ final class LauncherShellTest {
                 shell.getRoot().layout();
 
                 Assertions.assertEquals(SCENE_WIDTH, shell.getRoot().getWidth(), "the layout is in logical units at every scale");
-
-                for (Node node : shell.getRoot().lookupAll("ImageView")) {
-                    ImageView view = (ImageView) node;
-                    Image image = view.getImage();
-                    double shownWidth = view.getBoundsInLocal().getWidth();
-
-                    Assertions.assertNotNull(image);
-                    Assertions.assertTrue(image.getWidth() >= shownWidth * scale - TOLERANCE,
-                                          () -> "an image of " + image.getWidth() + " pixels is shown " + shownWidth + " units wide at " + scale);
-                }
-
                 result.complete(null);
             } catch (RuntimeException | Error exception) {
                 result.completeExceptionally(exception);

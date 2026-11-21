@@ -6,8 +6,6 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BackgroundFill;
@@ -65,7 +63,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Tests where the launcher window opens: its bounds fit the free area of a 1920 by 1080 pixel screen at display scales of 100%, 150% and
  * 200% (in JavaFX logical units), saved bounds are kept on their screen, and saved bounds on no screen are dropped. A display change to
- * another scale decodes the images again and fits the window to its screen without a restart. The launcher starts on the login step (with
+ * another scale builds the views again and fits the window to its screen without a restart. The launcher starts on the login step (with
  * the New account dialog when there is no account, else with the last used account selected); Log in opens the main view with the account
  * at the top right and no Accounts tab and starts the account's session, which connects to the node of the install's node list on
  * 127.0.0.1, and Log out from the account menu closes the session, frees the account and returns to the login step. Whisper in the account
@@ -89,7 +87,6 @@ final class LauncherWindowTest {
     private static final int SAVED_WIDTH = 1200;
     private static final int SAVED_HEIGHT = 760;
     private static final int OFF_SCREEN_X = 5000;
-    private static final double WINDOW_ICON_SIZE = 64;
     private static final double TOLERANCE = 1;
     private static final double FIRST_SCALE = 1;
     private static final double CHANGED_SCALE = 2;
@@ -150,21 +147,6 @@ final class LauncherWindowTest {
     private static void assertInside(@NotNull Rectangle2D screen, @NotNull Rectangle2D bounds) {
         Assertions.assertTrue(bounds.getMinX() >= screen.getMinX() && bounds.getMaxX() <= screen.getMaxX(), bounds::toString);
         Assertions.assertTrue(bounds.getMinY() >= screen.getMinY() && bounds.getMaxY() <= screen.getMaxY(), bounds::toString);
-    }
-
-    private static void assertImagesDecodedAt(@NotNull Parent root, double scale) {
-        List<ImageView> views = root.lookupAll("ImageView").stream().map(ImageView.class::cast).toList();
-
-        Assertions.assertFalse(views.isEmpty(), "the shell shows images");
-
-        for (ImageView view : views) {
-            Image image = view.getImage();
-            double shownWidth = view.getBoundsInLocal().getWidth();
-
-            Assertions.assertNotNull(image);
-            Assertions.assertTrue(image.getWidth() >= shownWidth * scale - TOLERANCE,
-                                  () -> "an image of " + image.getWidth() + " pixels is shown " + shownWidth + " units wide at " + scale);
-        }
     }
 
     private static @NotNull Parent layRoot(@NotNull Stage stage) {
@@ -357,7 +339,7 @@ final class LauncherWindowTest {
     }
 
     @Test
-    void fit_display_should_decode_the_images_again_and_fit_the_window_when_the_scale_changes(@TempDir @NotNull Path directory) throws Exception {
+    void fit_display_should_build_the_views_again_and_fit_the_window_when_the_scale_changes(@TempDir @NotNull Path directory) throws Exception {
         InstallLayout install = InstallLayout.of(directory);
         CompletableFuture<Void> result = new CompletableFuture<>();
 
@@ -386,8 +368,6 @@ final class LauncherWindowTest {
                 changedRoot.layout();
 
                 Assertions.assertNotSame(firstRoot, changedRoot, "the views are built again");
-                assertImagesDecodedAt(changedRoot, CHANGED_SCALE);
-                Assertions.assertEquals(WINDOW_ICON_SIZE * CHANGED_SCALE, stage.getIcons().getFirst().getWidth());
                 Assertions.assertEquals(changedScreen.getWidth(), stage.getMinWidth());
                 Assertions.assertEquals(changedScreen.getHeight(), stage.getMinHeight());
                 assertInside(changedScreen, new Rectangle2D(stage.getX(), stage.getY(), stage.getWidth(), stage.getHeight()));

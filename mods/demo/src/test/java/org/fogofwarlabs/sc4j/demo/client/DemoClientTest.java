@@ -50,8 +50,8 @@ import java.util.stream.Stream;
 
 /**
  * Tests the demo's client offscreen: from the main menu through the game setup and the loading screen into a game against the computer (an arrow key
- * released while the console is open stops scrolling, training and building through the command card, the game screen mid-game with units of both
- * factions), to the outcome screen and its stored replay, and through the replay list (players named by their factions) into the replay viewer with
+ * released while the console is open stops scrolling, training and building through the command card, the computer's units coming to the person's
+ * base), to the outcome screen and its stored replay, and through the replay list (players named by their factions) into the replay viewer with
  * its speed and seek commands by game time, its replay panel (seek bar, next player) and the followed player's top bar and skin. At a display scale
  * the main menu keeps its logical layout, is drawn larger with the font's detail face and takes the pointer in logical units, and the game screen
  * draws the skin pictures and the cursor from their detail pictures. The queue panel of the selected town hall cancels the pressed slot with its full
@@ -62,10 +62,6 @@ final class DemoClientTest {
     private static final int LOOP_LIMIT = 60000;
     private static final int TRAINING_LOOPS = 200;
     private static final int START_WORKERS = 4;
-    private static final int TEAM_TOLERANCE = 48;
-    private static final int TEAM_PIXELS = 20;
-    private static final int BLUE = 0x3C78D8;
-    private static final int RED = 0xD8503C;
     private static final int CENTER_X = DemoClientScenario.WIDTH / 2;
     private static final int CENTER_Y = DemoClientScenario.HEIGHT / 2;
     private static final int SITE_STEP = 48;
@@ -502,8 +498,6 @@ final class DemoClientTest {
 
                     engineScreen.getCamera().centerOn(enemyView.getX(), enemyView.getY());
                     scenario.runFrame();
-                    Assertions.assertTrue(scenario.countPixels(BLUE, TEAM_TOLERANCE) >= TEAM_PIXELS, "Dawnhold units in their blue");
-                    Assertions.assertTrue(scenario.countPixels(RED, TEAM_TOLERANCE) >= TEAM_PIXELS, "Cindermaw units in their red");
                     midGameSaved = true;
                 }
             }

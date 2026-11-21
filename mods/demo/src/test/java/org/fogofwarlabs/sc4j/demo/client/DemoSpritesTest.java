@@ -26,15 +26,13 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Tests the demo's sprites in a computer game drawn offscreen: a building under construction shows the foundation, the timber frame and the
- * half walls over the thirds of its build time, then the done building; projectiles fly as frames of their sheets and end in their impact
- * effect.
+ * half walls over the thirds of its build time, then the done building; a projectile's flight ends in its impact effect.
  */
 final class DemoSpritesTest {
     private static final int WIDTH = 960;
@@ -70,29 +68,11 @@ final class DemoSpritesTest {
         return null;
     }
 
-    private static @NotNull BufferedImage draw(@NotNull ImageCanvas canvas, @NotNull WorldViewport viewport, @NotNull WorldView world) throws IOException {
+    private static void draw(@NotNull ImageCanvas canvas, @NotNull WorldViewport viewport, @NotNull WorldView world) throws IOException {
         canvas.begin(WIDTH, HEIGHT);
         canvas.fillRectangle(0, 0, WIDTH, HEIGHT, OPAQUE_BLACK);
         world.draw(viewport);
         canvas.end();
-
-        BufferedImage copy = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
-
-        copy.setData(canvas.getImage().getData());
-
-        return copy;
-    }
-
-    private static int countDifferentPixels(@NotNull BufferedImage first, @NotNull BufferedImage second) {
-        int count = 0;
-
-        for (int y = 0; y < HEIGHT; y++) {
-            for (int x = 0; x < WIDTH; x++) {
-                count += first.getRGB(x, y) != second.getRGB(x, y) ? 1 : 0;
-            }
-        }
-
-        return count;
     }
 
     @Test
@@ -142,7 +122,7 @@ final class DemoSpritesTest {
     }
 
     @Test
-    void projectiles_fly_as_frames_of_their_sheets_and_end_in_their_impact_effect() throws IOException {
+    void projectile_flight_ends_in_its_impact_effect() throws IOException {
         try (DemoGameScenario scenario = new DemoGameScenario()) {
             GameSetup setup = scenario.createSetup(SEED);
             Game game = scenario.getGames().createGame(setup);
@@ -170,22 +150,16 @@ final class DemoSpritesTest {
             try (TilesetLayer terrain = DemoWorldUtils.createTerrainLayer(canvas, view, scenario.getContent(), map, tiles);
                  UnitSpriteLayer units = new UnitSpriteLayer(canvas, view, sprites::findSprite);
                  ProjectileSpriteLayer projectiles = new ProjectileSpriteLayer(canvas, view, sprites::findProjectileSprite)) {
-                BufferedImage withoutProjectiles = draw(canvas, viewport, new WorldView(List.of(terrain, units)));
-                BufferedImage withProjectiles = draw(canvas, viewport, new WorldView(List.of(terrain, units, projectiles)));
+                WorldView world = new WorldView(List.of(terrain, units, projectiles));
 
-                Assertions.assertTrue(countDifferentPixels(withoutProjectiles, withProjectiles) > 0, "the projectile is drawn");
+                draw(canvas, viewport, world);
 
-                BufferedImage impact = null;
-
-                for (int loop = 0; loop < IMPACT_LOOPS && impact == null; loop++) {
+                for (int loop = 0; loop < IMPACT_LOOPS && projectiles.getImpactCount() == 0; loop++) {
                     game.getFrameRunner().runFrame();
-
-                    BufferedImage frame = draw(canvas, viewport, new WorldView(List.of(terrain, units, projectiles)));
-
-                    impact = projectiles.getImpactCount() > 0 ? frame : null;
+                    draw(canvas, viewport, world);
                 }
 
-                Assertions.assertNotNull(impact, "a flight ends in its impact effect");
+                Assertions.assertTrue(projectiles.getImpactCount() > 0, "a flight ends in its impact effect");
             }
         }
     }

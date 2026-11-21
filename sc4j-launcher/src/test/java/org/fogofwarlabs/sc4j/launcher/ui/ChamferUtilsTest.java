@@ -114,7 +114,10 @@ final class ChamferUtilsTest {
             int topRow = row;
             int bottomRow = height - 1 - row;
 
-            Assertions.assertEquals(expected, countOpenPixels(pixels, topRow, 0, 1), () -> description + ": top-left cut, row " + topRow);
+            Assertions.assertEquals(expected, countOpenPixels(pixels, topRow, 0, 1), () -> description + ": top-left cut, row " + topRow + " " +
+                                                                                          java.util.stream.IntStream.range(0, side)
+                                                                                                                    .mapToObj(x -> String.format("%.3f", pixels.getColor(x, topRow).getOpacity()))
+                                                                                                                    .toList());
             Assertions.assertEquals(expected, countOpenPixels(pixels, bottomRow, width - 1, -1),
                                     () -> description + ": bottom-right cut, row " + bottomRow);
         }

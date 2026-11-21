@@ -32,19 +32,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Tests the demo's world view: Ashen Ford in the isometric projection with its diamond tileset and a few units, drawn offscreen through the
  * engine world layers, a building under construction drawn with the demo's sprite art, and the tiles and sprites drawn from their detail
- * pictures on a scaled display; the frames are saved as sample pictures under the build folder.
+ * pictures on a scaled display.
  */
 final class DemoWorldUtilsTest {
     private static final int WIDTH = 960;
@@ -62,10 +59,6 @@ final class DemoWorldUtilsTest {
     private static final int OPAQUE_BLACK = 0x000000FF;
     private static final int RED_SHIFT = 16;
     private static final int ALPHA_SHIFT = 24;
-    private static final @NotNull String SAMPLE = "build/demo-frames/ashen-ford-isometric.png";
-    private static final @NotNull String CONSTRUCTION_SAMPLE = "build/demo-frames/construction.png";
-    private static final @NotNull String SCALED_SAMPLE = "build/demo-frames/world-scale-%d.png";
-    private static final int PERCENT_SCALE = 100;
     private static final @NotNull String SIZE_SEPARATOR = "x";
     private static final int CONSTRUCTION_FRAME_LIMIT = 12000;
     private static final int SHOWN_CONSTRUCTION_PROGRESS = UnitView.COMPLETE * 2 / 3;
@@ -162,11 +155,6 @@ final class DemoWorldUtilsTest {
             Assertions.assertEquals(CHANNEL_MASK, centerColor >>> ALPHA_SHIFT, "the town hall's footprint is drawn");
             Assertions.assertTrue((centerColor & CHANNEL_MASK) > (centerColor >> RED_SHIFT & CHANNEL_MASK), "in the first player's blue");
             Assertions.assertEquals(CHANNEL_MASK, groundColor >>> ALPHA_SHIFT, "the tiles cover the ground");
-
-            Path sample = Path.of(SAMPLE);
-
-            Files.createDirectories(sample.getParent());
-            Assertions.assertTrue(ImageIO.write(frame, "png", sample.toFile()));
         }
     }
 
@@ -223,11 +211,6 @@ final class DemoWorldUtilsTest {
             Assertions.assertEquals(scale > 1, !uploads.contains(TILE_WIDTH + SIZE_SEPARATOR + TILE_HEIGHT), "no 1x tile on a 2x display");
             Assertions.assertEquals(1, tiles.getDetailCount());
             Assertions.assertEquals(1, townHallSprite.getSheets().getDetailCount());
-
-            Path sample = Path.of(SCALED_SAMPLE.formatted(Math.round(scale * PERCENT_SCALE)));
-
-            Files.createDirectories(sample.getParent());
-            Assertions.assertTrue(ImageIO.write(image.getImage(), "png", sample.toFile()));
         }
     }
 
@@ -267,11 +250,6 @@ final class DemoWorldUtilsTest {
                 int wallY = (int) viewport.worldToScreenY(building.getX(), building.getY()) - WALL_HEIGHT;
 
                 Assertions.assertNotEquals(ground.getRGB(wallX, wallY), frame.getRGB(wallX, wallY), "the building stands on its footprint");
-
-                Path sample = Path.of(CONSTRUCTION_SAMPLE);
-
-                Files.createDirectories(sample.getParent());
-                Assertions.assertTrue(ImageIO.write(frame, "png", sample.toFile()));
             }
         }
     }

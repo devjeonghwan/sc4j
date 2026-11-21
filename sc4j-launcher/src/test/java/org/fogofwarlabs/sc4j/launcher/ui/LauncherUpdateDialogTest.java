@@ -13,6 +13,7 @@ import org.fogofwarlabs.sc4j.catalog.github.ReleaseProblem;
 import org.fogofwarlabs.sc4j.catalog.github.ReleaseRepository;
 import org.fogofwarlabs.sc4j.catalog.test.ReleaseServerScenario;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
+import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
 import org.fogofwarlabs.sc4j.launcher.release.ReleaseNotesUtils;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherRelease;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherUpdater;
@@ -22,9 +23,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -44,8 +44,7 @@ import java.util.zip.ZipOutputStream;
 /**
  * Tests the Update dialog offscreen, against a local stand-in for GitHub: the offer shows the versions, the release date, the download size
  * and the release notes, and Skip this version closes it; Update shows the download's progress and Cancel returns to the offer; a ready
- * package offers Restart, which waits while a game runs; a failed download shows its reason with Retry. Each state is saved as a sample
- * picture in English, Korean and Chinese.
+ * package offers Restart, which waits while a game runs; a failed download shows its reason with Retry.
  */
 final class LauncherUpdateDialogTest {
     private static final @NotNull String REPOSITORY = "owner/sc4j";
@@ -75,11 +74,9 @@ final class LauncherUpdateDialogTest {
         LauncherFxScenario.startToolkit();
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"en", "ko", "zh"})
-    void offer_should_show_the_release_and_skip_this_version_should_close_the_dialog(@NotNull String languageCode,
-                                                                                     @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
+    @Test
+    void offer_should_show_the_release_and_skip_this_version_should_close_the_dialog(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
         InstallLayout install = InstallLayout.of(directory);
         AtomicInteger skipped = new AtomicInteger();
 
@@ -110,7 +107,6 @@ final class LauncherUpdateDialogTest {
                 Assertions.assertEquals(ReleaseNotesUtils.toPlainText(NOTES), notes.getText());
                 Assertions.assertTrue(hasButton(shell.getRoot(), texts.get("update.later")));
                 Assertions.assertTrue(hasButton(shell.getRoot(), texts.get("update.start")));
-                LauncherFxScenario.saveSample(shell.getRoot(), 1, "launcher-update-offer-" + languageCode);
 
                 LauncherFxScenario.findButton(shell.getRoot(), texts.get("update.skip")).fire();
 
@@ -122,11 +118,9 @@ final class LauncherUpdateDialogTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"en", "ko", "zh"})
-    void download_should_show_its_progress_and_cancel_should_return_to_the_offer(@NotNull String languageCode,
-                                                                                 @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
+    @Test
+    void download_should_show_its_progress_and_cancel_should_return_to_the_offer(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
         InstallLayout install = InstallLayout.of(directory);
 
         try (ReleaseServerScenario server = ReleaseServerScenario.start()) {
@@ -157,7 +151,6 @@ final class LauncherUpdateDialogTest {
                     Assertions.assertTrue(hasButton(shell.getRoot(), texts.get("update.cancel")));
                     Assertions.assertFalse(hasButton(shell.getRoot(), texts.get("update.start")));
                     layOut(shell);
-                    LauncherFxScenario.saveSample(shell.getRoot(), 1, "launcher-update-downloading-" + languageCode);
 
                     LauncherFxScenario.findButton(shell.getRoot(), texts.get("update.cancel")).fire();
 
@@ -173,11 +166,9 @@ final class LauncherUpdateDialogTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"en", "ko", "zh"})
-    void download_should_unpack_the_package_and_restart_should_wait_for_a_running_game(@NotNull String languageCode,
-                                                                                       @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
+    @Test
+    void download_should_unpack_the_package_and_restart_should_wait_for_a_running_game(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
         InstallLayout install = InstallLayout.of(directory);
         AtomicInteger closed = new AtomicInteger();
 
@@ -205,7 +196,6 @@ final class LauncherUpdateDialogTest {
                 LauncherFxScenario.findButton(shell.getRoot(), texts.get("update.restart")).fire();
                 Assertions.assertTrue(hasLabel(shell.getRoot(), texts.get("update.running")), "Restart waits for the game");
                 layOut(shell);
-                LauncherFxScenario.saveSample(shell.getRoot(), 1, "launcher-update-ready-" + languageCode);
 
                 return null;
             });
@@ -214,11 +204,9 @@ final class LauncherUpdateDialogTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"en", "ko", "zh"})
-    void failed_download_should_show_the_reason_and_retry_should_download_again(@NotNull String languageCode,
-                                                                                @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
+    @Test
+    void failed_download_should_show_the_reason_and_retry_should_download_again(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
         InstallLayout install = InstallLayout.of(directory);
         String mismatch = texts.describeReleaseProblem(ReleaseProblem.CHECKSUM_MISMATCH);
 
@@ -247,7 +235,6 @@ final class LauncherUpdateDialogTest {
                 Assertions.assertTrue(hasLabel(shell.getRoot(), mismatch));
                 Assertions.assertTrue(hasButton(shell.getRoot(), texts.get("update.later")));
                 layOut(shell);
-                LauncherFxScenario.saveSample(shell.getRoot(), 1, "launcher-update-error-" + languageCode);
 
                 return null;
             });

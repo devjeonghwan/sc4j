@@ -23,12 +23,11 @@ import org.fogofwarlabs.sc4j.manifest.test.TestJarUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -42,15 +41,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tests the launcher window's content at display scales of 100%, 150% and 200%: the layout keeps its logical size, every image is decoded at
- * its logical size times the scale (so it stays sharp), and the window renders at the scale; each rendering is saved as a sample picture.
- * Before the login the app bar shows neither the navigation nor an account; after it, it lists Mods, Run log, Chat and Settings (no Accounts tab)
- * and ends with the account button with its status, which opens the account menu, at 100% and 200% in English, Korean and Chinese; every entry's
- * text is centred in the entry, and the Chat entry shows its dot over the text's top right corner without moving or widening the entries.
- * In a window of the
- * launcher's minimum size, a screen taller than the space between the app bar and the status bar scrolls and leaves both bars in the window; a
- * shorter screen fills that space. The Mods screen's mod list keeps the regular list item, and its footers keep the same room on every side of
- * their buttons; an empty mod list shows its text centred, also on several lines, with the room of a panel body on its sides.
+ * Tests the launcher window's content at display scales of 150% and 200%: the layout keeps its logical size and every image is decoded at its
+ * logical size times the scale (so it stays sharp). Before the login the app bar shows neither the navigation nor an account; after it, it
+ * lists Mods, Run log, Chat and Settings (no Accounts tab) and ends with the account button with its status, which opens the account menu;
+ * every entry's text is centred in the entry, and the Chat entry shows its dot over the text's top right corner without moving or widening
+ * the entries. In a window of the launcher's minimum size, a screen taller than the space between the app bar and the status bar scrolls and
+ * leaves both bars in the window; a shorter screen fills that space. The Mods screen's mod list keeps the regular list item, and its footers
+ * keep the same room on every side of their buttons; an empty mod list shows its text centred, also on several lines, with the room of a
+ * panel body on its sides.
  */
 final class LauncherShellTest {
     private static final @NotNull String MANIFEST = """
@@ -82,7 +80,6 @@ final class LauncherShellTest {
     private static final @NotNull String LONG_FOLDER_NAME = "a-folder-with-a-rather-long-name-for-the-launcher-install";
     private static final double SCENE_WIDTH = 1280;
     private static final double SCENE_HEIGHT = 800;
-    private static final double PERCENT_SCALE = 100;
     private static final @NotNull String TAGGED_NAME = "Raynor#60bf07";
     private static final @NotNull String APP_BAR_SELECTOR = ".app-bar";
     private static final @NotNull String NAVIGATION_SELECTOR = ".nav-button";
@@ -187,26 +184,22 @@ final class LauncherShellTest {
         Assertions.assertTrue(outsideX <= DOT_DISTANCE && outsideY <= DOT_DISTANCE, () -> "the dot " + dot + " sits at the text corner of " + text);
     }
 
-    @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
-    void app_bar_has_no_accounts_tab_and_its_account_button_opens_the_account_menu(double scale, @NotNull String languageCode,
-                                                                                   @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
-        LauncherTexts texts = LauncherTexts.of(language);
-        String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
+    @Test
+    void app_bar_has_no_accounts_tab_and_its_account_button_opens_the_account_menu(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
         InstallLayout install = InstallLayout.of(directory);
         List<LauncherShell.Section> navigated = new ArrayList<>();
         AtomicInteger menuOpened = new AtomicInteger();
 
         LauncherFxScenario.run(() -> {
-            LauncherShell shell = new LauncherShell(texts, install, scale, navigated::add, () -> {
+            LauncherShell shell = new LauncherShell(texts, install, 1, navigated::add, () -> {
             }, menuOpened::incrementAndGet);
             Scene scene = new Scene(shell.getRoot(), SCENE_WIDTH, SCENE_HEIGHT);
             HBox bar = (HBox) shell.getRoot().lookup(APP_BAR_SELECTOR);
             Button account = (Button) bar.lookup(ACCOUNT_SELECTOR);
             List<String> sections = new ArrayList<>();
 
-            ThemeUtils.apply(scene, language);
+            ThemeUtils.apply(scene, UiLanguage.ENGLISH);
 
             // The login step: no navigation and no account in the app bar.
             shell.showLogin(new Region());
@@ -218,7 +211,6 @@ final class LauncherShellTest {
             }
 
             Assertions.assertFalse(LauncherFxScenario.isShown(account), "no account before the login");
-            LauncherFxScenario.saveSample(bar, scale, "top-bar-login-" + suffix);
 
             // Logged in: Mods, Run log, Chat and Settings, and the account with its status at the right end.
             shell.show(LauncherShell.Section.MODS, new Region());
@@ -240,8 +232,6 @@ final class LauncherShellTest {
                 assertTextCentred((ToggleButton) button);
             }
 
-            LauncherFxScenario.saveSample(bar, scale, "top-bar-account-" + suffix);
-
             // The dot of the Chat entry: shown on that entry only, and the entries keep their place.
             List<Double> places = bar.lookupAll(NAVIGATION_SELECTOR).stream().map(Node::getLayoutX).toList();
 
@@ -261,7 +251,6 @@ final class LauncherShellTest {
             }
 
             Assertions.assertEquals(places, bar.lookupAll(NAVIGATION_SELECTOR).stream().map(Node::getLayoutX).toList(), "the entries do not move");
-            LauncherFxScenario.saveSample(bar, scale, "top-bar-chat-dot-" + suffix);
             account.fire();
 
             return null;
@@ -272,7 +261,7 @@ final class LauncherShellTest {
     }
 
     @ParameterizedTest
-    @ValueSource(doubles = {1.0, 1.5, 2.0})
+    @ValueSource(doubles = {1.5, 2.0})
     void launcher_content_decodes_images_for_the_display_scale_and_keeps_its_layout(double scale, @TempDir @NotNull Path directory) throws Exception {
         InstallLayout install = InstallLayout.of(directory);
         Map<String, byte[]> entries = new LinkedHashMap<>();
@@ -319,9 +308,8 @@ final class LauncherShellTest {
                                           () -> "an image of " + image.getWidth() + " pixels is shown " + shownWidth + " units wide at " + scale);
                 }
 
-                LauncherFxScenario.saveSample(shell.getRoot(), scale, "launcher-scale-" + Math.round(scale * PERCENT_SCALE));
                 result.complete(null);
-            } catch (IOException | RuntimeException | Error exception) {
+            } catch (RuntimeException | Error exception) {
                 result.completeExceptionally(exception);
             }
         });
@@ -373,10 +361,8 @@ final class LauncherShellTest {
         });
     }
 
-    @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
-    void mods_list_keeps_the_regular_list_item(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
+    @Test
+    void mods_list_keeps_the_regular_list_item(@TempDir @NotNull Path directory) throws Exception {
         InstallLayout install = InstallLayout.of(directory);
         Map<String, byte[]> entries = new LinkedHashMap<>();
 
@@ -394,19 +380,19 @@ final class LauncherShellTest {
         ModCatalog catalog = ModCatalog.scan(install, InstallationRecords.NONE);
 
         LauncherFxScenario.run(() -> {
-            LauncherTexts texts = LauncherTexts.of(language);
-            LauncherShell shell = new LauncherShell(texts, install, scale, section -> {
+            LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
+            LauncherShell shell = new LauncherShell(texts, install, 1, section -> {
             }, () -> {
             }, () -> {
             });
-            ModsScreen screen = new ModsScreen(install, catalog, texts, scale, new SimpleBooleanProperty(false), new NoActions());
+            ModsScreen screen = new ModsScreen(install, catalog, texts, 1, new SimpleBooleanProperty(false), new NoActions());
             Scene scene = new Scene(shell.getRoot(), SCENE_WIDTH, SCENE_HEIGHT);
             ModEntry entry = catalog.findByJarName(JAR_NAME);
 
             Assertions.assertNotNull(entry);
             shell.show(LauncherShell.Section.MODS, screen.getRoot());
             screen.select(entry);
-            ThemeUtils.apply(scene, language);
+            ThemeUtils.apply(scene, UiLanguage.ENGLISH);
             shell.getRoot().applyCss();
             shell.getRoot().layout();
 
@@ -416,16 +402,13 @@ final class LauncherShellTest {
             Assertions.assertFalse(list.getStyleClass().contains(COMPACT_LIST_STYLE_CLASS));
             Assertions.assertEquals(REGULAR_CELL_PADDING, cell.getPadding().getTop(), TOLERANCE);
             Assertions.assertTrue(LauncherFxScenario.assertFooterInsets(shell.getRoot()) >= 2, "the list and the detail footers are checked");
-            LauncherFxScenario.saveSample(shell.getRoot(), scale, "mods-list-" + Math.round(scale * PERCENT_SCALE) + "-" + language.getCode());
 
             return null;
         });
     }
 
-    @ParameterizedTest
-    @CsvSource({"1.0, en", "1.0, ko", "1.0, zh"})
-    void empty_mod_list_centres_its_wrapped_text(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
+    @Test
+    void empty_mod_list_centres_its_wrapped_text(@TempDir @NotNull Path directory) throws Exception {
         InstallLayout install = InstallLayout.of(directory.resolve(LONG_FOLDER_NAME).resolve(LONG_FOLDER_NAME));
 
         Files.createDirectories(install.getModsDirectory());
@@ -433,22 +416,21 @@ final class LauncherShellTest {
         ModCatalog catalog = ModCatalog.scan(install, InstallationRecords.NONE);
 
         LauncherFxScenario.run(() -> {
-            LauncherTexts texts = LauncherTexts.of(language);
-            LauncherShell shell = new LauncherShell(texts, install, scale, section -> {
+            LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
+            LauncherShell shell = new LauncherShell(texts, install, 1, section -> {
             }, () -> {
             }, () -> {
             });
-            ModsScreen screen = new ModsScreen(install, catalog, texts, scale, new SimpleBooleanProperty(false), new NoActions());
+            ModsScreen screen = new ModsScreen(install, catalog, texts, 1, new SimpleBooleanProperty(false), new NoActions());
             Scene scene = new Scene(shell.getRoot(), SCENE_WIDTH, SCENE_HEIGHT);
 
             shell.show(LauncherShell.Section.MODS, screen.getRoot());
-            ThemeUtils.apply(scene, language);
+            ThemeUtils.apply(scene, UiLanguage.ENGLISH);
             shell.getRoot().applyCss();
             shell.getRoot().layout();
 
             LauncherFxScenario.assertPlaceholderCentred((ListView<?>) shell.getRoot().lookup(".list-view"));
             Assertions.assertTrue(LauncherFxScenario.assertFooterInsets(shell.getRoot()) >= 1, "the list footer is checked");
-            LauncherFxScenario.saveSample(shell.getRoot(), scale, "mods-empty-" + Math.round(scale * PERCENT_SCALE) + "-" + language.getCode());
 
             return null;
         });

@@ -26,11 +26,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,8 +50,6 @@ final class DemoSpritesTest {
     private static final double MINIMUM_STAGE_SHARE = 0.25;
     private static final double MAXIMUM_STAGE_SHARE = 0.42;
     private static final int IMPACT_LOOPS = 30;
-    private static final @NotNull String PROJECTILE_SAMPLE = "build/demo-frames/projectile.png";
-    private static final @NotNull String IMPACT_SAMPLE = "build/demo-frames/impact.png";
 
     private static @NotNull GameView createView(@NotNull DemoGameScenario scenario, @NotNull Game game, @NotNull MapModel map) {
         return new StandardGameView(game, null, map.getTerrain(), game.getModSystem(TableUnitBounds.KEY), StandardCombatSystem.FRACTION_BITS,
@@ -98,13 +93,6 @@ final class DemoSpritesTest {
         }
 
         return count;
-    }
-
-    private static void save(@NotNull BufferedImage image, @NotNull String file) throws IOException {
-        Path sample = Path.of(file);
-
-        Files.createDirectories(sample.getParent());
-        Assertions.assertTrue(ImageIO.write(image, "png", sample.toFile()));
     }
 
     @Test
@@ -186,7 +174,6 @@ final class DemoSpritesTest {
                 BufferedImage withProjectiles = draw(canvas, viewport, new WorldView(List.of(terrain, units, projectiles)));
 
                 Assertions.assertTrue(countDifferentPixels(withoutProjectiles, withProjectiles) > 0, "the projectile is drawn");
-                save(withProjectiles, PROJECTILE_SAMPLE);
 
                 BufferedImage impact = null;
 
@@ -199,7 +186,6 @@ final class DemoSpritesTest {
                 }
 
                 Assertions.assertNotNull(impact, "a flight ends in its impact effect");
-                save(impact, IMPACT_SAMPLE);
             }
         }
     }

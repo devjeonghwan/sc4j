@@ -41,7 +41,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 
-import javax.imageio.ImageIO;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,8 +54,7 @@ import java.util.function.UnaryOperator;
 /**
  * Runs the demo's client offscreen like the runtime runs it on a window: the demo's content, maps and game definition from the test class
  * loader, a launch request with the engine replay and save formats, a mod storage folder, an image canvas (by default {@value #WIDTH} by
- * {@value #HEIGHT}) and silent audio, the first scene of the demo, and the person's input as engine input events. Frames are saved as
- * sample pictures under the build folder.
+ * {@value #HEIGHT}) and silent audio, the first scene of the demo, and the person's input as engine input events.
  */
 public final class DemoClientScenario implements Closeable {
     /**
@@ -67,10 +65,6 @@ public final class DemoClientScenario implements Closeable {
      * The height of the offscreen frames.
      */
     public static final int HEIGHT = 720;
-    /**
-     * The folder of the sample pictures.
-     */
-    public static final @NotNull String SAMPLE_FOLDER = "build/demo-frames";
     /**
      * The folder of a client's Beacon.Link key and node list in its storage folder.
      */
@@ -303,19 +297,6 @@ public final class DemoClientScenario implements Closeable {
         this.client.handleInput(InputEvent.createPointerMoved(x, y));
         this.client.handleInput(InputEvent.createButtonPressed(button, 0, x, y, false));
         this.client.handleInput(InputEvent.createButtonReleased(button, 0, x, y));
-    }
-
-    /**
-     * Saves the last drawn frame as a sample picture.
-     *
-     * @param name the picture's name without extension
-     * @throws IOException if the picture cannot be written
-     */
-    public void saveFrame(@NotNull String name) throws IOException {
-        Path sample = Path.of(SAMPLE_FOLDER, name + ".png");
-
-        Files.createDirectories(sample.getParent());
-        Assertions.assertTrue(ImageIO.write(this.canvas.getImage(), "png", sample.toFile()));
     }
 
     /**

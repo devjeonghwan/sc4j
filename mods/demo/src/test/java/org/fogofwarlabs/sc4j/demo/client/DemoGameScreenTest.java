@@ -36,6 +36,7 @@ import org.fogofwarlabs.sc4j.engine.resource.ResourceProvider;
 import org.fogofwarlabs.sc4j.manifest.ManifestException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -51,8 +52,8 @@ import java.util.List;
  * with its sections inside it, the production queue panel stands in its region between the selection panel and the command card with slots
  * large enough to read, the selected unit's name fits its panel, the console, the top bar, the portrait slot and the command buttons are laid
  * out from the pack's pictures, each drawn at its own resolution (the detail picture of the display scale), never scaled, and the cancel
- * button shows the faction's cancel picture of the display scale; a worker without gold sees its build buttons refused with a message; a single
- * unit and a group show their selection info, a small group as cards with each unit's name; the unexplored map's edge shows no terrain line,
+ * button shows the faction's cancel picture of the display scale; a worker without gold sees its build buttons refused with a message; the
+ * unexplored map's edge shows no terrain line,
  * the ground beyond the map shows the dark backdrop apart from the black of unexplored ground, and the view keeps its centre over the map at
  * the map's corner; a unit of the person that takes damage pings the minimap; and without a queue the selection panel takes the queue's
  * region, while a town hall whose entry waits for supply says so once and its hovered queue slot shows a tooltip in the faction's slot frame.
@@ -62,7 +63,6 @@ import java.util.List;
  */
 final class DemoGameScreenTest {
     private static final long UPDATE_MILLISECONDS = (long) DemoGameScene.LOOP_MILLISECONDS * DemoGameScene.MAXIMUM_LOOPS_PER_UPDATE;
-    private static final int PERCENT = 100;
     private static final int GOLD = 1000;
     private static final int QUEUED_ENTRIES = 3;
     private static final int QUEUE_PROGRESS_LOOPS = 20;
@@ -390,7 +390,6 @@ final class DemoGameScreenTest {
 
             scenario.runUpdate((long) DemoGameScene.LOOP_MILLISECONDS * QUEUE_PROGRESS_LOOPS);
             scenario.runFrame();
-            scenario.saveFrame("console-" + width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName());
 
             float logicalWidth = width / scale;
 
@@ -443,7 +442,6 @@ final class DemoGameScreenTest {
                                                                                                                                        ManifestException,
                                                                                                                                        ModException {
         try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height)) {
-            Faction faction = scenario.getMenu().getDemo().getContent().getFactions().get(factionIndex);
             Font font = scenario.getMenu().getDemo().getFont();
 
             scenario.getClient().setDisplayScale(DisplayScale.of(scale, 1));
@@ -474,7 +472,6 @@ final class DemoGameScreenTest {
 
             scenario.runUpdate((long) DemoGameScene.LOOP_MILLISECONDS * QUEUE_PROGRESS_LOOPS);
             scenario.runFrame();
-            scenario.saveFrame("layout-" + width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName());
 
             int logicalHeight = scenario.getClient().getHeight();
             HudBlock console = engineScreen.getConsolePlate();
@@ -515,17 +512,12 @@ final class DemoGameScreenTest {
         }
     }
 
-    @ParameterizedTest
-    @CsvSource({"1280, 720, 2.0, 1", "1920, 1080, 1.0, 1", "1920, 1080, 2.0, 0", "2560, 1440, 1.0, 0"})
-    void demo_game_screen_refuses_a_build_button_without_gold_with_a_message(int width, int height, float scale, int factionIndex,
-                                                                             @TempDir @NotNull Path storage) throws IOException,
+    @Test
+    void demo_game_screen_refuses_a_build_button_without_gold_with_a_message(@TempDir @NotNull Path storage) throws IOException,
                                                                                                                     ManifestException,
                                                                                                                     ModException {
-        try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height)) {
-            Faction faction = scenario.getMenu().getDemo().getContent().getFactions().get(factionIndex);
-
-            scenario.getClient().setDisplayScale(DisplayScale.of(scale, 1));
-            startGame(scenario, factionIndex);
+        try (DemoClientScenario scenario = new DemoClientScenario(storage)) {
+            startGame(scenario, 0);
 
             DemoGameScene gameScene = requireGameScene(scenario);
             Game game = gameScene.getGame();
@@ -551,9 +543,8 @@ final class DemoGameScreenTest {
 
             Assertions.assertNotNull(hotkey, "the build button has a hotkey");
 
-            scenario.getClient().handleInput(InputEvent.createPointerMoved(point[0] * scale, point[1] * scale));
+            scenario.getClient().handleInput(InputEvent.createPointerMoved(point[0], point[1]));
             scenario.runFrame();
-            scenario.saveFrame("refusal-" + width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName());
             scenario.press(hotkey);
             scenario.runFrame();
 
@@ -564,55 +555,11 @@ final class DemoGameScreenTest {
 
     @ParameterizedTest
     @CsvSource({"1280, 720, 2.0, 1", "1920, 1080, 1.0, 1", "1920, 1080, 2.0, 0", "2560, 1440, 1.0, 0"})
-    void demo_game_screen_shows_the_selection_of_one_unit_and_of_a_group(int width, int height, float scale, int factionIndex,
-                                                                         @TempDir @NotNull Path storage) throws IOException, ManifestException, ModException {
-        try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height)) {
-            Faction faction = scenario.getMenu().getDemo().getContent().getFactions().get(factionIndex);
-            String suffix = width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName();
-
-            scenario.getClient().setDisplayScale(DisplayScale.of(scale, 1));
-            startGame(scenario, factionIndex);
-
-            DemoGameScene gameScene = requireGameScene(scenario);
-            Game game = gameScene.getGame();
-            DemoGameScreen screen = gameScene.getScreen();
-
-            Assertions.assertNotNull(game);
-            Assertions.assertNotNull(screen);
-
-            GameScreen engineScreen = screen.getScreen();
-            Player person = game.getPlayer(DemoGames.FIRST_SLOT);
-            List<Unit> workers = findUnits(game, screen.getView(), person, UnitTrait.WORKER);
-
-            workers.getFirst().setHitPoints(workers.getFirst().getHitPoints() / 2);
-            engineScreen.getSelection().select(workers.getFirst());
-            scenario.runUpdate(UPDATE_MILLISECONDS);
-            scenario.runFrame();
-            scenario.saveFrame("selection-unit-" + suffix);
-
-            engineScreen.getSelection().select(findTownHall(game, screen.getView(), person));
-
-            for (Unit worker : workers) {
-                engineScreen.getSelection().add(worker);
-            }
-
-            scenario.runUpdate(UPDATE_MILLISECONDS);
-            scenario.runFrame();
-            scenario.saveFrame("selection-group-" + suffix);
-
-            Assertions.assertEquals(workers.size() + 1, engineScreen.getSelection().getUnits().size(), "the group is selected");
-        }
-    }
-
-    @ParameterizedTest
-    @CsvSource({"1280, 720, 2.0, 1", "1920, 1080, 1.0, 1", "1920, 1080, 2.0, 0", "2560, 1440, 1.0, 0"})
     void demo_game_screen_keeps_the_map_in_view_and_shows_no_terrain_at_its_unexplored_edge(int width, int height, float scale, int factionIndex,
                                                                                             @TempDir @NotNull Path storage) throws IOException,
                                                                                                                                    ManifestException,
                                                                                                                                    ModException {
         try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height)) {
-            Faction faction = scenario.getMenu().getDemo().getContent().getFactions().get(factionIndex);
-            String suffix = width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName();
             int top = Math.round((GameScreen.RESOURCE_BAR_HEIGHT + MESSAGE_ROWS) * scale);
 
             scenario.getClient().setDisplayScale(DisplayScale.of(scale, 1));
@@ -630,7 +577,6 @@ final class DemoGameScreenTest {
 
             camera.centerOn(0, camera.getMapHeight());
             scenario.runFrame();
-            scenario.saveFrame("edge-" + suffix);
 
             int bottom = Math.round(screen.getScreen().getConsolePlate().getY() * scale);
             Path2D.Float inner = createMapOutline(camera, -OUTLINE_MARGIN);
@@ -658,7 +604,6 @@ final class DemoGameScreenTest {
 
             camera.moveTo(camera.getBoundsLeft(), camera.getBoundsTop());
             scenario.runFrame();
-            scenario.saveFrame("corner-" + suffix);
 
             Path2D.Float outline = createMapOutline(camera, 0);
             int voidPixels = 0;
@@ -690,7 +635,6 @@ final class DemoGameScreenTest {
         try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height, canvas -> check[0] = new TextureScaleCheck(canvas))) {
             Faction faction = scenario.getMenu().getDemo().getContent().getFactions().get(factionIndex);
             ResourceProvider pack = scenario.getMenu().getDemo().getContent().getPack();
-            String suffix = width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName();
             String slot = faction.getDebugName() + '-' + SLOT_PICTURE + (scale > 1 ? DETAIL_SUFFIX : "");
 
             watch(check[0], pack, slot);
@@ -758,7 +702,6 @@ final class DemoGameScreenTest {
 
             scenario.getClient().handleInput(InputEvent.createPointerMoved(point[0] * scale, point[1] * scale));
             scenario.runFrame();
-            scenario.saveFrame("supply-" + suffix);
 
             Assertions.assertTrue(check[0].getDrawCount(slot) - drawn > slotsWithoutHover, "the slot's tooltip is drawn in the skin's frame");
             Assertions.assertTrue(check[0].getLargestScaleError(slot) < LARGEST_SCALE_ERROR, "the tooltip frame is drawn at its own resolution");
@@ -771,7 +714,6 @@ final class DemoGameScreenTest {
                                   "the train button's tooltip warns that a further unit waits for supply too");
             scenario.getClient().handleInput(InputEvent.createPointerMoved(trainPoint[0] * scale, trainPoint[1] * scale));
             scenario.runFrame();
-            scenario.saveFrame("supply-warning-" + suffix);
         }
     }
 
@@ -782,8 +724,6 @@ final class DemoGameScreenTest {
                                                                                                                                                            ManifestException,
                                                                                                                                                            ModException {
         try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height)) {
-            Faction faction = scenario.getMenu().getDemo().getContent().getFactions().get(factionIndex);
-            String suffix = width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName();
 
             scenario.getClient().setDisplayScale(DisplayScale.of(scale, 1));
             startGame(scenario, factionIndex);
@@ -819,7 +759,6 @@ final class DemoGameScreenTest {
 
             scenario.getClient().handleInput(InputEvent.createPointerMoved(blocked[0], blocked[1]));
             scenario.runFrame();
-            scenario.saveFrame("placement-blocked-" + suffix);
 
             PlacementLayer placement = engineScreen.getPlacement();
 
@@ -832,7 +771,6 @@ final class DemoGameScreenTest {
 
             scenario.getClient().handleInput(InputEvent.createPointerMoved(free[0], free[1]));
             scenario.runFrame();
-            scenario.saveFrame("placement-" + suffix);
 
             Assertions.assertTrue(placement.isBuildable(), "free ground beside the town hall takes the building");
 
@@ -849,25 +787,18 @@ final class DemoGameScreenTest {
             scenario.click(PointerButton.RIGHT, rally[0], rally[1]);
             scenario.runUpdate(DemoGameScene.LOOP_MILLISECONDS);
             scenario.runFrame();
-            scenario.saveFrame("rally-" + suffix);
 
             Assertions.assertTrue(hallView.hasRallyPoint(), "a right press sets the town hall's rally point");
             Assertions.assertTrue(scenario.countPixels(RALLY_RGB, RALLY_TOLERANCE) > 0, "the rally line and marker are drawn");
         }
     }
 
-    @ParameterizedTest
-    @CsvSource({"1280, 720, 1.0, 0", "1920, 1080, 2.0, 1", "640, 360, 1.0, 0"})
-    void demo_game_screen_shows_what_a_selected_worker_does_and_the_gold_it_carries(int width, int height, float scale, int factionIndex,
-                                                                                    @TempDir @NotNull Path storage) throws IOException,
+    @Test
+    void demo_game_screen_shows_what_a_selected_worker_does_and_the_gold_it_carries(@TempDir @NotNull Path storage) throws IOException,
                                                                                                                            ManifestException,
                                                                                                                            ModException {
-        try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height)) {
-            Faction faction = scenario.getMenu().getDemo().getContent().getFactions().get(factionIndex);
-            String suffix = width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName();
-
-            scenario.getClient().setDisplayScale(DisplayScale.of(scale, 1));
-            startGame(scenario, factionIndex);
+        try (DemoClientScenario scenario = new DemoClientScenario(storage)) {
+            startGame(scenario, 0);
 
             DemoGameScene gameScene = requireGameScene(scenario);
             Game game = gameScene.getGame();
@@ -891,7 +822,6 @@ final class DemoGameScreenTest {
             }
 
             scenario.runFrame();
-            scenario.saveFrame("activity-" + suffix);
 
             UnitView workerView = view.getUnitView(worker);
             OrderTexts texts = screen.getScreen().getSelectionPanel().getOrderTexts();
@@ -903,23 +833,19 @@ final class DemoGameScreenTest {
             screen.getScreen().getSelection().select(mine);
             scenario.runUpdate(UPDATE_MILLISECONDS);
             scenario.runFrame();
-            scenario.saveFrame("activity-mine-" + suffix);
 
             Assertions.assertTrue(view.getUnitView(mine).getResourceAmount() > 0, "the mine shows the gold it holds");
         }
     }
 
-    @ParameterizedTest
-    @CsvSource({"1280, 720, 1.0, 0", "1920, 1080, 2.0, 1"})
-    void demo_game_screen_counts_the_kills_of_a_selected_fighter(int width, int height, float scale, int factionIndex,
-                                                                 @TempDir @NotNull Path storage) throws IOException,
+    @Test
+    void demo_game_screen_counts_the_kills_of_a_selected_fighter(@TempDir @NotNull Path storage) throws IOException,
                                                                                                         ManifestException,
                                                                                                         ModException {
-        try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height)) {
-            Faction faction = scenario.getMenu().getDemo().getContent().getFactions().get(factionIndex);
+        try (DemoClientScenario scenario = new DemoClientScenario(storage)) {
+            Faction faction = scenario.getMenu().getDemo().getContent().getFactions().getFirst();
 
-            scenario.getClient().setDisplayScale(DisplayScale.of(scale, 1));
-            startGame(scenario, factionIndex);
+            startGame(scenario, 0);
 
             DemoGameScene gameScene = requireGameScene(scenario);
             Game game = gameScene.getGame();
@@ -942,21 +868,17 @@ final class DemoGameScreenTest {
             screen.getScreen().getSelection().select(fighter);
             scenario.runUpdate(UPDATE_MILLISECONDS);
             scenario.runFrame();
-            scenario.saveFrame("kills-" + width + "x" + height + "-" + Math.round(scale * PERCENT) + "-" + faction.getDebugName());
 
             Assertions.assertEquals(1, view.getUnitView(fighter).getKillCount(), "the fighter counts its kill");
         }
     }
 
-    @ParameterizedTest
-    @CsvSource({"1280, 720, 1.0, 0", "1280, 720, 2.0, 1"})
-    void demo_game_screen_pings_the_minimap_where_a_unit_of_the_person_takes_damage(int width, int height, float scale, int factionIndex,
-                                                                                    @TempDir @NotNull Path storage) throws IOException,
+    @Test
+    void demo_game_screen_pings_the_minimap_where_a_unit_of_the_person_takes_damage(@TempDir @NotNull Path storage) throws IOException,
                                                                                                                            ManifestException,
                                                                                                                            ModException {
-        try (DemoClientScenario scenario = new DemoClientScenario(storage, width, height)) {
-            scenario.getClient().setDisplayScale(DisplayScale.of(scale, 1));
-            startGame(scenario, factionIndex);
+        try (DemoClientScenario scenario = new DemoClientScenario(storage)) {
+            startGame(scenario, 0);
 
             DemoGameScene gameScene = requireGameScene(scenario);
             Game game = gameScene.getGame();

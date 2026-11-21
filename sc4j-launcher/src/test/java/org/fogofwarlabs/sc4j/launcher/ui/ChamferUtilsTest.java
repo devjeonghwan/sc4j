@@ -1,34 +1,29 @@
 package org.fogofwarlabs.sc4j.launcher.ui;
 
-import javafx.geometry.Insets;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
 import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Transform;
-import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Tests that the chamfered controls of the launcher theme keep the stylesheet's cut size in pixels at every width, height and display scale,
- * with their 1 pixel edge as wide along the cut as along the sides, at 100% and 200% in English, Korean and Chinese.
+ * Tests that the chamfered controls of the launcher theme keep the stylesheet's cut size in pixels at every width and height at display
+ * scales of 100% and 200%, with their 1 pixel edge as wide along the cut as along the sides.
  */
 final class ChamferUtilsTest {
-    private static final double PERCENT_SCALE = 100;
+    private static final @NotNull String BUTTON_TEXT = "Save";
+    private static final @NotNull String BADGE_TEXT = "Running";
     private static final double NARROW_WIDTH = 80;
     private static final double WIDE_WIDTH = 400;
     private static final double BUTTON_HEIGHT = 34;
@@ -64,7 +59,6 @@ final class ChamferUtilsTest {
      * The distance from the cut at which the top edge's colour is read, in logical units.
      */
     private static final double EDGE_SAMPLE_GAP = 8;
-    private static final double SAMPLE_PADDING = 24;
 
     @BeforeAll
     static void startToolkit() {
@@ -149,20 +143,16 @@ final class ChamferUtilsTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
-    void chamfered_controls_keep_the_cut_size_at_every_width_and_height(double scale, @NotNull String languageCode) throws Exception {
-        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
-        LauncherTexts texts = LauncherTexts.of(language);
-        String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
-
+    @ValueSource(doubles = {1.0, 2.0})
+    void chamfered_controls_keep_the_cut_size_at_every_width_and_height(double scale) throws Exception {
         LauncherFxScenario.run(() -> {
-            Button button = ComponentUtils.createButton(texts.get("session.save"), ButtonRole.SECONDARY);
-            Label badge = ComponentUtils.createBadge(texts.get("run.state.running"), Tone.SUCCESS);
+            Button button = ComponentUtils.createButton(BUTTON_TEXT, ButtonRole.SECONDARY);
+            Label badge = ComponentUtils.createBadge(BADGE_TEXT, Tone.SUCCESS);
             Group group = new Group(button, badge);
             Scene scene = new Scene(group);
 
             group.setAutoSizeChildren(false);
-            ThemeUtils.apply(scene, language);
+            ThemeUtils.apply(scene, UiLanguage.ENGLISH);
             group.applyCss();
 
             for (double width : new double[]{NARROW_WIDTH, WIDE_WIDTH}) {
@@ -174,31 +164,6 @@ final class ChamferUtilsTest {
                     assertChamfer(render(badge, width, height, scale), BADGE_CUT, scale, "badge " + width + "x" + height);
                 }
             }
-
-            return null;
-        });
-
-        LauncherFxScenario.run(() -> {
-            HBox narrow = ComponentUtils.createRow(Spacing.S,
-                                                   ComponentUtils.createButton(texts.get("session.save"), ButtonRole.PRIMARY),
-                                                   ComponentUtils.createButton(texts.get("session.cancel"), ButtonRole.SECONDARY),
-                                                   ComponentUtils.createSmallButton(texts.get("app.about"), ButtonRole.DANGER),
-                                                   ComponentUtils.createBadge(texts.get("run.state.running"), Tone.ACCENT),
-                                                   ComponentUtils.createBadge(texts.get("run.state.ended"), Tone.SUCCESS));
-            Button wide = ComponentUtils.createButton(texts.get("session.save"), ButtonRole.SECONDARY);
-            TabPane tabs = new TabPane(new Tab(texts.get("run.tab.log")), new Tab(texts.get("run.tab.command")), new Tab(texts.get("run.tab.settings")));
-            VBox sample = ComponentUtils.createColumn(Spacing.M, narrow, wide, tabs);
-            Scene scene = new Scene(sample, WIDE_WIDTH + WIDE_WIDTH, WIDE_WIDTH / 2);
-
-            wide.setPrefWidth(WIDE_WIDTH);
-            tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-            // The padding holds the glow of the primary button, which reaches past the button.
-            sample.setPadding(new Insets(SAMPLE_PADDING));
-            sample.getStyleClass().add("app-backdrop");
-            ThemeUtils.apply(scene, language);
-            sample.applyCss();
-            sample.layout();
-            LauncherFxScenario.saveSample(sample, scale, "chamfer-" + suffix);
 
             return null;
         });

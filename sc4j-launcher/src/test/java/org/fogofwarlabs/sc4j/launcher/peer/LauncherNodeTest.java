@@ -527,6 +527,7 @@ final class LauncherNodeTest {
                 Assertions.assertEquals(new InetSocketAddress(MAPPED_ADDRESS, automatic.getPort()), mapping.getExternalAddress());
             }
 
+            await(() -> gateway.getRequestedLifetimes(MappingProtocol.PCP).size() > 1, "the router receives the release");
             Assertions.assertEquals(List.of(MAPPING_LEASE_SECONDS, 0), gateway.getRequestedLifetimes(MappingProtocol.PCP),
                                     "the node's close releases the mapping");
 

@@ -20,7 +20,7 @@ final class ToolCommandLineTest {
     private static final @NotNull String LAUNCH_TEXT = """
                                                        -XX:-UsePerfData
                                                        -Djava.io.tmpdir=${APP_HOME}/.cache/tmp
-
+                                                       
                                                        -cp
                                                        ${APP_HOME}/lib/*
                                                        main.Main

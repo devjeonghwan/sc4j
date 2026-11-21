@@ -23,11 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -158,7 +154,7 @@ public final class ModReleaseDialogs {
                                                 release -> this.texts.format("mods.version.confirm", name, release.getRepository(), release.getTag()),
                                                 this.texts.get("mods.install.start"), releases, source.getRelease(), entry);
                       }, this::describe, () -> {
-                      });
+                });
     }
 
     /**

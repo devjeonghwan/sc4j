@@ -188,7 +188,7 @@ final class ModReleaseDialogsTest {
     @ParameterizedTest
     @ValueSource(strings = {"en", "ko"})
     void change_version_should_offer_the_releases_newest_first_and_install_the_chosen_one(@NotNull String languageCode,
-                                                                                         @TempDir @NotNull Path directory) throws Exception {
+                                                                                          @TempDir @NotNull Path directory) throws Exception {
         UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
         LauncherTexts texts = LauncherTexts.of(language);
         InstallLayout install = InstallLayout.of(directory.resolve("install"));

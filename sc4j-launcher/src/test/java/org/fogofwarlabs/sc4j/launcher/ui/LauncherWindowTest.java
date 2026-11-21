@@ -70,7 +70,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * the New account dialog when there is no account, else with the last used account selected); Log in opens the main view with the account
  * at the top right and no Accounts tab and starts the account's session, which connects to the node of the install's node list on
  * 127.0.0.1, and Log out from the account menu closes the session, frees the account and returns to the login step, at 100% and 200% in
- * English and Korean. Whisper in the account menu's Friends shows the Chat screen with the friend's conversation selected and the input
+ * English, Korean and Chinese. Whisper in the account menu's Friends shows the Chat screen with the friend's conversation selected and the input
  * focused, from another screen and from the Chat screen. Open mods folder hands the mods folder to the folder opener, and a mod's website
  * link goes to the document opener.
  * The Update dialog of a newer launcher version opens by itself once per version and run, once logged in, while no game runs and not for a
@@ -113,6 +113,7 @@ final class LauncherWindowTest {
     private static final @NotNull String TEXT_ONLY_STYLE_CLASS = "text-only";
     private static final @NotNull String ENGLISH_CLOSE_TEXT = "Quit the SC4J launcher?";
     private static final @NotNull String KOREAN_CLOSE_TEXT = "정말로 SC4J 런처를 종료하시겠습니까?";
+    private static final @NotNull String CHINESE_CLOSE_TEXT = "确定要退出 SC4J 启动器吗？";
     private static final @NotNull Runnable NO_SOUND = () -> {
     };
     /**
@@ -171,10 +172,6 @@ final class LauncherWindowTest {
             Assertions.assertTrue(image.getWidth() >= shownWidth * scale - TOLERANCE,
                                   () -> "an image of " + image.getWidth() + " pixels is shown " + shownWidth + " units wide at " + scale);
         }
-    }
-
-    private static @NotNull UiLanguage selectLanguage(@NotNull String languageCode) {
-        return languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
     }
 
     private static @NotNull Parent layRoot(@NotNull Stage stage) {
@@ -415,10 +412,10 @@ final class LauncherWindowTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void launcher_without_accounts_starts_on_the_login_step_with_the_new_account_dialog(double scale, @NotNull String languageCode,
                                                                                         @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory);
@@ -446,9 +443,9 @@ final class LauncherWindowTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void launcher_logs_in_from_the_login_step_and_logs_out_back_to_it(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory.resolve("install"));
@@ -589,10 +586,10 @@ final class LauncherWindowTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void whisper_from_friends_opens_the_chat_tab_on_the_friend_conversation(double scale, @NotNull String languageCode,
                                                                             @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory);
@@ -630,11 +627,11 @@ final class LauncherWindowTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void chat_dot_shows_unread_lines_and_whispers_until_read_and_the_sound_plays_while_the_chat_is_hidden(double scale,
                                                                                                           @NotNull String languageCode,
                                                                                                           @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory);
@@ -697,9 +694,9 @@ final class LauncherWindowTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void settings_switch_mutes_the_chat_sound_and_saves_it(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory);
@@ -745,9 +742,9 @@ final class LauncherWindowTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void close_request_asks_to_minimize_quit_or_cancel(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory);
@@ -782,7 +779,14 @@ final class LauncherWindowTest {
             Assertions.assertTrue(minimize.getStyleClass().contains("primary"));
             Assertions.assertTrue(cancel.isCancelButton());
             assertTextOnly(LauncherFxScenario.findButton(dialog, texts.get("close.quit")));
-            Assertions.assertEquals(language == UiLanguage.KOREAN ? KOREAN_CLOSE_TEXT : ENGLISH_CLOSE_TEXT, texts.get("close.text"));
+
+            String closeText = switch (language) {
+                case ENGLISH -> ENGLISH_CLOSE_TEXT;
+                case KOREAN -> KOREAN_CLOSE_TEXT;
+                case CHINESE -> CHINESE_CLOSE_TEXT;
+            };
+
+            Assertions.assertEquals(closeText, texts.get("close.text"));
             Assertions.assertTrue(dialog.lookupAll(".label").stream().anyMatch(node -> ((Label) node).getText().equals(texts.get("close.text"))),
                                   "the dialog asks whether to quit");
             Assertions.assertTrue(LauncherFxScenario.assertFooterInsets(dialog) >= 1, "the dialog footer is checked");

@@ -190,7 +190,7 @@ Players install a released mod from the launcher: the latest GitHub release of t
 |---|---|---|
 | `format` | yes | `1` |
 | `id` | yes | mod id |
-| `name` | yes | per language: `{"en": "My Mod", "ko": "..."}` |
+| `name` | yes | per language: `{"en": "My Mod", "ko": "...", "zh": "..."}`; the launcher shows `en`, `ko` or `zh` (Simplified Chinese), English when the display language is missing |
 | `version` | written by the mod plugin | mod version: the Gradle project's `version`; part of the identity |
 | `engine` | written by the mod plugin | engine API version `MAJOR.MINOR` of the plugin's SC4J version; runs when the majors are equal and the mod's minor is not higher ([API policy 3.1](api-policy.md#31-the-sc4j-version-and-the-engine-api-version)) |
 | `entry` | yes | fully qualified entry class |

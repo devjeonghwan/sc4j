@@ -31,17 +31,19 @@ import java.util.Properties;
 final class LauncherTextsTest {
     private static final @NotNull String BASE_BUNDLE = "messages.properties";
     private static final @NotNull String KOREAN_BUNDLE = "messages_ko.properties";
+    private static final @NotNull String CHINESE_BUNDLE = "messages_zh.properties";
     private static final @NotNull List<@NotNull String> REMOVED_KEY_TEXTS = List.of("nodes.key", "nodes.key.prompt", "nodes.pinned",
                                                                                     "nodes.ping.wrong_key", "nodes.entry.key_invalid");
     private static final @NotNull List<@NotNull String> SEED_TEXT_PREFIXES = List.of("nodes.", "beaconlink.", "status.nodes.");
-    private static final @NotNull List<@NotNull String> NODE_KEY_WORDS = List.of("key", "키");
+    private static final @NotNull List<@NotNull String> NODE_KEY_WORDS = List.of("key", "키", "密钥");
 
     @Test
     void every_language_has_every_text_of_the_base_bundle() throws IOException {
         Properties base = readBundle(BASE_BUNDLE);
-        Properties korean = readBundle(KOREAN_BUNDLE);
 
-        Assertions.assertEquals(base.stringPropertyNames(), korean.stringPropertyNames());
+        for (String bundle : List.of(KOREAN_BUNDLE, CHINESE_BUNDLE)) {
+            Assertions.assertEquals(base.stringPropertyNames(), readBundle(bundle).stringPropertyNames(), bundle);
+        }
     }
 
     @Test
@@ -150,7 +152,7 @@ final class LauncherTextsTest {
 
     @Test
     void no_launcher_text_shows_a_node_key() throws IOException {
-        for (String bundle : List.of(BASE_BUNDLE, KOREAN_BUNDLE)) {
+        for (String bundle : List.of(BASE_BUNDLE, KOREAN_BUNDLE, CHINESE_BUNDLE)) {
             Properties texts = readBundle(bundle);
 
             for (String removed : REMOVED_KEY_TEXTS) {
@@ -180,6 +182,7 @@ final class LauncherTextsTest {
 
             Assertions.assertEquals("Run", LauncherTexts.of(UiLanguage.ENGLISH).get("detail.run"));
             Assertions.assertEquals("실행", LauncherTexts.of(UiLanguage.KOREAN).get("detail.run"));
+            Assertions.assertEquals("启动", LauncherTexts.of(UiLanguage.CHINESE).get("detail.run"));
         } finally {
             Locale.setDefault(defaultLocale);
         }

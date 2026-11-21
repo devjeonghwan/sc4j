@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Tests the About dialog: SC4J's own notice and the Beacon.Link privacy statement, then the notices of the installed mods under their names in
  * the display language (English when a notice has no text in it), a mod without notices left out and a mod id shown once, at 100% and 200%
- * in English and Korean; Close closes it.
+ * in English, Korean and Chinese; Close closes it.
  */
 final class AboutDialogTest {
     private static final @NotNull String VERSION = "1.0.0";
@@ -45,10 +45,6 @@ final class AboutDialogTest {
     @BeforeAll
     static void startToolkit() {
         LauncherFxScenario.startToolkit();
-    }
-
-    private static @NotNull UiLanguage selectLanguage(@NotNull String languageCode) {
-        return languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
     }
 
     private static @NotNull ModManifest parse(@NotNull String manifest) throws ManifestException {
@@ -84,10 +80,10 @@ final class AboutDialogTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void about_dialog_shows_the_sc4j_notice_then_the_notices_of_each_mod_under_its_name(double scale, @NotNull String languageCode,
                                                                                         @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         List<ModManifest> mods = List.of(parse(NOTICE_MOD), parse(PLAIN_MOD), parse(NOTICE_MOD));
         boolean korean = language == UiLanguage.KOREAN;
@@ -114,9 +110,9 @@ final class AboutDialogTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void about_dialog_without_mod_notices_shows_only_the_sc4j_texts(@NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(selectLanguage(languageCode));
+        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
         List<ModManifest> mods = List.of(parse(PLAIN_MOD));
 
         LauncherFxScenario.run(() -> {

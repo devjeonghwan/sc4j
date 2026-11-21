@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 
 /**
  * Tests the Settings screen offscreen: two columns of equal width, the launcher panel's fields stacked one per row on the left (the version
- * first, the update source last) and the Beacon.Link panel with the peer list under it on the right, at 100% and 200% in English and Korean,
+ * first, the update source last) and the Beacon.Link panel with the peer list under it on the right, at 100% and 200% in English, Korean and Chinese,
  * with one header height, the same room right of the header controls as above and below them and on every side of the peer footer; Peers
  * shows the list and keeps the header heights, and Ping asks for the listed peers and marks every row as being pinged until the results
  * come.
@@ -139,9 +139,9 @@ final class OptionsScreenTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void settings_screen_shows_two_columns_of_equal_width(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
 
@@ -203,9 +203,9 @@ final class OptionsScreenTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void peers_should_keep_the_header_heights(@NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
 
         LauncherFxScenario.run(() -> {
@@ -236,9 +236,9 @@ final class OptionsScreenTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void ping_should_mark_every_listed_peer_until_the_results_come(@NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         PingActions actions = new PingActions();
 

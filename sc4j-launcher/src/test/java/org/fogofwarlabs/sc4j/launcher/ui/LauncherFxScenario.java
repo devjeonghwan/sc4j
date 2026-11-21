@@ -15,6 +15,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Transform;
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
+import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 
@@ -31,10 +32,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 /**
- * Runs launcher views in the JavaFX toolkit of a test JVM without showing a window: starts the toolkit once, runs code on its thread, waits
- * for a state that work on other threads brings, finds buttons by their text, tells whether a node is shown, checks the height of panel
- * headers, the room around the controls of panel headers and footers and the text of an empty list, and saves renderings at a display
- * scale as sample pictures in {@value #SAMPLE_FOLDER}.
+ * Runs launcher views in the JavaFX toolkit of a test JVM without showing a window: starts the toolkit once, finds the UI language of a
+ * test parameter, runs code on its thread, waits for a state that work on other threads brings, finds buttons by their text, tells whether
+ * a node is shown, checks the height of panel headers, the room around the controls of panel headers and footers and the text of an empty
+ * list, and saves renderings at a display scale as sample pictures in {@value #SAMPLE_FOLDER}.
  */
 public final class LauncherFxScenario {
     /**
@@ -60,6 +61,20 @@ public final class LauncherFxScenario {
         } catch (IllegalStateException exception) {
             // The toolkit of this test JVM runs already.
         }
+    }
+
+    /**
+     * Finds the UI language of a test parameter.
+     *
+     * @param languageCode the language code, such as {@code ko}
+     * @return the language
+     */
+    public static @NotNull UiLanguage requireLanguage(@NotNull String languageCode) {
+        UiLanguage language = UiLanguage.fromCode(languageCode);
+
+        Assertions.assertNotNull(language, languageCode);
+
+        return language;
     }
 
     /**

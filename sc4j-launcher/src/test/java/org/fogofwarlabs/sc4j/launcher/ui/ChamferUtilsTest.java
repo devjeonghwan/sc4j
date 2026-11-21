@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Tests that the chamfered controls of the launcher theme keep the stylesheet's cut size in pixels at every width, height and display scale,
- * with their 1 pixel edge as wide along the cut as along the sides, at 100% and 200% in English and Korean.
+ * with their 1 pixel edge as wide along the cut as along the sides, at 100% and 200% in English, Korean and Chinese.
  */
 final class ChamferUtilsTest {
     private static final double PERCENT_SCALE = 100;
@@ -69,10 +69,6 @@ final class ChamferUtilsTest {
     @BeforeAll
     static void startToolkit() {
         LauncherFxScenario.startToolkit();
-    }
-
-    private static @NotNull UiLanguage selectLanguage(@NotNull String languageCode) {
-        return languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
     }
 
     private static @NotNull WritableImage render(@NotNull Region region, double width, double height, double scale) {
@@ -153,9 +149,9 @@ final class ChamferUtilsTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void chamfered_controls_keep_the_cut_size_at_every_width_and_height(double scale, @NotNull String languageCode) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
 

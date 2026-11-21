@@ -190,7 +190,7 @@ jar 루트의 `sc4j-mod.json`([데모](../mods/demo/src/main/resources/sc4j-mod.
 |---|---|---|
 | `format` | 예 | `1` |
 | `id` | 예 | 모드 id |
-| `name` | 예 | 언어별: `{"en": "My Mod", "ko": "..."}` |
+| `name` | 예 | 언어별: `{"en": "My Mod", "ko": "...", "zh": "..."}`. 런처는 `en`, `ko`, `zh`(간체 중국어) 중 표시 언어로 보여 주고, 없으면 영어로 보여 줍니다 |
 | `version` | 모드 플러그인이 씀 | 모드 버전: Gradle 프로젝트의 `version`. 정체성의 일부 |
 | `engine` | 모드 플러그인이 씀 | 플러그인 SC4J 버전의 엔진 API 버전 `MAJOR.MINOR`. major가 같고 모드의 minor가 더 높지 않으면 실행([API 정책 3.1](api-policy.ko.md#31-sc4j-버전과-엔진-api-버전)) |
 | `entry` | 예 | 진입 클래스의 전체 이름 |

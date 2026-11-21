@@ -164,6 +164,8 @@ final class PeerChannel implements ParticipantChannel, RequestOwner {
     private final @NotNull Set<@NotNull InetSocketAddress> probeTargets;
     private @Nullable InetSocketAddress directAddress;
     private @Nullable PeerChannel relay;
+    private int remoteCandidateCount;
+    private boolean mappedCandidateSent;
 
     private int offersLeft;
     private long nextOfferMillis;
@@ -210,16 +212,18 @@ final class PeerChannel implements ParticipantChannel, RequestOwner {
         this.joinProof    = null;
         this.room         = null;
 
-        this.phase               = initiator ? Phase.OFFERING : Phase.AWAITING_OFFER;
-        this.opened              = false;
-        this.failure             = null;
-        this.joinRefusal         = null;
-        this.remoteReceiveNumber = 0L;
-        this.remoteSignalMillis  = NO_SIGNAL_MILLIS;
-        this.cipher              = null;
-        this.probeTargets        = new LinkedHashSet<>();
-        this.directAddress       = null;
-        this.relay               = null;
+        this.phase                = initiator ? Phase.OFFERING : Phase.AWAITING_OFFER;
+        this.opened               = false;
+        this.failure              = null;
+        this.joinRefusal          = null;
+        this.remoteReceiveNumber  = 0L;
+        this.remoteSignalMillis   = NO_SIGNAL_MILLIS;
+        this.cipher               = null;
+        this.probeTargets         = new LinkedHashSet<>();
+        this.directAddress        = null;
+        this.relay                = null;
+        this.remoteCandidateCount = 0;
+        this.mappedCandidateSent  = false;
 
         this.offersLeft      = HANDSHAKE_ATTEMPTS;
         this.nextOfferMillis = nowMillis;
@@ -455,9 +459,10 @@ final class PeerChannel implements ParticipantChannel, RequestOwner {
         this.remoteSignalMillis  = signalMillis;
         this.cipher              = new ChannelCipher(keys, offer.getReceiveNumber());
         this.answer              = new ChannelAnswer(this.client.getConnection(), offer.getReceiveNumber(), this.receiveNumber,
-                                                     this.ephemeral.getPublicKey(), this.client.getCandidates());
+                                                     this.ephemeral.getPublicKey(), this.listCandidates());
 
         this.addProbeTargets(offer.getCandidates());
+        this.remoteCandidateCount = offer.getCandidates().size();
         this.sendAnswer(node);
         this.startPunching(nowMillis + PUNCH_DELAY_MILLIS);
 
@@ -509,6 +514,7 @@ final class PeerChannel implements ParticipantChannel, RequestOwner {
 
         this.client.cancelRequests(this);
         this.addProbeTargets(answer.getCandidates());
+        this.remoteCandidateCount = answer.getCandidates().size();
         this.startPunching(nowMillis + Math.max(0L, PUNCH_DELAY_MILLIS - (nowMillis - this.offerSentMillis) / HALF));
 
         return true;
@@ -870,7 +876,7 @@ final class PeerChannel implements ParticipantChannel, RequestOwner {
 
     private void sendOffers(long nowMillis) {
         ChannelOffer offer = new ChannelOffer(this.client.getConnection(), this.receiveNumber, this.ephemeral.getPublicKey(), this.roomNumber,
-                                              this.joinIdentity, this.joinProof, this.client.getCandidates());
+                                              this.joinIdentity, this.joinProof, this.listCandidates());
         byte[] payload = offer.write();
 
         for (NodeSession node : this.client.getNodeSessions()) {
@@ -882,6 +888,18 @@ final class PeerChannel implements ParticipantChannel, RequestOwner {
         this.offersLeft--;
         this.nextOfferMillis = nowMillis + HANDSHAKE_RESEND_MILLIS;
         this.offerSentMillis = nowMillis;
+    }
+
+    /**
+     * Lists the session's address candidates for an offer or an answer, and notes whether they hold the session's mapped address.
+     */
+    private @NotNull List<@NotNull InetSocketAddress> listCandidates() {
+        List<InetSocketAddress> candidates = this.client.getCandidates();
+        InetSocketAddress mapped = this.client.getMappedAddress();
+
+        this.mappedCandidateSent |= mapped != null && candidates.contains(mapped);
+
+        return candidates;
     }
 
     private void sendAnswer(@NotNull NodeSession node) {
@@ -925,7 +943,13 @@ final class PeerChannel implements ParticipantChannel, RequestOwner {
     }
 
     private void fail(@NotNull ChannelFailure reason) {
-        LOGGER.info("BEACON.LINK: channel to {0} failed: {1}", this.participant, reason);
+        if (reason == ChannelFailure.PAIR_CANNOT_CONNECT) {
+            LOGGER.info("BEACON.LINK: channel to {0} failed: {1} ({2} candidates of the other, own mapped address {3})", this.participant, reason,
+                        this.remoteCandidateCount, this.mappedCandidateSent ? "sent" : "none");
+        } else {
+            LOGGER.info("BEACON.LINK: channel to {0} failed: {1}", this.participant, reason);
+        }
+
         this.failure = reason;
         this.finish();
     }

@@ -28,6 +28,7 @@ import java.util.Locale;
  *     --account <install>/userdata/beaconlink/accounts/<account id>
  *     --seeds <install>/userdata/beaconlink/nodes.json, or <install>/launcher/seeds.json until the user saved a node list
  *     --peers <install>/userdata/beaconlink/peers.json
+ *     --no-port-mapping, when the launcher's port mapping setting is off
  *}
  * {@code --seeds} is left out while neither seed list exists. Each path is one argument. A program file the install lacks is reported by
  * {@link #getMissingProgram()}.
@@ -58,6 +59,7 @@ public final class RuntimeCommandLine {
     private static final @NotNull String ACCOUNT_OPTION = "--account";
     private static final @NotNull String SEEDS_OPTION = "--seeds";
     private static final @NotNull String PEERS_OPTION = "--peers";
+    private static final @NotNull String NO_PORT_MAPPING_OPTION = "--no-port-mapping";
     private static final @NotNull String QUOTE = "\"";
     private static final @NotNull String ARGUMENT_SEPARATOR = " ";
     private static final @NotNull String WINDOWS_NAME_PREFIX = "windows";
@@ -70,12 +72,14 @@ public final class RuntimeCommandLine {
      * @param modId            the mod id, which names the settings file, the storage folder and the log folder
      * @param modJar           the mod jar
      * @param accountDirectory the folder of the account the game runs with
+     * @param portMapping      whether the game's Beacon.Link sessions map their socket on the router
      * @param javaHome         the Java runtime that runs the runtime
      * @param windows          whether the runtime runs on Windows (Java program {@value #WINDOWS_JAVA})
      * @return the created {@link RuntimeCommandLine} instance
      */
     public static @NotNull RuntimeCommandLine create(@NotNull InstallLayout install, @NotNull String modId, @NotNull Path modJar,
-                                                     @NotNull Path accountDirectory, @NotNull Path javaHome, boolean windows) {
+                                                     @NotNull Path accountDirectory, boolean portMapping,
+                                                     @NotNull Path javaHome, boolean windows) {
         List<String> arguments = new ArrayList<>();
         Path settingsFile = install.getSettingsFile(modId);
         Path seedsFile = new NodeListFile(install.getNodesFile()).selectExistingOr(new NodeListFile(install.getSeedsFile())).getPath();
@@ -109,6 +113,10 @@ public final class RuntimeCommandLine {
 
         arguments.add(PEERS_OPTION);
         arguments.add(install.getBeaconLinkDirectory().resolve(PeerStore.FILE_NAME).toString());
+
+        if (!portMapping) {
+            arguments.add(NO_PORT_MAPPING_OPTION);
+        }
 
         return new RuntimeCommandLine(arguments, install.getRoot(), settingsFile, install.getLogDirectory(modId), missingProgram);
     }

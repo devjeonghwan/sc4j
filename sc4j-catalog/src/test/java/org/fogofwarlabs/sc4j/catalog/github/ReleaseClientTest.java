@@ -91,6 +91,29 @@ final class ReleaseClientTest {
     }
 
     @Test
+    void repeated_looks_should_ask_on_condition_and_read_a_changed_answer_again() throws IOException {
+        try (ReleaseServerScenario server = ReleaseServerScenario.start()) {
+            ReleaseClient client = new ReleaseClient(server.getApi());
+
+            server.addCheckedRelease(REPOSITORY, "v1.0.0", Map.of(JAR, JAR_CONTENTS));
+
+            Assertions.assertEquals("v1.0.0", client.findLatestRelease(requireRepository(REPOSITORY)).getTag());
+            Assertions.assertEquals(1, client.findReleases(requireRepository(REPOSITORY)).size());
+            Assertions.assertEquals(0, server.getNotModifiedAnswerCount(), "the first looks have no kept answer");
+
+            Assertions.assertEquals("v1.0.0", client.findLatestRelease(requireRepository(REPOSITORY)).getTag());
+            Assertions.assertEquals(1, client.findReleases(requireRepository(REPOSITORY)).size());
+            Assertions.assertEquals(2, server.getNotModifiedAnswerCount(), "unchanged answers come back as not modified");
+
+            server.addCheckedRelease(REPOSITORY, TAG, Map.of(JAR, JAR_CONTENTS));
+
+            Assertions.assertEquals(TAG, client.findLatestRelease(requireRepository(REPOSITORY)).getTag());
+            Assertions.assertEquals(2, client.findReleases(requireRepository(REPOSITORY)).size());
+            Assertions.assertEquals(2, server.getNotModifiedAnswerCount(), "changed answers are read again");
+        }
+    }
+
+    @Test
     void find_releases_should_list_the_releases_newest_first() throws IOException {
         try (ReleaseServerScenario server = ReleaseServerScenario.start()) {
             server.addCheckedRelease(REPOSITORY, "v1.0.0", Map.of(JAR, JAR_CONTENTS));

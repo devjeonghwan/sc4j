@@ -138,12 +138,12 @@ public final class LauncherWindow {
     /**
      * The time between two automatic looks for a newer launcher version and newer mod releases while the launcher runs.
      */
-    private static final @NotNull Duration UPDATE_CHECK_PERIOD = Duration.ofHours(4);
+    private static final @NotNull Duration UPDATE_CHECK_PERIOD = Duration.ofMinutes(30);
     /**
      * The time between two tests whether the automatic look is due ({@link #isUpdateCheckDue}); short, so that a look missed while the
      * computer slept follows soon after it wakes.
      */
-    private static final @NotNull Duration UPDATE_CHECK_TICK = Duration.ofMinutes(10);
+    private static final @NotNull Duration UPDATE_CHECK_TICK = Duration.ofMinutes(5);
     private static final @NotNull String CONFIRMED_VERSION_SEPARATOR = "@";
     private static final @NotNull String BACKUP_FILE_PATTERN = "*" + AccountBackup.FILE_EXTENSION;
     private static final @NotNull String KEY_FILE_PATTERN = "*.key";
@@ -1546,14 +1546,15 @@ public final class LauncherWindow {
             return;
         }
 
-        ModalDialog dialog = new ModalDialog(this.texts.get("run.version.title"));
+        boolean older = state == ModReleaseState.OLDER && newer != null;
+        ModalDialog dialog = new ModalDialog(this.texts.get(older ? "run.version.older.title" : "run.version.unreleased.title"));
         Button cancel = ComponentUtils.createButton(this.texts.get("mods.cancel"), ButtonRole.SECONDARY);
         Button start = ComponentUtils.createButton(this.texts.get("run.version.start"), ButtonRole.PRIMARY);
         String name = ModArt.getName(entry, this.texts);
-        String text = state == ModReleaseState.OLDER && newer != null ? this.texts.format("run.version.older", name, manifest.getVersion(), newer.getTag())
-                                                                      : this.texts.format("run.version.unreleased", name, manifest.getVersion());
+        String text = older ? this.texts.format("run.version.older", name, manifest.getVersion(), newer.getTag())
+                            : this.texts.format("run.version.unreleased", name, manifest.getVersion());
 
-        dialog.addContent(ComponentUtils.createNotice(Tone.WARNING, text));
+        dialog.addContent(ComponentUtils.createParagraph(text, "text-body"));
         dialog.setButtons(cancel, start);
         cancel.setOnAction(event -> this.shell.closeDialog(dialog));
         start.setOnAction(event -> {

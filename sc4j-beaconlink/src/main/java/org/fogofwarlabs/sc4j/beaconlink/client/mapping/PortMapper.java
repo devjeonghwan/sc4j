@@ -1,5 +1,6 @@
 package org.fogofwarlabs.sc4j.beaconlink.client.mapping;
 
+import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.fogofwarlabs.sc4j.base.log.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -120,6 +121,16 @@ public final class PortMapper implements Closeable {
         return List.copyOf(gateways);
     }
 
+    private static @NotNull MappingClient findOwner(@NotNull List<@NotNull MappingClient> clients, @NotNull PortMapping mapping) {
+        for (MappingClient client : clients) {
+            if (client.getProtocol() == mapping.getProtocol()) {
+                return client;
+            }
+        }
+
+        throw Exceptions.newIllegalStateException("No client speaks {0}.", mapping.getProtocol().getName());
+    }
+
     private static @NotNull String describeLease(@NotNull PortMapping mapping) {
         return mapping.isPermanent() ? "permanent" : mapping.getLeaseSeconds() + " s";
     }
@@ -217,10 +228,10 @@ public final class PortMapper implements Closeable {
                                               new UpnpClient(this.configuration, gateways));
 
         try {
-            MappingClient owner = this.establish(clients);
+            PortMapping established = this.establish(clients);
 
-            if (owner != null) {
-                this.keep(owner);
+            if (established != null) {
+                this.keep(findOwner(clients, established), established);
             }
         } catch (RuntimeException exception) {
             this.mapping = null;
@@ -238,9 +249,9 @@ public final class PortMapper implements Closeable {
      * Looks for a router with every protocol at once and maps the port with the first protocol, in the preferred order, whose router answered
      * and granted a public external address.
      *
-     * @return the client that holds the mapping, or {@code null} if none does
+     * @return the created mapping, or {@code null} if none was created or the mapper was closed first
      */
-    private @Nullable MappingClient establish(@NotNull List<@NotNull MappingClient> clients) {
+    private @Nullable PortMapping establish(@NotNull List<@NotNull MappingClient> clients) {
         ExecutorService searches = Executors.newVirtualThreadPerTaskExecutor();
 
         try {
@@ -291,7 +302,7 @@ public final class PortMapper implements Closeable {
                         LOGGER.info("BEACON.LINK: port mapping by {0} at {1}: {2}, lease {3}", created.getProtocol().getName(),
                                     created.getGateway().getHostAddress(), created, describeLease(created));
 
-                        return client;
+                        return created;
                     }
                 }
 
@@ -338,8 +349,8 @@ public final class PortMapper implements Closeable {
     /**
      * Renews the mapping after half of each granted lease until it is skipped or the mapper is closed, then releases it.
      */
-    private void keep(@NotNull MappingClient owner) {
-        PortMapping current = this.mapping;
+    private void keep(@NotNull MappingClient owner, @NotNull PortMapping established) {
+        PortMapping current = established;
 
         while (current != null) {
             long renewMillis = Math.max(current.getLeaseSeconds() * MILLIS_PER_SECOND / RENEW_DIVISOR, MINIMUM_RENEW_MILLIS);

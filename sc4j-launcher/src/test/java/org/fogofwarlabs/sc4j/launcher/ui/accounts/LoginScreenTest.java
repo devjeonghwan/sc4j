@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tests the login step at display scales of 100% and 200% in English and Korean: the list with the last used account preselected and an
+ * Tests the login step at display scales of 100% and 200% in English, Korean and Chinese: the list with the last used account preselected and an
  * account a running game uses (it can be logged in to but not deleted), no way to rename an account, Log in, the New account dialog that says
  * the name stays, with its progress and Cancel, the Export dialog that checks the repeated password and saves a protected backup, the Import
  * dialog that refuses a wrong password and adds the account under its own name, and the Delete warning; each view is saved as a sample
@@ -137,9 +137,9 @@ final class LoginScreenTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void login_screen_shows_its_list_and_dialogs_at_the_display_scale(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         InstallLayout install = InstallLayout.of(directory.resolve("install"));

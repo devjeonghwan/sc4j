@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
- * Tests the account menu at the top right at display scales of 100% and 200% in English and Korean: Friends, My status, Sign out everywhere
+ * Tests the account menu at the top right at display scales of 100% and 200% in English, Korean and Chinese: Friends, My status, Sign out everywhere
  * else and Log out. With a connected session the Friends panel lists eight friends at once in compact rows, inside the window, with their
  * state and device count, shows and copies the own friend code, adds a friend by code (a text that is no code, the own code and a known
  * friend are refused in one line), ignores and removes the selected friend, and hands Whisper to the window with the selected friend and
@@ -222,15 +222,12 @@ final class AccountMenuTest {
         lay(shell);
     }
 
-    private static @NotNull UiLanguage selectLanguage(@NotNull String languageCode) {
-        return languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
-    }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void account_menu_shows_friends_whispers_status_and_sign_out_of_a_connected_session(double scale, @NotNull String languageCode,
                                                                                         @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         RecordingLauncherSession session = createSession(new SelfView(SessionState.CONNECTED, SelfStatus.ONLINE, "", 2, null));
@@ -391,9 +388,9 @@ final class AccountMenuTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void account_menu_shows_why_the_session_is_offline(double scale, @NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
         RecordingLauncherSession session = createSession(new SelfView(SessionState.OFFLINE, SelfStatus.ONLINE, "", 0, SessionFailure.SIGNED_OUT));
@@ -434,10 +431,10 @@ final class AccountMenuTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
+    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko", "1.0, zh", "2.0, zh"})
     void account_menu_shows_the_real_sessions_of_three_accounts_at_a_node(double scale, @NotNull String languageCode,
                                                                           @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = selectLanguage(languageCode);
+        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
         LauncherTexts texts = LauncherTexts.of(language);
         String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
 

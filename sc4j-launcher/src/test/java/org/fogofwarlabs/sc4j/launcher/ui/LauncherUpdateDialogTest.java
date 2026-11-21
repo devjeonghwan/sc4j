@@ -13,7 +13,6 @@ import org.fogofwarlabs.sc4j.catalog.github.ReleaseProblem;
 import org.fogofwarlabs.sc4j.catalog.github.ReleaseRepository;
 import org.fogofwarlabs.sc4j.catalog.test.ReleaseServerScenario;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
-import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
 import org.fogofwarlabs.sc4j.launcher.release.ReleaseNotesUtils;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherRelease;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherUpdater;
@@ -46,7 +45,7 @@ import java.util.zip.ZipOutputStream;
  * Tests the Update dialog offscreen, against a local stand-in for GitHub: the offer shows the versions, the release date, the download size
  * and the release notes, and Skip this version closes it; Update shows the download's progress and Cancel returns to the offer; a ready
  * package offers Restart, which waits while a game runs; a failed download shows its reason with Retry. Each state is saved as a sample
- * picture in English and Korean.
+ * picture in English, Korean and Chinese.
  */
 final class LauncherUpdateDialogTest {
     private static final @NotNull String REPOSITORY = "owner/sc4j";
@@ -77,10 +76,10 @@ final class LauncherUpdateDialogTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void offer_should_show_the_release_and_skip_this_version_should_close_the_dialog(@NotNull String languageCode,
                                                                                      @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(requireLanguage(languageCode));
+        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
         InstallLayout install = InstallLayout.of(directory);
         AtomicInteger skipped = new AtomicInteger();
 
@@ -124,10 +123,10 @@ final class LauncherUpdateDialogTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void download_should_show_its_progress_and_cancel_should_return_to_the_offer(@NotNull String languageCode,
                                                                                  @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(requireLanguage(languageCode));
+        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
         InstallLayout install = InstallLayout.of(directory);
 
         try (ReleaseServerScenario server = ReleaseServerScenario.start()) {
@@ -175,10 +174,10 @@ final class LauncherUpdateDialogTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void download_should_unpack_the_package_and_restart_should_wait_for_a_running_game(@NotNull String languageCode,
                                                                                        @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(requireLanguage(languageCode));
+        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
         InstallLayout install = InstallLayout.of(directory);
         AtomicInteger closed = new AtomicInteger();
 
@@ -216,10 +215,10 @@ final class LauncherUpdateDialogTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "ko"})
+    @ValueSource(strings = {"en", "ko", "zh"})
     void failed_download_should_show_the_reason_and_retry_should_download_again(@NotNull String languageCode,
                                                                                 @TempDir @NotNull Path directory) throws Exception {
-        LauncherTexts texts = LauncherTexts.of(requireLanguage(languageCode));
+        LauncherTexts texts = LauncherTexts.of(LauncherFxScenario.requireLanguage(languageCode));
         InstallLayout install = InstallLayout.of(directory);
         String mismatch = texts.describeReleaseProblem(ReleaseProblem.CHECKSUM_MISMATCH);
 
@@ -266,14 +265,6 @@ final class LauncherUpdateDialogTest {
                 return null;
             });
         }
-    }
-
-    private static @NotNull UiLanguage requireLanguage(@NotNull String languageCode) {
-        UiLanguage language = UiLanguage.fromCode(languageCode);
-
-        Assertions.assertNotNull(language);
-
-        return language;
     }
 
     private static @NotNull LauncherRelease findUpdate(@NotNull LauncherUpdater updater) throws IOException {

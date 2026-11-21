@@ -1575,6 +1575,7 @@ public final class LauncherWindow {
         }
 
         RuntimeCommandLine commandLine = RuntimeCommandLine.create(this.install, manifest.getId(), entry.getJar(), chosen.getDirectory(),
+                                                                   this.nodeRunner.getSettings().isPortMapping(),
                                                                    RuntimeCommandLine.getLauncherJavaHome(), RuntimeCommandLine.isWindows());
         String failure = null;
         String settingsText = "";

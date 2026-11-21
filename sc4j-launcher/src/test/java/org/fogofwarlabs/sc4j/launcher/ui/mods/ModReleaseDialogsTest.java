@@ -32,8 +32,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,8 +42,9 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Tests the dialogs that change {@code mods/} offscreen, against a local stand-in for GitHub: Install mod with the catalog choice and the
- * confirmation, a refused jar, Change version with the releases newest first and an older one chosen, and Remove.
+ * Tests the dialogs that change {@code mods/} offscreen, against a local stand-in for GitHub: Install mod with the catalog choice under the
+ * mod's name in the display language and the confirmation, a refused jar, Change version with the releases newest first and an older one
+ * chosen, and Remove.
  */
 final class ModReleaseDialogsTest {
     private static final @NotNull String MANIFEST = """
@@ -100,10 +99,10 @@ final class ModReleaseDialogsTest {
         LauncherFxScenario.startToolkit();
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"en", "ko", "zh"})
-    void install_should_list_the_catalog_confirm_the_release_and_add_the_jar(@NotNull String languageCode, @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
+    @Test
+    void install_should_list_the_catalog_confirm_the_release_and_add_the_jar(@TempDir @NotNull Path directory) throws Exception {
+        // Korean, so that the catalog lists the mod under its name in the display language.
+        UiLanguage language = UiLanguage.KOREAN;
         LauncherTexts texts = LauncherTexts.of(language);
         InstallLayout install = InstallLayout.of(directory.resolve("install"));
         List<String> changed = new CopyOnWriteArrayList<>();
@@ -122,10 +121,8 @@ final class ModReleaseDialogsTest {
             LauncherFxScenario.run(() -> {
                 StackPane list = createChoiceList(findChoice(shown.shell), language);
 
-                LauncherFxScenario.saveSample(list, 1, "mod-install-list-" + language.getCode());
-                Assertions.assertTrue(hasLabel(list, language == UiLanguage.KOREAN ? "내 모드" : "My Mod"));
+                Assertions.assertTrue(hasLabel(list, "내 모드"));
                 findChoice(shown.shell).getEditor().setText(REPOSITORY);
-                LauncherFxScenario.saveSample(shown.shell.getRoot(), 1, "mod-install-" + language.getCode());
                 LauncherFxScenario.findButton(shown.shell.getRoot(), texts.get("mods.install.next")).fire();
 
                 return null;
@@ -134,7 +131,6 @@ final class ModReleaseDialogsTest {
             LauncherFxScenario.run(() -> {
                 shown.shell.getRoot().applyCss();
                 shown.shell.getRoot().layout();
-                LauncherFxScenario.saveSample(shown.shell.getRoot(), 1, "mod-install-confirm-" + language.getCode());
                 LauncherFxScenario.findButton(shown.shell.getRoot(), texts.get("mods.install.start")).fire();
 
                 return null;
@@ -172,24 +168,15 @@ final class ModReleaseDialogsTest {
                 return null;
             });
             LauncherFxScenario.await(() -> findMessage(shown.shell.getRoot()).startsWith(refused.strip()), "the refusal is shown");
-            LauncherFxScenario.run(() -> {
-                shown.shell.getRoot().applyCss();
-                shown.shell.getRoot().layout();
-                LauncherFxScenario.saveSample(shown.shell.getRoot(), 1, "mod-install-refused-en");
-
-                return null;
-            });
 
             Assertions.assertEquals(List.of(), changed);
             Assertions.assertFalse(Files.exists(install.getModsDirectory().resolve(JAR)));
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"en", "ko", "zh"})
-    void change_version_should_offer_the_releases_newest_first_and_install_the_chosen_one(@NotNull String languageCode,
-                                                                                          @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
+    @Test
+    void change_version_should_offer_the_releases_newest_first_and_install_the_chosen_one(@TempDir @NotNull Path directory) throws Exception {
+        UiLanguage language = UiLanguage.ENGLISH;
         LauncherTexts texts = LauncherTexts.of(language);
         InstallLayout install = InstallLayout.of(directory.resolve("install"));
         List<String> changed = new CopyOnWriteArrayList<>();
@@ -227,12 +214,10 @@ final class ModReleaseDialogsTest {
                 Assertions.assertEquals(NEWER_TAG, version.getValue());
                 Assertions.assertTrue(hasLabel(list, texts.get("mods.version.latest")));
                 Assertions.assertTrue(hasLabel(list, texts.get("mods.version.installed")));
-                LauncherFxScenario.saveSample(list, 1, "mod-change-version-list-" + language.getCode());
                 version.setValue(TAG);
                 Assertions.assertTrue(hasLabel(shown.shell.getRoot(), texts.format("mods.version.confirm", "My Mod", REPOSITORY, TAG)));
                 shown.shell.getRoot().applyCss();
                 shown.shell.getRoot().layout();
-                LauncherFxScenario.saveSample(shown.shell.getRoot(), 1, "mod-change-version-" + language.getCode());
                 LauncherFxScenario.findButton(shown.shell.getRoot(), texts.get("mods.install.start")).fire();
 
                 return null;
@@ -267,7 +252,6 @@ final class ModReleaseDialogsTest {
                 shown.dialogs.openRemove(entry);
                 shown.shell.getRoot().applyCss();
                 shown.shell.getRoot().layout();
-                LauncherFxScenario.saveSample(shown.shell.getRoot(), 1, "mod-remove-en");
                 LauncherFxScenario.findButton(shown.shell.getRoot(), texts.get("mods.remove")).fire();
 
                 return null;

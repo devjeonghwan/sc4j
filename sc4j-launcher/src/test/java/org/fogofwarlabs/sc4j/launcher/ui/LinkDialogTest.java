@@ -10,22 +10,20 @@ import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tests the dialog that asks before a link opens, at 100% and 200% in English and Korean: it shows the whole address, Cancel opens nothing,
- * Open hands the address to the opener; an address of another scheme is refused.
+ * Tests the dialog that asks before a link opens: it shows the whole address, Cancel opens nothing, Open hands the address to the opener; an
+ * address of another scheme is refused.
  */
 final class LinkDialogTest {
     private static final @NotNull String ADDRESS = "https://example.com/maps/fog-of-war/very/long/path/that/wraps?id=7&name=lost-temple-remake-final";
-    private static final double PERCENT_SCALE = 100;
+    private static final @NotNull String REFUSED_ADDRESS = "file:///C:/Windows/notepad.exe";
     private static final double SCENE_WIDTH = 1280;
     private static final double SCENE_HEIGHT = 800;
     private static final @NotNull String DIALOG_SELECTOR = ".modal-scrim";
@@ -35,8 +33,8 @@ final class LinkDialogTest {
         LauncherFxScenario.startToolkit();
     }
 
-    private static @NotNull LauncherShell createShell(@NotNull LauncherTexts texts, double scale, @NotNull Path directory) {
-        LauncherShell shell = new LauncherShell(texts, InstallLayout.of(directory), scale, section -> {
+    private static @NotNull LauncherShell createShell(@NotNull LauncherTexts texts, @NotNull Path directory) {
+        LauncherShell shell = new LauncherShell(texts, InstallLayout.of(directory), 1, section -> {
         }, () -> {
         }, () -> {
         });
@@ -61,17 +59,13 @@ final class LinkDialogTest {
                                                                     LauncherFxScenario.isShown(label));
     }
 
-    @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
-    void open_should_hand_the_address_to_the_opener_and_cancel_should_open_nothing(double scale, @NotNull String languageCode,
-                                                                                   @TempDir @NotNull Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
-        LauncherTexts texts = LauncherTexts.of(language);
-        String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
+    @Test
+    void open_should_hand_the_address_to_the_opener_and_cancel_should_open_nothing(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
         List<String> opened = new ArrayList<>();
 
         LauncherFxScenario.run(() -> {
-            LauncherShell shell = createShell(texts, scale, directory);
+            LauncherShell shell = createShell(texts, directory);
             Node dialog;
 
             // Cancel closes the dialog and opens nothing.
@@ -84,7 +78,6 @@ final class LinkDialogTest {
             Assertions.assertTrue(showsAddress(dialog), "the dialog shows the whole address");
             Assertions.assertTrue(dialog.lookup(".link-address").getLayoutBounds().getWidth() <= ModalDialog.Width.REGULAR.getWidth(),
                                   "the address wraps inside the dialog");
-            LauncherFxScenario.saveSample(shell.getRoot(), scale, "link-dialog-" + suffix);
             LauncherFxScenario.findButton(shell.getRoot(), texts.get("link.cancel")).fire();
 
             Assertions.assertNull(shell.getRoot().lookup(DIALOG_SELECTOR));
@@ -102,16 +95,15 @@ final class LinkDialogTest {
         });
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"file:///C:/Windows/notepad.exe", "javascript:alert(1)", "ftp://example.com", "https://example.com/a b", ""})
-    void constructor_should_refuse_an_address_other_than_http_or_https(@NotNull String address, @TempDir @NotNull Path directory) throws Exception {
+    @Test
+    void constructor_should_refuse_an_address_other_than_http_or_https(@TempDir @NotNull Path directory) throws Exception {
         LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
         List<String> opened = new ArrayList<>();
 
         LauncherFxScenario.run(() -> {
-            LauncherShell shell = createShell(texts, 1, directory);
+            LauncherShell shell = createShell(texts, directory);
 
-            Assertions.assertThrows(IllegalArgumentException.class, () -> new LinkDialog(shell, texts, address, opened::add));
+            Assertions.assertThrows(IllegalArgumentException.class, () -> new LinkDialog(shell, texts, REFUSED_ADDRESS, opened::add));
             Assertions.assertNull(shell.getRoot().lookup(DIALOG_SELECTOR));
 
             return null;

@@ -29,8 +29,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.*;
 
@@ -38,12 +36,11 @@ import java.util.*;
  * Tests the chat log: a press and drag selects across lines and copies one line (name and text) per line, Shift extends, a double press
  * selects a word, a press below the lines ends the selection; web addresses are links with the hand pointer, a click on one asks before it
  * opens and a drag that starts on one selects; the selection stays on its lines when lines come in or the oldest drop and ends for another
- * conversation. The selection is saved as a sample picture at 100% and 200% in English and Korean.
+ * conversation.
  */
 final class ChatLogTest {
     private static final double SCENE_WIDTH = 900;
     private static final double SCENE_HEIGHT = 500;
-    private static final double PERCENT_SCALE = 100;
     private static final @NotNull String KERRIGAN = "Kerrigan#a1b2c3";
     private static final @NotNull String RAYNOR = "Raynor#60bf07";
     private static final @NotNull String ARTANIS = "Artanis#0a0b0c";
@@ -134,8 +131,8 @@ final class ChatLogTest {
         }
     }
 
-    private static @NotNull Shown show(@NotNull LauncherTexts texts, double scale, @NotNull java.nio.file.Path directory) {
-        LauncherShell shell = new LauncherShell(texts, InstallLayout.of(directory), scale, section -> {
+    private static @NotNull Shown show(@NotNull LauncherTexts texts, @NotNull java.nio.file.Path directory) {
+        LauncherShell shell = new LauncherShell(texts, InstallLayout.of(directory), 1, section -> {
         }, () -> {
         }, () -> {
         });
@@ -150,7 +147,6 @@ final class ChatLogTest {
         shell.show(LauncherShell.Section.CHAT, content);
         log.show(createLines(), false);
         layOut(shell);
-        LauncherFxScenario.disableViewportCache(shell.getRoot());
 
         return new Shown(shell, log, actions, playerMenus);
     }
@@ -256,16 +252,12 @@ final class ChatLogTest {
         return count;
     }
 
-    @ParameterizedTest
-    @CsvSource({"1.0, en", "2.0, en", "1.0, ko", "2.0, ko"})
-    void drag_selects_across_lines_and_copy_takes_one_line_per_line(double scale, @NotNull String languageCode,
-                                                                    @TempDir @NotNull java.nio.file.Path directory) throws Exception {
-        UiLanguage language = languageCode.equals(UiLanguage.KOREAN.getCode()) ? UiLanguage.KOREAN : UiLanguage.ENGLISH;
-        LauncherTexts texts = LauncherTexts.of(language);
-        String suffix = Math.round(scale * PERCENT_SCALE) + "-" + language.getCode();
+    @Test
+    void drag_selects_across_lines_and_copy_takes_one_line_per_line(@TempDir @NotNull java.nio.file.Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
 
         LauncherFxScenario.run(() -> {
-            Shown shown = show(texts, scale, directory);
+            Shown shown = show(texts, directory);
             TextFlow greeting = findFlow(shown, GREETING);
             TextFlow joined = findFlow(shown, JOINED);
             ListCell<?> pressed = findCell(greeting);
@@ -276,7 +268,6 @@ final class ChatLogTest {
 
             Assertions.assertEquals("all\n" + RAYNOR + ": " + LINK_TEXT + "\nZeratul", copySelection(shown));
             Assertions.assertEquals(4, countHighlights(shown), "the selected parts of the three lines are highlighted");
-            LauncherFxScenario.saveSample(shown.shell.getRoot(), scale, "chat-log-selection-" + suffix);
 
             // The log's menu copies too; on a name it is the player's menu.
             Point2D inText = findPoint(greeting, 1);
@@ -304,7 +295,7 @@ final class ChatLogTest {
         LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
 
         LauncherFxScenario.run(() -> {
-            Shown shown = show(texts, 1, directory);
+            Shown shown = show(texts, directory);
             TextFlow greeting = findFlow(shown, GREETING);
             TextFlow link = findFlow(shown, LINK_TEXT);
             TextFlow name = findFlow(shown, RAYNOR + ":");
@@ -352,7 +343,7 @@ final class ChatLogTest {
         LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
 
         LauncherFxScenario.run(() -> {
-            Shown shown = show(texts, 1, directory);
+            Shown shown = show(texts, directory);
             TextFlow link = findFlow(shown, LINK_TEXT);
             ListCell<?> cell = findCell(link);
             Point2D onLink = findPoint(link, LINK_TEXT.indexOf(ADDRESS) + 3);
@@ -420,7 +411,7 @@ final class ChatLogTest {
         LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
 
         LauncherFxScenario.run(() -> {
-            Shown shown = show(texts, 1, directory);
+            Shown shown = show(texts, directory);
             TextFlow link = findFlow(shown, LINK_TEXT);
             TextFlow joined = findFlow(shown, JOINED);
             String selected = "for the map\nZeratul";

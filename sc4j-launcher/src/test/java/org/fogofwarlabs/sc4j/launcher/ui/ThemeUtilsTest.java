@@ -27,7 +27,7 @@ final class ThemeUtilsTest {
     @ParameterizedTest
     @CsvSource({"en, ''", "ko, Malgun Gothic", "zh, Microsoft YaHei"})
     void apply_should_add_the_font_stylesheet_of_the_language_when_its_font_is_installed(@NotNull String languageCode,
-                                                                                          @NotNull String fontFamily) throws Exception {
+                                                                                         @NotNull String fontFamily) throws Exception {
         UiLanguage language = LauncherFxScenario.requireLanguage(languageCode);
 
         LauncherFxScenario.run(() -> {

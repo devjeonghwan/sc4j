@@ -7,6 +7,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.ContextMenuEvent;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.community.chat.ChatEntryKind;
 import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
@@ -111,7 +113,20 @@ final class ChatScreenTest {
     }
 
     private static boolean showsText(@NotNull Parent root, @NotNull String text) {
-        return find(root, Label.class).stream().anyMatch(label -> LauncherFxScenario.isShown(label) && label.getText().contains(text));
+        return find(root, Label.class).stream().anyMatch(label -> LauncherFxScenario.isShown(label) && label.getText().contains(text)) ||
+               find(root, TextFlow.class).stream().anyMatch(flow -> LauncherFxScenario.isShown(flow) && readFlow(flow).contains(text));
+    }
+
+    private static @NotNull String readFlow(@NotNull TextFlow flow) {
+        StringBuilder text = new StringBuilder();
+
+        for (Node child : flow.getChildren()) {
+            if (child instanceof Text run) {
+                text.append(run.getText());
+            }
+        }
+
+        return text.toString();
     }
 
     private static void lay(@NotNull LauncherShell shell) {
@@ -197,8 +212,8 @@ final class ChatScreenTest {
 
     private static @NotNull Node findName(@NotNull LauncherShell shell, @NotNull String prefix) {
         for (Node node : getList(shell, LOG).lookupAll(NAME_SELECTOR)) {
-            if (node instanceof Label label && label.getText().equals(prefix)) {
-                return label;
+            if (node instanceof Text name && name.getText().equals(prefix) && LauncherFxScenario.isShown(name)) {
+                return name;
             }
         }
 
@@ -251,7 +266,28 @@ final class ChatScreenTest {
         }, () -> {
         });
         Scene scene = new Scene(shell.getRoot(), SCENE_WIDTH, SCENE_HEIGHT);
-        ChatScreen screen = new ChatScreen(shell, texts, RAYNOR.getTaggedName(), session, new Conversations(session), modId -> modId, copied::add);
+        ChatScreen.Actions actions = new ChatScreen.Actions() {
+            /**
+             * Called when the user copies text: a player's name or the selected text of the log.
+             *
+             * @param text the text for the clipboard
+             */
+            @Override
+            public void onCopy(@NotNull String text) {
+                copied.add(text);
+            }
+
+            /**
+             * Called when the user opens a link of the log after confirming it.
+             *
+             * @param address the {@code http} or {@code https} address
+             */
+            @Override
+            public void onOpenWebsite(@NotNull String address) {
+                Assertions.fail("no link is opened");
+            }
+        };
+        ChatScreen screen = new ChatScreen(shell, texts, RAYNOR.getTaggedName(), session, new Conversations(session), modId -> modId, actions);
 
         created.set(screen);
 

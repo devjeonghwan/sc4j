@@ -1,4 +1,4 @@
-package org.fogofwarlabs.sc4j.engine.client.dialog;
+package org.fogofwarlabs.sc4j.base.text;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -6,8 +6,8 @@ import java.util.function.ToDoubleFunction;
 
 /**
  * Finds the boundaries a text selection snaps to: the code point boundary nearest a pointer position on a drawn line and the ends of the
- * word around an index. Text inputs ({@link TextEditModel}) and read-only logs ({@link LogSelectionModel}) share them; the measure of a
- * text comes from the owner's font.
+ * word around an index. Text inputs and read-only logs ({@link LogSelectionModel}) share them; the measure of a text comes from the owner's
+ * font.
  */
 public final class TextBoundaryUtils {
     private static final float HALF = 2;

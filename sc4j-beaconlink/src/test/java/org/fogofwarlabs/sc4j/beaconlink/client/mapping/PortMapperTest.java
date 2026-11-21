@@ -39,6 +39,7 @@ final class PortMapperTest {
     private static final long WAIT_MILLIS = 15_000L;
     private static final long CHECK_MILLIS = 10L;
     private static final long QUIET_MILLIS = 1_500L;
+    private static final int CLOSE_ATTEMPTS = 20;
 
     private static void await(@NotNull BooleanSupplier condition, @NotNull String description) throws InterruptedException {
         long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(WAIT_MILLIS);
@@ -69,6 +70,20 @@ final class PortMapperTest {
         gateway.setNatPmpAnswer(GatewayScenario.NatPmpAnswer.SILENT);
 
         return gateway;
+    }
+
+    @Test
+    void a_close_right_after_the_mapping_still_releases_it() throws IOException, InterruptedException {
+        for (int attempt = 0; attempt < CLOSE_ATTEMPTS; attempt++) {
+            try (GatewayScenario gateway = GatewayScenario.open(EXTERNAL)) {
+                PortMapper mapper = PortMapper.start(DYNAMIC_PORT_MINIMUM, gateway.createConfiguration().build());
+
+                await(() -> mapper.getMapping() != null, "the port is mapped");
+                mapper.close();
+
+                Assertions.assertEquals(List.of(LEASE_SECONDS, 0), gateway.getRequestedLifetimes(MappingProtocol.PCP), "attempt " + attempt);
+            }
+        }
     }
 
     @Test

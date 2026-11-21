@@ -1546,14 +1546,15 @@ public final class LauncherWindow {
             return;
         }
 
-        ModalDialog dialog = new ModalDialog(this.texts.get("run.version.title"));
+        boolean older = state == ModReleaseState.OLDER && newer != null;
+        ModalDialog dialog = new ModalDialog(this.texts.get(older ? "run.version.older.title" : "run.version.unreleased.title"));
         Button cancel = ComponentUtils.createButton(this.texts.get("mods.cancel"), ButtonRole.SECONDARY);
         Button start = ComponentUtils.createButton(this.texts.get("run.version.start"), ButtonRole.PRIMARY);
         String name = ModArt.getName(entry, this.texts);
-        String text = state == ModReleaseState.OLDER && newer != null ? this.texts.format("run.version.older", name, manifest.getVersion(), newer.getTag())
-                                                                      : this.texts.format("run.version.unreleased", name, manifest.getVersion());
+        String text = older ? this.texts.format("run.version.older", name, manifest.getVersion(), newer.getTag())
+                            : this.texts.format("run.version.unreleased", name, manifest.getVersion());
 
-        dialog.addContent(ComponentUtils.createNotice(Tone.WARNING, text));
+        dialog.addContent(ComponentUtils.createParagraph(text, "text-body"));
         dialog.setButtons(cancel, start);
         cancel.setOnAction(event -> this.shell.closeDialog(dialog));
         start.setOnAction(event -> {

@@ -44,10 +44,10 @@ import java.util.concurrent.TimeUnit;
 final class UpnpClient implements MappingClient {
     private static final @NotNull Logger LOGGER = Logger.of(UpnpClient.class);
     private static final @NotNull List<@NotNull String> SEARCH_TARGETS = List.of("urn:schemas-upnp-org:device:InternetGatewayDevice:1",
-                                                                              "urn:schemas-upnp-org:device:InternetGatewayDevice:2");
+                                                                                 "urn:schemas-upnp-org:device:InternetGatewayDevice:2");
     private static final @NotNull List<@NotNull String> SERVICE_TYPES = List.of("urn:schemas-upnp-org:service:WANIPConnection:2",
-                                                                             "urn:schemas-upnp-org:service:WANIPConnection:1",
-                                                                             "urn:schemas-upnp-org:service:WANPPPConnection:1");
+                                                                                "urn:schemas-upnp-org:service:WANIPConnection:1",
+                                                                                "urn:schemas-upnp-org:service:WANPPPConnection:1");
     private static final @NotNull String VERSION_2_SERVICE_TYPE = "urn:schemas-upnp-org:service:WANIPConnection:2";
     private static final @NotNull String HTTP_SCHEME = "http";
     private static final @NotNull String SEARCH_OK_PREFIX = "HTTP/1.1 200";
@@ -688,7 +688,7 @@ final class UpnpClient implements MappingClient {
                                                                            .header("Content-Type", "text/xml; charset=\"utf-8\"")
                                                                            .header("SOAPAction", "\"" + type + "#" + action + "\"")
                                                                            .POST(HttpRequest.BodyPublishers.ofString(body.toString(),
-                                                                                                                      StandardCharsets.UTF_8))
+                                                                                                                     StandardCharsets.UTF_8))
                                                                            .build(), HttpResponse.BodyHandlers.ofInputStream());
             byte[] contents = readBody(response);
             Document document = contents.length == 0 ? null : parseDocument(contents);

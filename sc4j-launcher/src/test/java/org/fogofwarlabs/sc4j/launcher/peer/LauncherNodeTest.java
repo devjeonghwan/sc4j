@@ -511,7 +511,7 @@ final class LauncherNodeTest {
     @Test
     @Timeout(TEST_SECONDS)
     void the_node_maps_its_port_only_in_the_automatic_role_with_port_mapping_on(@TempDir @NotNull Path directory) throws IOException,
-                                                                                                                       InterruptedException {
+                                                                                                                         InterruptedException {
         try (GatewayScenario gateway = GatewayScenario.open(MAPPED_ADDRESS)) {
             NodeSettings automatic = new NodeSettings(NodeRole.AUTOMATIC, findFreePort());
 

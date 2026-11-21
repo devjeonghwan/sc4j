@@ -223,16 +223,16 @@ final class UpnpDeviceScenario implements Closeable {
 
     private void describe(@NotNull HttpExchange exchange) throws IOException {
         send(exchange, HTTP_OK, """
-                <?xml version="1.0"?>
-                <root xmlns="urn:schemas-upnp-org:device-1-0">
-                <device><deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>
-                <serviceList><service><serviceType>urn:schemas-upnp-org:service:Layer3Forwarding:1</serviceType>
-                <controlURL>/ctl/L3F</controlURL></service></serviceList>
-                <deviceList><device><deviceType>urn:schemas-upnp-org:device:WANDevice:1</deviceType>
-                <deviceList><device><deviceType>urn:schemas-upnp-org:device:WANConnectionDevice:1</deviceType>
-                <serviceList><service><serviceType>%s</serviceType><controlURL>%s</controlURL></service></serviceList>
-                </device></deviceList></device></deviceList></device></root>
-                """.formatted(this.serviceType, CONTROL_PATH));
+                                <?xml version="1.0"?>
+                                <root xmlns="urn:schemas-upnp-org:device-1-0">
+                                <device><deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>
+                                <serviceList><service><serviceType>urn:schemas-upnp-org:service:Layer3Forwarding:1</serviceType>
+                                <controlURL>/ctl/L3F</controlURL></service></serviceList>
+                                <deviceList><device><deviceType>urn:schemas-upnp-org:device:WANDevice:1</deviceType>
+                                <deviceList><device><deviceType>urn:schemas-upnp-org:device:WANConnectionDevice:1</deviceType>
+                                <serviceList><service><serviceType>%s</serviceType><controlURL>%s</controlURL></service></serviceList>
+                                </device></deviceList></device></deviceList></device></root>
+                                """.formatted(this.serviceType, CONTROL_PATH));
     }
 
     private void control(@NotNull HttpExchange exchange) throws IOException {
@@ -257,11 +257,11 @@ final class UpnpDeviceScenario implements Closeable {
 
         if (error != 0) {
             send(exchange, HTTP_ERROR, """
-                    <?xml version="1.0"?>
-                    <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><s:Fault><faultcode>s:Client</faultcode>
-                    <faultstring>UPnPError</faultstring><detail><UPnPError xmlns="urn:schemas-upnp-org:control-1-0">
-                    <errorCode>%d</errorCode><errorDescription>Error</errorDescription></UPnPError></detail></s:Fault></s:Body></s:Envelope>
-                    """.formatted(error));
+                                       <?xml version="1.0"?>
+                                       <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><s:Fault><faultcode>s:Client</faultcode>
+                                       <faultstring>UPnPError</faultstring><detail><UPnPError xmlns="urn:schemas-upnp-org:control-1-0">
+                                       <errorCode>%d</errorCode><errorDescription>Error</errorDescription></UPnPError></detail></s:Fault></s:Body></s:Envelope>
+                                       """.formatted(error));
 
             return;
         }
@@ -273,10 +273,10 @@ final class UpnpDeviceScenario implements Closeable {
         }
 
         send(exchange, HTTP_OK, """
-                <?xml version="1.0"?>
-                <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:%sResponse xmlns:u="%s">%s</u:%sResponse>
-                </s:Body></s:Envelope>
-                """.formatted(action, this.serviceType, values, action));
+                                <?xml version="1.0"?>
+                                <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:%sResponse xmlns:u="%s">%s</u:%sResponse>
+                                </s:Body></s:Envelope>
+                                """.formatted(action, this.serviceType, values, action));
     }
 
     /**

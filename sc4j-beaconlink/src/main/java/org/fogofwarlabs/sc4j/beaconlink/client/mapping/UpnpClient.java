@@ -66,6 +66,11 @@ final class UpnpClient implements MappingClient {
      */
     private static final int ERROR_ONLY_PERMANENT_LEASES = 725;
     private static final int HTTP_OK = 200;
+    /**
+     * The time an HTTP connection or request to the device may take, in milliseconds: longer than the datagram answer time, since the first
+     * HTTP exchange of a process also starts the HTTP client.
+     */
+    private static final long HTTP_TIMEOUT_MILLIS = 8_000L;
     private static final int SEARCH_WAIT_SECONDS = 1;
     private static final int SEARCH_SENDS = 2;
     private static final int MAXIMUM_SEARCH_ANSWER_LENGTH = 2048;
@@ -243,7 +248,7 @@ final class UpnpClient implements MappingClient {
         this.gateways      = gateways;
         this.http          = HttpClient.newBuilder()
                                        .version(HttpClient.Version.HTTP_1_1)
-                                       .connectTimeout(Duration.ofMillis(configuration.getAnswerMillis()))
+                                       .connectTimeout(Duration.ofMillis(HTTP_TIMEOUT_MILLIS))
                                        .followRedirects(HttpClient.Redirect.NEVER)
                                        .proxy(HttpClient.Builder.NO_PROXY)
                                        .build();
@@ -407,7 +412,7 @@ final class UpnpClient implements MappingClient {
 
         try {
             HttpResponse<InputStream> response = this.http.send(HttpRequest.newBuilder(description)
-                                                                           .timeout(Duration.ofMillis(this.configuration.getAnswerMillis()))
+                                                                           .timeout(Duration.ofMillis(HTTP_TIMEOUT_MILLIS))
                                                                            .GET()
                                                                            .build(), HttpResponse.BodyHandlers.ofInputStream());
 
@@ -684,7 +689,7 @@ final class UpnpClient implements MappingClient {
 
         try {
             HttpResponse<InputStream> response = this.http.send(HttpRequest.newBuilder(control)
-                                                                           .timeout(Duration.ofMillis(this.configuration.getAnswerMillis()))
+                                                                           .timeout(Duration.ofMillis(HTTP_TIMEOUT_MILLIS))
                                                                            .header("Content-Type", "text/xml; charset=\"utf-8\"")
                                                                            .header("SOAPAction", "\"" + type + "#" + action + "\"")
                                                                            .POST(HttpRequest.BodyPublishers.ofString(body.toString(),

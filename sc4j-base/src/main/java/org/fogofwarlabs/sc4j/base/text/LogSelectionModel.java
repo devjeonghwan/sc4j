@@ -1,4 +1,4 @@
-package org.fogofwarlabs.sc4j.engine.client.dialog;
+package org.fogofwarlabs.sc4j.base.text;
 
 import org.jetbrains.annotations.NotNull;
 

@@ -1325,8 +1325,29 @@ public final class LauncherWindow {
             throw Exceptions.newIllegalStateException("The Chat screen needs a logged-in account.");
         }
 
+        ChatScreen.Actions actions = new ChatScreen.Actions() {
+            /**
+             * Called when the user copies text: a player's name or the selected text of the log.
+             *
+             * @param text the text for the clipboard
+             */
+            @Override
+            public void onCopy(@NotNull String text) {
+                LauncherWindow.this.copy(text);
+            }
+
+            /**
+             * Called when the user opens a link of the log after confirming it.
+             *
+             * @param address the {@code http} or {@code https} address
+             */
+            @Override
+            public void onOpenWebsite(@NotNull String address) {
+                LauncherWindow.this.showDocument.accept(address);
+            }
+        };
         ChatScreen screen = new ChatScreen(this.shell, this.texts, loggedIn.getTaggedName(), opened, openedConversations, this::findModName,
-                                           this::copy);
+                                           actions);
 
         this.chatScreen = screen;
         screen.update();

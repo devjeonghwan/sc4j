@@ -797,22 +797,6 @@ public final class org.fogofwarlabs.sc4j.engine.client.dialog.ListModel<T> {
   public void step(boolean, int);
 }
 
-public final class org.fogofwarlabs.sc4j.engine.client.dialog.LogSelectionModel {
-  public boolean hasSelection();
-  public boolean isDragging();
-  public boolean isSelected(int);
-  public int getSelectionEnd(int, int);
-  public int getSelectionStart(int);
-  public java.lang.String getSelectedText(java.util.List<java.lang.String>);
-  public org.fogofwarlabs.sc4j.engine.client.dialog.LogSelectionModel();
-  public void clear();
-  public void drag(int, int);
-  public void press(int, int, boolean);
-  public void release();
-  public void removeFirstLines(int);
-  public void selectWord(int, java.lang.String, int);
-}
-
 public final class org.fogofwarlabs.sc4j.engine.client.dialog.Panel extends org.fogofwarlabs.sc4j.engine.client.dialog.Control {
   protected void drawControl(org.fogofwarlabs.sc4j.engine.client.render.Canvas, org.fogofwarlabs.sc4j.engine.client.dialog.DialogTheme, float, float);
   public org.fogofwarlabs.sc4j.engine.client.dialog.Panel(org.fogofwarlabs.sc4j.engine.resource.dialog.DialogControl);
@@ -873,12 +857,6 @@ public final class org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart extends
   public static final org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart THUMB;
   public static org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart valueOf(java.lang.String);
   public static org.fogofwarlabs.sc4j.engine.client.dialog.ScrollPart[] values();
-}
-
-public final class org.fogofwarlabs.sc4j.engine.client.dialog.TextBoundaryUtils {
-  public static int findIndexAt(java.lang.String, float, java.util.function.ToDoubleFunction<java.lang.String>);
-  public static int findWordEnd(java.lang.String, int);
-  public static int findWordStart(java.lang.String, int);
 }
 
 public interface org.fogofwarlabs.sc4j.engine.client.dialog.TextClipboard {

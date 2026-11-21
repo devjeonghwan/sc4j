@@ -333,8 +333,8 @@ final class LauncherWindowTest {
         Instant start = Instant.parse("2026-11-21T10:00:00Z");
 
         Assertions.assertTrue(LauncherWindow.isUpdateCheckDue(null, start), "the first check");
-        Assertions.assertFalse(LauncherWindow.isUpdateCheckDue(start, start.plus(Duration.ofHours(3).plusMinutes(59))), "within the period");
-        Assertions.assertTrue(LauncherWindow.isUpdateCheckDue(start, start.plus(Duration.ofHours(4))), "after the period");
+        Assertions.assertFalse(LauncherWindow.isUpdateCheckDue(start, start.plus(Duration.ofMinutes(29))), "within the period");
+        Assertions.assertTrue(LauncherWindow.isUpdateCheckDue(start, start.plus(Duration.ofMinutes(30))), "after the period");
         Assertions.assertTrue(LauncherWindow.isUpdateCheckDue(start, start.plus(Duration.ofDays(1))), "after a long sleep");
     }
 

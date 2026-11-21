@@ -35,7 +35,8 @@ import java.util.regex.Pattern;
  * equals the one in the release's checksum file ({@code <file>.sha256}, the {@code sha256sum} output or the bare checksum).
  * <p>
  * Redirects are followed, as GitHub serves release files from another host. Every answer is limited in size, and a download stops when
- * its thread is interrupted.
+ * its thread is interrupted. The client keeps its last API answers with their entity tags and asks for them again on condition that they
+ * changed, so a repeated look costs nothing of GitHub's request limit while nothing changed.
  */
 public final class ReleaseClient {
     /**
@@ -56,8 +57,15 @@ public final class ReleaseClient {
     private static final @NotNull String ACCEPT_HEADER = "Accept";
     private static final @NotNull String CONTENT_LENGTH_HEADER = "Content-Length";
     private static final @NotNull String GITHUB_JSON = "application/vnd.github+json";
+    private static final @NotNull String ENTITY_TAG_HEADER = "ETag";
+    private static final @NotNull String IF_NONE_MATCH_HEADER = "If-None-Match";
     private static final int OK_STATUS = 200;
+    private static final int NOT_MODIFIED_STATUS = 304;
     private static final int NOT_FOUND_STATUS = 404;
+    /**
+     * The number of API answers kept for conditional requests, the least recently used one being dropped first.
+     */
+    private static final int MAXIMUM_KEPT_ANSWERS = 32;
     private static final int MAXIMUM_RELEASE_SIZE = 4 * 1024 * 1024;
     private static final int MAXIMUM_RELEASE_LIST_SIZE = 16 * 1024 * 1024;
     private static final int MAXIMUM_CHECKSUM_SIZE = 4 * 1024;
@@ -136,8 +144,23 @@ public final class ReleaseClient {
     }
 
 
+    /**
+     * An API answer with its entity tag, sent again when the server answers a conditional request with "not modified".
+     */
+    private static final class KeptAnswer {
+        private final @NotNull String entityTag;
+        private final byte @NotNull [] contents;
+
+        private KeptAnswer(@NotNull String entityTag, byte @NotNull [] contents) {
+            this.entityTag = entityTag;
+            this.contents  = contents;
+        }
+    }
+
+
     private final @NotNull URI api;
     private final @NotNull HttpClient http;
+    private final @NotNull Map<@NotNull URI, @NotNull KeptAnswer> keptAnswers;
 
     /**
      * Creates a {@link ReleaseClient} instance.
@@ -145,8 +168,14 @@ public final class ReleaseClient {
      * @param api the address of the GitHub REST API, normally {@link #GITHUB_API}, ending with {@code /}
      */
     public ReleaseClient(@NotNull URI api) {
-        this.api  = api;
-        this.http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(CONNECT_TIMEOUT).build();
+        this.api         = api;
+        this.http        = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(CONNECT_TIMEOUT).build();
+        this.keptAnswers = new LinkedHashMap<>(MAXIMUM_KEPT_ANSWERS, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(@NotNull Map.Entry<@NotNull URI, @NotNull KeptAnswer> eldest) {
+                return this.size() > MAXIMUM_KEPT_ANSWERS;
+            }
+        };
     }
 
     /**
@@ -221,7 +250,7 @@ public final class ReleaseClient {
 
         Files.createDirectories(partial.toAbsolutePath().getParent());
 
-        HttpResponse<InputStream> response = this.send(file.getAddress(), null, HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<InputStream> response = this.send(file.getAddress(), null, null, HttpResponse.BodyHandlers.ofInputStream());
         long total = file.getSize() > 0 ? file.getSize() : response.headers().firstValueAsLong(CONTENT_LENGTH_HEADER).orElse(0);
         MessageDigest digest = createDigest();
         byte[] buffer = new byte[BUFFER_SIZE];
@@ -273,14 +302,36 @@ public final class ReleaseClient {
         Files.move(partial, target, StandardCopyOption.REPLACE_EXISTING);
     }
 
+    /**
+     * Reads an answer; an API answer ({@code accept} given) is requested on condition that it changed since the kept one, which GitHub does
+     * not count against its request limit, and the kept contents are returned when it did not.
+     */
     private byte @NotNull [] read(@NotNull URI address, @Nullable String accept, int maximumSize) throws ReleaseException {
-        HttpResponse<InputStream> response = this.send(address, accept, HttpResponse.BodyHandlers.ofInputStream());
+        KeptAnswer kept;
+
+        synchronized (this.keptAnswers) {
+            kept = accept == null ? null : this.keptAnswers.get(address);
+        }
+
+        HttpResponse<InputStream> response = this.send(address, accept, kept == null ? null : kept.entityTag, HttpResponse.BodyHandlers.ofInputStream());
 
         try (InputStream input = response.body()) {
+            if (kept != null && response.statusCode() == NOT_MODIFIED_STATUS) {
+                return kept.contents;
+            }
+
             byte[] contents = input.readNBytes(maximumSize + 1);
 
             if (contents.length > maximumSize) {
                 throw new ReleaseException(ReleaseProblem.TOO_LARGE, Exceptions.format("{0} is larger than {1} bytes", address, maximumSize));
+            }
+
+            Optional<String> entityTag = response.headers().firstValue(ENTITY_TAG_HEADER);
+
+            if (accept != null && entityTag.isPresent()) {
+                synchronized (this.keptAnswers) {
+                    this.keptAnswers.put(address, new KeptAnswer(entityTag.get(), contents));
+                }
             }
 
             return contents;
@@ -291,7 +342,10 @@ public final class ReleaseClient {
         }
     }
 
-    private <T> @NotNull HttpResponse<T> send(@NotNull URI address, @Nullable String accept,
+    /**
+     * Sends a request and returns its answer when it is {@code 200}, or {@code 304} for a conditional request ({@code entityTag} given).
+     */
+    private <T> @NotNull HttpResponse<T> send(@NotNull URI address, @Nullable String accept, @Nullable String entityTag,
                                               @NotNull HttpResponse.BodyHandler<T> body) throws ReleaseException {
         HttpResponse<T> response;
 
@@ -300,6 +354,10 @@ public final class ReleaseClient {
 
             if (accept != null) {
                 request.header(ACCEPT_HEADER, accept);
+            }
+
+            if (entityTag != null) {
+                request.header(IF_NONE_MATCH_HEADER, entityTag);
             }
 
             response = this.http.send(request.build(), body);
@@ -313,7 +371,7 @@ public final class ReleaseClient {
             throw new ReleaseException(ReleaseProblem.UNAVAILABLE, Exceptions.format("Interrupted while reaching {0}", address), exception);
         }
 
-        if (response.statusCode() == OK_STATUS) {
+        if (response.statusCode() == OK_STATUS || entityTag != null && response.statusCode() == NOT_MODIFIED_STATUS) {
             return response;
         }
 

@@ -138,12 +138,12 @@ public final class LauncherWindow {
     /**
      * The time between two automatic looks for a newer launcher version and newer mod releases while the launcher runs.
      */
-    private static final @NotNull Duration UPDATE_CHECK_PERIOD = Duration.ofHours(4);
+    private static final @NotNull Duration UPDATE_CHECK_PERIOD = Duration.ofMinutes(30);
     /**
      * The time between two tests whether the automatic look is due ({@link #isUpdateCheckDue}); short, so that a look missed while the
      * computer slept follows soon after it wakes.
      */
-    private static final @NotNull Duration UPDATE_CHECK_TICK = Duration.ofMinutes(10);
+    private static final @NotNull Duration UPDATE_CHECK_TICK = Duration.ofMinutes(5);
     private static final @NotNull String CONFIRMED_VERSION_SEPARATOR = "@";
     private static final @NotNull String BACKUP_FILE_PATTERN = "*" + AccountBackup.FILE_EXTENSION;
     private static final @NotNull String KEY_FILE_PATTERN = "*.key";

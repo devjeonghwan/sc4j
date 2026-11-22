@@ -421,9 +421,10 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     }
 
     /**
-     * @return what the session knows of its network's direct connections, from its port mapping and the public addresses its registered
-     * nodes observed; {@link #poll()} updates it, and once settled it keeps its last settled value while too few nodes are registered to
-     * settle it again
+     * Returns what the session knows of its network's direct connections, from its port mapping and the public addresses its registered nodes
+     * observed. {@link #poll()} updates it; once settled, it keeps its last settled value while too few nodes are registered to settle it again.
+     *
+     * @return the network's direct connectivity
      */
     @Override
     public @NotNull LinkConnectivity getConnectivity() {
@@ -431,10 +432,11 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     }
 
     /**
-     * @return why the session cannot reach Beacon.Link, or {@code null} while a node is registered or still being contacted for the first
-     * time; {@link LinkFailure#SIGNED_OUT} once another connection of the account signed out everywhere else after this one
-     * started; {@link LinkFailure#TOO_MANY_CONNECTIONS} when no node registered the session and one of them refused it because it
-     * holds the most connections of the account
+     * Returns why the session cannot reach Beacon.Link: {@link LinkFailure#SIGNED_OUT} once another connection of the account signed out
+     * everywhere else after this one started, {@link LinkFailure#TOO_MANY_CONNECTIONS} when no node registered the session and one of them
+     * refused it because it holds the most connections of the account.
+     *
+     * @return the failure, or {@code null} while a node is registered or still being contacted for the first time
      */
     @Override
     public @Nullable LinkFailure getFailure() {
@@ -494,8 +496,7 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     }
 
     /**
-     * @return the number of received datagrams that were dropped: malformed, unexpected, late, forged, replayed, or channel datagrams of no
-     * channel
+     * @return the number of received datagrams that were dropped: malformed, unexpected, late, forged, replayed, or channel datagrams of no channel
      */
     public int getDroppedCount() {
         return this.droppedCount;
@@ -565,8 +566,7 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     }
 
     /**
-     * @return the session's home nodes: its first registered nodes whose key is known, in list order, at most
-     * {@value HomePeerListUtils#MAXIMUM_COUNT}
+     * @return the session's home nodes: its first registered nodes whose key is known, in list order, at most {@value HomePeerListUtils#MAXIMUM_COUNT}
      */
     @NotNull List<@NotNull NodeSession> getHomeNodes() {
         List<NodeSession> homeNodes = new ArrayList<>(HomePeerListUtils.MAXIMUM_COUNT);
@@ -1316,8 +1316,9 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     }
 
     /**
-     * @return {@code true} if the session keeps learned peers and knows fewer than {@value #FEW_LEARNED_NODES} of them, so that its listed nodes
-     * are asked for their node lists again, {@code false} otherwise
+     * Checks whether the listed nodes are asked for their node lists again.
+     *
+     * @return {@code true} if the session keeps learned peers and knows fewer than {@value #FEW_LEARNED_NODES} of them, {@code false} otherwise
      */
     boolean needsMoreNodes() {
         return this.knownNodes.getPeersFile() != null && this.knownNodes.getPeerCount() < FEW_LEARNED_NODES;
@@ -1695,8 +1696,7 @@ public final class BeaconLinkClient implements BeaconLinkSession {
      * run's search a room that differs.
      *
      * @param other the other run's fingerprint
-     * @return the first differing part as a refusal ({@link JoinRefusal#PROTOCOL_VERSION} if the fingerprint is no mod identity), or
-     * {@code null} if the identities are equal
+     * @return the first differing part as a refusal ({@link JoinRefusal#PROTOCOL_VERSION} if the fingerprint is no mod identity), or {@code null} if the identities are equal
      */
     @Nullable JoinRefusal findJoinRefusal(@NotNull ModFingerprint other) {
         ModIdentity otherIdentity = readIdentity(other);

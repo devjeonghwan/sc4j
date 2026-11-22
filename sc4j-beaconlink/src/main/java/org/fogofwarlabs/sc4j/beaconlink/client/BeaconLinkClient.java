@@ -102,6 +102,9 @@ import java.util.random.RandomGenerator;
  * own samples. Its room advertisements and presences carry the coordinate once it settled, and the rooms and presences of others give the
  * estimated round trip time to their hosts and players ({@link LatencyEstimate}).
  * <p>
+ * The session settles what it knows of its network's direct connections ({@link #getConnectivity()}) from its port mapping and the public
+ * addresses its registered nodes observed.
+ * <p>
  * The session is single-threaded: the owner calls {@link #poll()} from its loop.
  */
 public final class BeaconLinkClient implements BeaconLinkSession {
@@ -263,6 +266,7 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     private final @NotNull ReplayGuard<@NotNull InetSocketAddress> replyGuard;
     private final @NotNull ReplayGuard<@NotNull IdentityKey> signalGuard;
     private final @NotNull CoordinateEstimator coordinates;
+    private final @NotNull ConnectivityCheck connectivityCheck;
 
     private final @NotNull List<@NotNull NodeSession> nodes;
     private final @NotNull KnownNodes knownNodes;
@@ -326,13 +330,14 @@ public final class BeaconLinkClient implements BeaconLinkSession {
         this.topic                 = TopicKey.of(TopicKind.MOD, identity.getModId());
         this.stamp                 = stamp;
 
-        this.endpoint      = endpoint;
-        this.setup         = setup;
-        this.receiveBuffer = ByteBuffer.allocate(Envelope.MAXIMUM_DATAGRAM_LENGTH + 1);
-        this.encoder       = new MessageEncoder(keyPair, clock, random);
-        this.replyGuard    = new ReplayGuard<>(REPLAY_WINDOW_MILLIS, REPLY_REPLAY_CAPACITY, REPLY_REPLAY_NODE_CAPACITY);
-        this.signalGuard   = new ReplayGuard<>(REPLAY_WINDOW_MILLIS, SIGNAL_REPLAY_CAPACITY, SIGNAL_REPLAY_SENDER_CAPACITY);
-        this.coordinates   = new CoordinateEstimator(random);
+        this.endpoint          = endpoint;
+        this.setup             = setup;
+        this.receiveBuffer     = ByteBuffer.allocate(Envelope.MAXIMUM_DATAGRAM_LENGTH + 1);
+        this.encoder           = new MessageEncoder(keyPair, clock, random);
+        this.replyGuard        = new ReplayGuard<>(REPLAY_WINDOW_MILLIS, REPLY_REPLAY_CAPACITY, REPLY_REPLAY_NODE_CAPACITY);
+        this.signalGuard       = new ReplayGuard<>(REPLAY_WINDOW_MILLIS, SIGNAL_REPLAY_CAPACITY, SIGNAL_REPLAY_SENDER_CAPACITY);
+        this.coordinates       = new CoordinateEstimator(random);
+        this.connectivityCheck = new ConnectivityCheck();
 
         this.nodes      = new ArrayList<>();
         this.knownNodes = knownNodes;
@@ -413,6 +418,16 @@ public final class BeaconLinkClient implements BeaconLinkSession {
         }
 
         return null;
+    }
+
+    /**
+     * @return what the session knows of its network's direct connections, from its port mapping and the public addresses its registered
+     * nodes observed; {@link #poll()} updates it, and once settled it keeps its last settled value while too few nodes are registered to
+     * settle it again
+     */
+    @Override
+    public @NotNull LinkConnectivity getConnectivity() {
+        return this.connectivityCheck.getConnectivity();
     }
 
     /**
@@ -1760,6 +1775,8 @@ public final class BeaconLinkClient implements BeaconLinkSession {
             this.checkMappedAddress(this.portMapper);
         }
 
+        this.updateConnectivity();
+
         if (this.knownNodes.isFlushDue(nowMillis)) {
             this.flushKnownNodes(nowMillis);
         }
@@ -1782,6 +1799,23 @@ public final class BeaconLinkClient implements BeaconLinkSession {
                 return;
             }
         }
+    }
+
+    /**
+     * Hands the connectivity check the state of the port mapper and the addresses the registered nodes observed.
+     */
+    private void updateConnectivity() {
+        List<InetSocketAddress> observedAddresses = new ArrayList<>(this.nodes.size());
+
+        for (NodeSession node : this.nodes) {
+            InetSocketAddress observed = node.getObservedAddress();
+
+            if (node.isRegistered() && observed != null) {
+                observedAddresses.add(observed);
+            }
+        }
+
+        this.connectivityCheck.update(this.portMapper == null ? null : this.portMapper.getState(), observedAddresses);
     }
 
     /**

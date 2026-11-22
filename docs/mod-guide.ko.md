@@ -403,7 +403,7 @@ for (String file : List.of("maps/first-field.json")) {
 
 ### 14.1 Beacon.Link 방
 
-명령줄에 시드 출처(`--seeds <file>`, `--seed <host:port>`, `--peers <file>`)가 없으면 `ModLaunch.getBeaconLink()`는 `null`입니다. `--account <dir>`는 계정을 정하며, 없으면 게스트 `Guest`(`BeaconLink.GUEST_NAME`)입니다. 런처는 이 모두를 넘깁니다. `BeaconLink.open()`은 계정의 연결 하나인 `BeaconLinkSession`을 반환합니다(`getParticipant()`: `LinkParticipant`, 플레이어와 연결 번호). 호출은 작업을 시작하기만 하며, 세션의 스레드가 루프에서 `poll()`을, 끝에 `close()`를 호출합니다. `getFailure()`(`LinkFailure`)는 노드에 닿지 못한 이유를, `getNodes()`는 노드마다의 상태를 줍니다.
+명령줄에 시드 출처(`--seeds <file>`, `--seed <host:port>`, `--peers <file>`)가 없으면 `ModLaunch.getBeaconLink()`는 `null`입니다. `--account <dir>`는 계정을 정하며, 없으면 게스트 `Guest`(`BeaconLink.GUEST_NAME`)입니다. 런처는 이 모두를 넘깁니다. `BeaconLink.open()`은 계정의 연결 하나인 `BeaconLinkSession`을 반환합니다(`getParticipant()`: `LinkParticipant`, 플레이어와 연결 번호). 호출은 작업을 시작하기만 하며, 세션의 스레드가 루프에서 `poll()`을, 끝에 `close()`를 호출합니다. `getFailure()`(`LinkFailure`)는 노드에 닿지 못한 이유를, `getNodes()`는 노드마다의 상태를 줍니다. `getConnectivity()`(`LinkConnectivity`)는 다른 플레이어와의 직접 연결이 될 만한지 알려 주며, 노드가 세션을 서로 다른 포트로 관찰하면 `RESTRICTED`입니다([프로토콜](beaconlink/protocol.ko.md#등록과-관찰된-주소)).
 
 - **호스트**: `publishRoom(settings, password)`(빈 비밀번호는 공개 방)는 `HostedRoom`을 반환합니다: `getState()`(`PUBLISHING`, `PUBLISHED`, `WITHDRAWN`, `FAILED`), `update(settings)`, 확인을 통과한 참가자마다 `acceptChannel()`, `withdraw()`. `RoomSettings`: 방 이름과 맵 이름(각각 UTF-8 최대 48바이트), 플레이어 수, 정원, 시작 여부, 최대 64바이트의 모드 데이터(데모: 턴 속도).
 - **검색**: `searchRooms()`는 `RoomSearch`를 반환합니다: `getRooms()`(자기 정체성), `getOtherRooms()`(다른 버전, `FoundRoom.getJoinRefusal()`과 함께), `isComplete()`. `FoundRoom`은 호스트, 설정, `isJoinable()`, `isPrivate()`, 모드 id와 버전, `getLatencyEstimate()`(`LatencyClass`: 100 ms까지 `GOOD`, 200 ms까지 `FAIR`, `POOR`, `UNKNOWN`)를 줍니다.

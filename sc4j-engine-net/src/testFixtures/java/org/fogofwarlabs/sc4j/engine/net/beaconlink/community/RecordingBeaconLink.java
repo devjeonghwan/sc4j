@@ -148,6 +148,14 @@ public final class RecordingBeaconLink implements BeaconLink {
         }
 
         /**
+         * @return what the session knows of its network's direct connections: {@link LinkConnectivity#UNKNOWN}, since one node observes it
+         */
+        @Override
+        public @NotNull LinkConnectivity getConnectivity() {
+            return LinkConnectivity.UNKNOWN;
+        }
+
+        /**
          * @return why the session cannot reach Beacon.Link, or {@code null} while a node is registered or still being contacted for the first
          * time
          */

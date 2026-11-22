@@ -12,6 +12,7 @@ import org.fogofwarlabs.sc4j.beaconlink.protocol.file.ConfiguredNode;
 import org.fogofwarlabs.sc4j.engine.mod.identity.ModIdentity;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.BeaconLink;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.BeaconLinkSession;
+import org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkConnectivity;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkFailure;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.LinkPlayer;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.community.*;
@@ -286,7 +287,7 @@ public final class LauncherSession implements LauncherSessionView {
         this.connectNanos      = 0L;
         this.status            = SelfStatus.ONLINE;
         this.awayText          = "";
-        this.lastSelf          = new SelfView(SessionState.CONNECTING, SelfStatus.ONLINE, "", 0, null);
+        this.lastSelf          = new SelfView(SessionState.CONNECTING, SelfStatus.ONLINE, "", 0, null, LinkConnectivity.UNKNOWN);
         this.lastFriends       = List.of();
         this.lastWhispers      = List.of();
         this.lastChannels      = List.of();
@@ -784,20 +785,21 @@ public final class LauncherSession implements LauncherSessionView {
         CommunitySession openedCommunity = this.community;
 
         if (opened == null || openedCommunity == null) {
-            return new SelfView(SessionState.OFFLINE, this.status, this.awayText, 0, SessionFailure.NOT_STARTED);
+            return new SelfView(SessionState.OFFLINE, this.status, this.awayText, 0, SessionFailure.NOT_STARTED, LinkConnectivity.UNKNOWN);
         }
 
         LinkFailure failure = opened.getFailure();
 
         if (failure != null) {
-            return new SelfView(SessionState.OFFLINE, this.status, this.awayText, 0, toSessionFailure(failure));
+            return new SelfView(SessionState.OFFLINE, this.status, this.awayText, 0, toSessionFailure(failure), LinkConnectivity.UNKNOWN);
         }
 
         if (opened.getObservedAddress() == null) {
-            return new SelfView(SessionState.CONNECTING, this.status, this.awayText, 0, null);
+            return new SelfView(SessionState.CONNECTING, this.status, this.awayText, 0, null, opened.getConnectivity());
         }
 
-        return new SelfView(SessionState.CONNECTED, this.status, this.awayText, openedCommunity.getSelf().getDeviceCount(), null);
+        return new SelfView(SessionState.CONNECTED, this.status, this.awayText, openedCommunity.getSelf().getDeviceCount(), null,
+                            opened.getConnectivity());
     }
 
     private @NotNull List<@NotNull FriendView> createFriends() {

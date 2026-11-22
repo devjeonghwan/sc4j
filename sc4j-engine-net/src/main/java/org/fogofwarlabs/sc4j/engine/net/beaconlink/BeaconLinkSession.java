@@ -34,6 +34,12 @@ public interface BeaconLinkSession extends Closeable {
     @Nullable InetSocketAddress getObservedAddress();
 
     /**
+     * @return what the session knows of its network's direct connections; {@link #poll()} updates it, and once settled it keeps its last
+     * settled value while too few nodes are registered to settle it again
+     */
+    @NotNull LinkConnectivity getConnectivity();
+
+    /**
      * @return why the session cannot reach Beacon.Link, or {@code null} while a node is registered or still being contacted for the first
      * time
      */

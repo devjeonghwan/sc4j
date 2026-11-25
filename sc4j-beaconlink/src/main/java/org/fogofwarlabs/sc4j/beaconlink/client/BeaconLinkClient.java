@@ -349,7 +349,7 @@ public final class BeaconLinkClient implements BeaconLinkSession {
         this.connectivityCheck = new ConnectivityCheck();
         this.firewallProgram   = configuration.getFirewall() == null ? null : InboundFirewall.findCurrentProgram();
         this.firewallState     = new AtomicReference<>(configuration.getFirewall() == null ? FirewallState.NOT_NEEDED
-                                                       : this.firewallProgram == null ? FirewallState.UNKNOWN : FirewallState.CHECKING);
+                                                                                           : this.firewallProgram == null ? FirewallState.UNKNOWN : FirewallState.CHECKING);
 
         this.nodes      = new ArrayList<>();
         this.knownNodes = knownNodes;

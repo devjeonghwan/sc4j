@@ -279,7 +279,7 @@ final class UpnpClient implements MappingClient {
      * location at the answering address.
      */
     private static @NotNull List<@NotNull UpnpClient> searchFrom(@NotNull PortMappingConfiguration configuration, @Nullable InetAddress localAddress,
-                                                                @Nullable NetworkInterface networkInterface) {
+                                                                 @Nullable NetworkInterface networkInterface) {
         List<UpnpClient> devices = new ArrayList<>();
 
         try (DatagramSocket socket = new DatagramSocket(new InetSocketAddress(localAddress, 0))) {

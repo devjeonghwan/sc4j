@@ -14,6 +14,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
+import org.fogofwarlabs.sc4j.beaconlink.client.firewall.FirewallState;
 import org.fogofwarlabs.sc4j.beaconlink.peer.account.Account;
 import org.fogofwarlabs.sc4j.beaconlink.peer.account.AccountStore;
 import org.fogofwarlabs.sc4j.beaconlink.protocol.identity.IdentityKeyPair;
@@ -240,7 +241,11 @@ final class LauncherWindowTest {
     }
 
     private static @NotNull SelfView createConnectedSelf(@NotNull LinkConnectivity connectivity) {
-        return new SelfView(SessionState.CONNECTED, SelfStatus.ONLINE, "", 1, null, connectivity);
+        return createConnectedSelf(connectivity, FirewallState.NOT_NEEDED);
+    }
+
+    private static @NotNull SelfView createConnectedSelf(@NotNull LinkConnectivity connectivity, @NotNull FirewallState firewall) {
+        return new SelfView(SessionState.CONNECTED, SelfStatus.ONLINE, "", 1, null, connectivity, firewall);
     }
 
     private static @NotNull RecordingLauncherSession createConnectedSession() {
@@ -703,6 +708,58 @@ final class LauncherWindowTest {
 
             session.setSelf(createConnectedSelf(LinkConnectivity.DIRECT));
             session.setSelf(createConnectedSelf(LinkConnectivity.RESTRICTED));
+
+            Assertions.assertNull(findNotice(stage, warning), "the warning does not come again in this run");
+
+            return null;
+        });
+    }
+
+    @Test
+    void firewall_warning_asks_to_allow_the_launcher_while_the_firewall_blocks_it(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
+        String warning = texts.get("notice.firewall");
+        InstallLayout install = InstallLayout.of(directory);
+        AccountStore store = AccountStore.of(install.getBeaconLinkDirectory());
+        RecordingLauncherSession session = createConnectedSession();
+
+        store.create(raynorKey, raynorStamp, PlayerStamp.DEFAULT_DIFFICULTY, RAYNOR_USE_MILLIS);
+        new LauncherSettingsFile(install.getLauncherSettingsFile()).write(LauncherSettings.DEFAULT.withLanguage(UiLanguage.ENGLISH));
+        LauncherFxScenario.run(() -> {
+            Stage stage = new Stage();
+            LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
+            }, folder -> {
+            }, new LauncherNodeRunner(install), account -> session, NO_SOUND);
+
+            window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
+            LauncherFxScenario.findButton(layRoot(stage), texts.get("accounts.log.in")).fire();
+            session.setSelf(createConnectedSelf(LinkConnectivity.UNKNOWN, FirewallState.ALLOWED));
+
+            Assertions.assertNull(findNotice(stage, warning), "an allowed launcher shows no warning");
+
+            session.setSelf(createConnectedSelf(LinkConnectivity.UNKNOWN, FirewallState.BLOCKED));
+            Node notice = findNotice(stage, warning);
+
+            Assertions.assertNotNull(notice, "a blocked launcher shows the warning");
+
+            LauncherFxScenario.findButton(notice, texts.get("notice.firewall.allow")).fire();
+
+            Assertions.assertTrue(session.getCommands().contains("allow firewall"), "Allow asks the session to allow the launcher");
+
+            session.setSelf(createConnectedSelf(LinkConnectivity.UNKNOWN, FirewallState.CHECKING));
+
+            Assertions.assertNull(findNotice(stage, warning), "the warning hides while the request runs");
+
+            session.setSelf(createConnectedSelf(LinkConnectivity.UNKNOWN, FirewallState.NO_RULE));
+            notice = findNotice(stage, warning);
+
+            Assertions.assertNotNull(notice, "a launcher without a rule shows the warning again");
+
+            LauncherFxScenario.findButton(notice, texts.get("notice.firewall.close")).fire();
+
+            Assertions.assertNull(findNotice(stage, warning), "Close hides the warning");
+
+            session.setSelf(createConnectedSelf(LinkConnectivity.UNKNOWN, FirewallState.BLOCKED));
 
             Assertions.assertNull(findNotice(stage, warning), "the warning does not come again in this run");
 

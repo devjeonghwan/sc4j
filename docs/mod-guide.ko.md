@@ -206,8 +206,8 @@ jar 루트의 `sc4j-mod.json`([데모](../mods/demo/src/main/resources/sc4j-mod.
 
 **폴더 설정**에는 폴더 선택기와 선택 필드 세 개가 있습니다.
 
-- `check.contains`: 폴더에 있어야 하는 상대 경로. 없으면 `message`를 보여 줍니다.
-- `detect`: 제거 항목 이름(`uninstallEntries`)과 프로그램 폴더 아래 폴더 이름(`programFolders`). 설정이 비어 있는 동안 런처와 런타임이 그곳을 읽기만 하며 찾아보고, `check`를 통과한 첫 폴더를 저장합니다.
+- `check.contains`: 폴더에 모두 있어야 하는 상대 경로. `check.containsAny`: 폴더에 하나 이상 있어야 하는 상대 경로(예: 플랫폼별 빌드의 실행 파일). 없으면 `message`를 보여 줍니다.
+- `detect`: 제거 항목 이름(`uninstallEntries`)과 프로그램 폴더 아래 폴더 이름(`programFolders`). 설정이 비어 있는 동안 런처와 런타임이 그곳을 읽기만 하며 찾아보고, `check`를 통과한 첫 폴더를 저장합니다. 프로그램 폴더는 Windows의 프로그램 폴더, macOS의 `/Applications`와 `~/Applications`, 그리고 Linux와 macOS에서 기본 위치의 Wine 접두사(`WINEPREFIX`, `~/.wine`, Steam Proton `steamapps/compatdata/<app>/pfx`, Lutris `~/Games/<game>`, Bottles, CrossOver)의 `drive_c/Program Files (x86)`와 `drive_c/Program Files`입니다. 제거 항목은 Windows에서만 읽습니다.
 - `shared`: 여러 모드가 값 하나를 함께 쓰는 이름. `userdata/shared-settings.json`에 저장됩니다.
 
 모드는 `ModContext.getSettings().getDirectory(key)`로 읽습니다.

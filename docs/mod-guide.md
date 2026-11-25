@@ -206,8 +206,8 @@ The mod plugin writes `version` and `engine` into the manifest of the jar. A sou
 
 **Directory settings** have a folder picker and three optional fields:
 
-- `check.contains`: relative paths the folder must hold; else `message` is shown.
-- `detect`: uninstall entry names (`uninstallEntries`) and folder names below the program folders (`programFolders`); while the setting is empty, the launcher and the runtime look there read-only and save the first folder that passes `check`.
+- `check.contains`: relative paths the folder must hold all of; `check.containsAny`: relative paths it must hold at least one of (for example the program of each platform's build). Else `message` is shown.
+- `detect`: uninstall entry names (`uninstallEntries`) and folder names below the program folders (`programFolders`); while the setting is empty, the launcher and the runtime look there read-only and save the first folder that passes `check`. The program folders are those of Windows; on macOS `/Applications` and `~/Applications`; on Linux and macOS also `drive_c/Program Files (x86)` and `drive_c/Program Files` of the Wine prefixes at their default places (`WINEPREFIX`, `~/.wine`, Steam Proton `steamapps/compatdata/<app>/pfx`, Lutris `~/Games/<game>`, Bottles, CrossOver). Uninstall entries are read on Windows only.
 - `shared`: a name under which mods share one value, saved in `userdata/shared-settings.json`.
 
 The mod reads it with `ModContext.getSettings().getDirectory(key)`.

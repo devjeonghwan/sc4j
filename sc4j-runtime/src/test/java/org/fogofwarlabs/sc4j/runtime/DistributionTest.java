@@ -28,6 +28,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +65,10 @@ final class DistributionTest {
     private static final @NotNull String JAVA_HOME_VARIABLE = "JAVA_HOME";
     private static final @NotNull String PATH_VARIABLE = "PATH";
     private static final @NotNull List<@NotNull String> JAVA_COMMANDS = List.of("java.exe", "java");
+    private static final @NotNull String UNIX_JAVA_COMMAND = "java";
+    private static final @NotNull String FAILING_JAVA_FOLDER = "computer-java";
+    private static final @NotNull String FAILING_JAVA = "#!/bin/sh\necho 'The computer Java ran instead of the package Java.' >&2\nexit 97\n";
+    private static final @NotNull String EXECUTABLE_PERMISSIONS = "rwxr-xr-x";
     private static final @NotNull String JAVA_RELEASE_FILE = "java/release";
     private static final @NotNull String PLATFORM_FILE = "launcher/package-platform.txt";
     private static final @NotNull String MAC_START = "SC4J.command";
@@ -145,12 +150,29 @@ final class DistributionTest {
     }
 
     /**
-     * Takes the computer's Java away from a process: no {@code JAVA_HOME} and no folder of {@code PATH} that holds a {@code java} command.
+     * Takes the computer's Java away from a process: no {@code JAVA_HOME}; on Windows no folder of {@code PATH} that holds a {@code java}
+     * command; elsewhere a folder first in {@code PATH} whose {@code java} fails, since system folders such as {@code /usr/bin} hold one
+     * besides the commands the start scripts need.
+     *
+     * @param environment the environment of the process
+     * @param directory   the folder of the test, which receives the failing {@code java}
+     * @throws IOException if the failing {@code java} cannot be written
      */
-    private static void hideComputerJava(@NotNull Map<@NotNull String, @NotNull String> environment) {
-        List<String> kept = new ArrayList<>();
-
+    private static void hideComputerJava(@NotNull Map<@NotNull String, @NotNull String> environment, @NotNull Path directory) throws IOException {
         environment.remove(JAVA_HOME_VARIABLE);
+
+        if (!isWindows()) {
+            Path folder = Files.createDirectories(directory.resolve(FAILING_JAVA_FOLDER));
+            Path java = folder.resolve(UNIX_JAVA_COMMAND);
+
+            Files.writeString(java, FAILING_JAVA, StandardCharsets.US_ASCII);
+            Files.setPosixFilePermissions(java, PosixFilePermissions.fromString(EXECUTABLE_PERMISSIONS));
+            environment.put(PATH_VARIABLE, folder + File.pathSeparator + environment.getOrDefault(PATH_VARIABLE, ""));
+
+            return;
+        }
+
+        List<String> kept = new ArrayList<>();
 
         for (String folder : environment.getOrDefault(PATH_VARIABLE, "").split(File.pathSeparator)) {
             if (!folder.isBlank() && !holdsJava(folder)) {
@@ -189,7 +211,7 @@ final class DistributionTest {
         builder.directory(directory.toFile());
         builder.redirectErrorStream(true);
         builder.redirectOutput(output.toFile());
-        hideComputerJava(builder.environment());
+        hideComputerJava(builder.environment(), directory);
 
         Process launcher = builder.start();
 
@@ -332,7 +354,7 @@ final class DistributionTest {
             builder.directory(install.getRoot().toFile());
             builder.redirectErrorStream(true);
             builder.redirectOutput(output.toFile());
-            hideComputerJava(builder.environment());
+            hideComputerJava(builder.environment(), directory);
 
             Process runtime = builder.start();
 

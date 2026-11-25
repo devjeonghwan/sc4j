@@ -67,7 +67,7 @@ The launcher lists every jar in `build/dev-install/mods/`. A mod of another repo
 
 ## Install
 
-Each GitHub release has one user package per platform, `SC4J-<version>-<platform>.zip` with `<platform>` one of `windows-x64`, `linux-x64`, `linux-arm64`, `macos-x64` and `macos-arm64`. It holds the launcher, the runtime, the demo and a Java runtime for that platform; `userdata/` is created at the first start. The game window needs OpenGL 3.3.
+Each GitHub release has one user package per platform, `SC4J-<version>-<platform>.zip` with `<platform>` one of `windows-x64`, `linux-x64`, `linux-arm64` and `macos-arm64` (Apple silicon). It holds the launcher, the runtime, the demo and a Java runtime for that platform; `userdata/` is created at the first start. The game window needs OpenGL 3.3.
 
 - **Windows**: unpack the zip and start `SC4J.exe` (or `SC4J.bat`).
 - **Linux**: unpack the zip with `unzip`, which keeps the program modes, and start `./SC4J`. The launcher needs GTK 3.

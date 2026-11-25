@@ -78,8 +78,6 @@ jobs:
             runner: ubuntu-24.04-arm
           - platform: macos-arm64
             runner: macos-latest
-          - platform: macos-x64
-            runner: macos-15-intel
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     defaults:
@@ -184,7 +182,7 @@ jobs:
         env:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          for platform in windows-x64 linux-x64 linux-arm64 macos-arm64 macos-x64; do
+          for platform in windows-x64 linux-x64 linux-arm64 macos-arm64; do
             package="packages/SC4J-$VERSION-$platform.zip"
             if [ ! -f "$package" ] || [ ! -f "$package.sha256" ]; then
               echo "::error::The release lacks $package or its checksum file."

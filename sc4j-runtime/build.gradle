@@ -25,6 +25,10 @@ dependencies {
 application {
     applicationName = 'sc4j-runtime'
     mainClass = 'org.fogofwarlabs.sc4j.runtime.RuntimeMain'
+    // GLFW runs on the process's first thread on macOS, where AWT (image decoding) stays headless so that it does not claim that thread.
+    if (OS == 'macos') {
+        applicationDefaultJvmArgs = ['-XstartOnFirstThread', '-Djava.awt.headless=true']
+    }
 }
 
 // The start scripts put every jar of lib/ on the class path. bin/sc4j-runtime.launch holds their Java arguments, one per line, with

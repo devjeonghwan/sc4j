@@ -38,8 +38,9 @@ import java.util.stream.Stream;
 
 /**
  * Tests the built user package as a user unpacks it on a fresh computer without Java: it holds the start of the launcher, its own Java
- * runtime, the launcher with the shipped seed list and its empty JVM temporary folder, the runtime, mods and the licence files but no user
- * data and no cache file, with its programs executable on Unix; the launcher, started from the package root by the start file and on Windows
+ * runtime, the launcher with the shipped seed list, its platform file (the platform the package file is named for) and its empty JVM
+ * temporary folder, the runtime, mods and the licence files but no user data and no cache file, with its programs executable on Unix and the
+ * Finder start file on macOS only; the launcher, started from the package root by the start file and on Windows
  * by {@code SC4J.exe} and {@code SC4J-cli.exe}, lists the mods with the package's Java without a JVM warning; and its runtime, started
  * headless with no user data and no Java of the computer and with the Beacon.Link options the launcher passes a fresh install (the shipped
  * seed list, here naming a node on 127.0.0.1, and the install's peers file), opens a Beacon.Link session and keeps the node in the peers file
@@ -64,6 +65,9 @@ final class DistributionTest {
     private static final @NotNull String PATH_VARIABLE = "PATH";
     private static final @NotNull List<@NotNull String> JAVA_COMMANDS = List.of("java.exe", "java");
     private static final @NotNull String JAVA_RELEASE_FILE = "java/release";
+    private static final @NotNull String PLATFORM_FILE = "launcher/package-platform.txt";
+    private static final @NotNull String MAC_START = "SC4J.command";
+    private static final @NotNull String MAC_NAME_PREFIX = "mac";
     private static final @NotNull String JAVA_VERSION = "JAVA_VERSION=\"" + Runtime.version().feature();
     private static final @NotNull String OPERATING_SYSTEM_PROPERTY = "os.name";
     private static final @NotNull String WINDOWS_NAME_PREFIX = "windows";
@@ -82,6 +86,10 @@ final class DistributionTest {
 
     private static boolean isWindows() {
         return System.getProperty(OPERATING_SYSTEM_PROPERTY, "").toLowerCase(Locale.ROOT).startsWith(WINDOWS_NAME_PREFIX);
+    }
+
+    private static boolean isMac() {
+        return System.getProperty(OPERATING_SYSTEM_PROPERTY, "").toLowerCase(Locale.ROOT).startsWith(MAC_NAME_PREFIX);
     }
 
     /**
@@ -217,9 +225,16 @@ final class DistributionTest {
 
         for (String file : List.of("LICENSE", "NOTICE", "licenses", WINDOWS_START, UNIX_START, "launcher/bin/sc4j-launcher",
                                    "launcher/bin/sc4j-launcher.bat", "runtime/bin/" + UNIX_SCRIPT, "runtime/bin/" + WINDOWS_SCRIPT,
-                                   "runtime/bin/sc4j-runtime.launch", "runtime/lib/natives", JAVA_RELEASE_FILE, "java/legal")) {
+                                   "runtime/bin/sc4j-runtime.launch", "runtime/lib/natives", JAVA_RELEASE_FILE, "java/legal", PLATFORM_FILE)) {
             Assertions.assertTrue(Files.exists(root.resolve(file)), file);
         }
+
+        String platform = Files.readString(root.resolve(PLATFORM_FILE), StandardCharsets.UTF_8).strip();
+
+        Assertions.assertFalse(platform.isEmpty(), "the package names its platform");
+        Assertions.assertTrue(RuntimeTestResources.getDistribution().getFileName().toString().endsWith("-" + platform + ".zip"),
+                              "the package file names the platform " + platform);
+        Assertions.assertEquals(isMac(), Files.exists(root.resolve(MAC_START)), "only the macOS package has " + MAC_START);
 
         Assertions.assertTrue(Files.readString(root.resolve(JAVA_RELEASE_FILE), StandardCharsets.UTF_8).contains(JAVA_VERSION),
                               "the package's Java runs the class files of this build");
@@ -228,6 +243,10 @@ final class DistributionTest {
             for (String file : UNIX_EXECUTABLES) {
                 Assertions.assertTrue(Files.isExecutable(root.resolve(file)), file + " is executable");
             }
+        }
+
+        if (isMac()) {
+            Assertions.assertTrue(Files.isExecutable(root.resolve(MAC_START)), MAC_START + " is executable");
         }
 
         try (Stream<Path> listed = Files.list(install.getModsDirectory())) {

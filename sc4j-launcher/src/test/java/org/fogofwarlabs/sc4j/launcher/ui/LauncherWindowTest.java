@@ -36,6 +36,7 @@ import org.fogofwarlabs.sc4j.launcher.ui.session.Conversations;
 import org.fogofwarlabs.sc4j.launcher.ui.session.RecordingLauncherSession;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherRelease;
 import org.fogofwarlabs.sc4j.launcher.update.LauncherUpdater;
+import org.fogofwarlabs.sc4j.launcher.update.PackagePlatform;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.fogofwarlabs.sc4j.manifest.test.TestJarUtils;
 import org.jetbrains.annotations.NotNull;
@@ -320,7 +321,7 @@ final class LauncherWindowTest {
     @Test
     void is_update_offered_should_open_the_dialog_once_for_a_newer_version_that_is_not_skipped(@TempDir @NotNull Path directory) throws Exception {
         try (ReleaseServerScenario server = ReleaseServerScenario.start()) {
-            LauncherUpdater updater = new LauncherUpdater(InstallLayout.of(directory), new ReleaseClient(server.getApi()));
+            LauncherUpdater updater = new LauncherUpdater(InstallLayout.of(directory), new ReleaseClient(server.getApi()), PackagePlatform.LINUX_X64);
             ReleaseRepository repository = ReleaseRepository.parse(UPDATE_REPOSITORY);
             ReleaseVersion olderSkipped = ReleaseVersion.parse("1.1.5");
             LauncherRelease newer;
@@ -328,7 +329,7 @@ final class LauncherWindowTest {
 
             Assertions.assertNotNull(repository);
             Assertions.assertNotNull(olderSkipped);
-            server.addCheckedRelease(UPDATE_REPOSITORY, "v1.2.0", Map.of("SC4J-1.2.0.zip", new byte[]{1}));
+            server.addCheckedRelease(UPDATE_REPOSITORY, "v1.2.0", Map.of("SC4J-1.2.0-linux-x64.zip", new byte[]{1}));
             newer = updater.findUpdate(repository, ReleaseVersion.parse("1.1.0"));
             Assertions.assertNotNull(newer);
             skipped = LauncherSettings.DEFAULT.withSkippedVersion(newer.getVersion());

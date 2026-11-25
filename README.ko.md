@@ -67,7 +67,7 @@ JDK 25가 필요하며, Gradle은 Gradle 래퍼가 내려받습니다. 명령은
 
 ## 설치
 
-GitHub 릴리즈마다 플랫폼별 사용자 패키지 `SC4J-<version>-<platform>.zip`이 있습니다. `<platform>`은 `windows-x64`, `linux-x64`, `linux-arm64`, `macos-x64`, `macos-arm64` 중 하나입니다. 패키지에는 런처, 런타임, 데모와 그 플랫폼용 Java 런타임이 있으며, `userdata/`는 처음 시작할 때 만들어집니다. 게임 창에는 OpenGL 3.3이 필요합니다.
+GitHub 릴리즈마다 플랫폼별 사용자 패키지 `SC4J-<version>-<platform>.zip`이 있습니다. `<platform>`은 `windows-x64`, `linux-x64`, `linux-arm64`, `macos-arm64`(Apple Silicon) 중 하나입니다. 패키지에는 런처, 런타임, 데모와 그 플랫폼용 Java 런타임이 있으며, `userdata/`는 처음 시작할 때 만들어집니다. 게임 창에는 OpenGL 3.3이 필요합니다.
 
 - **Windows**: zip을 풀고 `SC4J.exe`(또는 `SC4J.bat`)를 실행합니다.
 - **Linux**: 프로그램 권한을 유지하는 `unzip`으로 풀고 `./SC4J`를 실행합니다. 런처에는 GTK 3이 필요합니다.

@@ -79,20 +79,18 @@ jobs:
         with:
           cache-provider: basic
 
-      # The runners have no GPU, so the OpenGL checks are off; Linux runs the JavaFX tests on a virtual display (Xvfb).
-      - name: Test and build the user package
+      # The unit tests run in CI on every push; here each runner builds its package and checks it with the
+      # distribution tests (Linux on a virtual display, Xvfb).
+      - name: Build and check the user package
         env:
           VERSION: ${{ needs.version.outputs.version }}
           PLATFORM: ${{ matrix.platform }}
         run: |
-          run_gradle() {
-            if [ "$RUNNER_OS" = Linux ]; then
-              xvfb-run --auto-servernum ./gradlew "$@"
-            else
-              ./gradlew "$@"
-            fi
-          }
-          run_gradle test distributionTest -Psc4j.render.smoke=false
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run --auto-servernum ./gradlew distributionTest -Psc4j.render.smoke=false
+          else
+            ./gradlew distributionTest -Psc4j.render.smoke=false
+          fi
           if [ ! -f "build/distributions/SC4J-$VERSION-$PLATFORM.zip" ]; then
             echo "::error::The runner built no SC4J-$VERSION-$PLATFORM.zip."
             exit 1

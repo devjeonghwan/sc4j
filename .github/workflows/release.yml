@@ -103,13 +103,14 @@ jobs:
         with:
           cache-provider: basic
 
-      # The runners have no GPU, so the OpenGL checks are off; Linux runs the JavaFX tests on a virtual display (Xvfb).
-      - name: Test and build the user package
+      # The unit tests run in CI on every push; here each runner builds its package and checks it with the
+      # distribution tests (Linux on a virtual display, Xvfb).
+      - name: Build and check the user package
         run: |
           if [ "$RUNNER_OS" = Linux ]; then
-            xvfb-run --auto-servernum ./gradlew test distributionTest -Psc4j.render.smoke=false
+            xvfb-run --auto-servernum ./gradlew distributionTest -Psc4j.render.smoke=false
           else
-            ./gradlew test distributionTest -Psc4j.render.smoke=false
+            ./gradlew distributionTest -Psc4j.render.smoke=false
           fi
 
       # The checksum file has the sha256sum format: the hash, two spaces and the file name.

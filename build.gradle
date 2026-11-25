@@ -163,10 +163,12 @@ def registerApiTasks = { module, apiTool, String sourceSetName ->
         inputs.files(classes)
         inputs.files(apiFile)
         outputs.file(report)
-        argumentProviders.add({
-            ['check', '--api-file', apiFile.absolutePath] + classArguments() +
-            ['--update-task', module.path + ':' + listing.dump, '--report', report.get().asFile.absolutePath]
-        } as CommandLineArgumentProvider)
+        argumentProviders.add(
+            {
+                ['check', '--api-file', apiFile.absolutePath] + classArguments() +
+                ['--update-task', module.path + ':' + listing.dump, '--report', report.get().asFile.absolutePath]
+            } as CommandLineArgumentProvider
+        )
     }
     module.tasks.named('check') {
         dependsOn apiCheck
@@ -234,7 +236,7 @@ def createJavaRuntime = tasks.register('createJavaRuntime', Exec) {
     def imageDirectory = javaRuntimeImage.get().asFile
     executable = new File(javaRuntimeHome, 'bin/' + (platformOperatingSystem == 'windows' ? 'jlink.exe' : 'jlink')).absolutePath
     args '--add-modules', javaRuntimeModules.join(','), '--include-locales=' + javaRuntimeLocales.join(','), '--strip-debug',
-        '--no-header-files', '--no-man-pages', '--compress=zip-6', '--output', imageDirectory.absolutePath
+         '--no-header-files', '--no-man-pages', '--compress=zip-6', '--output', imageDirectory.absolutePath
     // jlink writes only into a folder that does not exist.
     doFirst {
         imageDirectory.deleteDir()
@@ -392,14 +394,14 @@ tasks.register('runDevInstall', JavaExec) {
     doFirst {
         def nativeDirectory = new File(runtimeDirectory.get(), 'lib/natives').absolutePath
         jvmArgs '--enable-native-access=ALL-UNNAMED',
-            '-Dorg.lwjgl.librarypath=' + nativeDirectory,
-            '-Djava.library.path=' + nativeDirectory,
-            '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + new File(runtimeDirectory.get(), '.cache/natives').absolutePath,
-            '-Dorg.bytedeco.javacpp.cachedir=' + new File(runtimeDirectory.get(), '.cache/javacpp').absolutePath,
-            '-Dorg.bytedeco.javacpp.platform.linkpath=' + nativeDirectory,
-            '-Dorg.bytedeco.javacpp.platform.preloadpath=' + nativeDirectory,
-            '-Dorg.bytedeco.javacpp.pathsFirst=true',
-            '-Dorg.bytedeco.javacpp.cacheLibraries=false'
+                '-Dorg.lwjgl.librarypath=' + nativeDirectory,
+                '-Djava.library.path=' + nativeDirectory,
+                '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + new File(runtimeDirectory.get(), '.cache/natives').absolutePath,
+                '-Dorg.bytedeco.javacpp.cachedir=' + new File(runtimeDirectory.get(), '.cache/javacpp').absolutePath,
+                '-Dorg.bytedeco.javacpp.platform.linkpath=' + nativeDirectory,
+                '-Dorg.bytedeco.javacpp.platform.preloadpath=' + nativeDirectory,
+                '-Dorg.bytedeco.javacpp.pathsFirst=true',
+                '-Dorg.bytedeco.javacpp.cacheLibraries=false'
     }
 }
 
@@ -551,13 +553,15 @@ def createWindowsProgram = tasks.register('createWindowsProgram', Exec) {
     outputs.dir(imageDirectory)
     executable = new File(javaRuntimeHome, 'bin/jpackage.exe').absolutePath
     // jpackage takes a version of numbers only.
-    argumentProviders.add({
-        ['--type', 'app-image', '--name', windowsProgramName, '--dest', imageDirectory.parentFile.absolutePath,
-         '--input', inputDirectory.absolutePath, '--main-jar', launcherJar().name, '--main-class', launcherMainClass.get(),
-         '--runtime-image', javaRuntimeImage.get().asFile.absolutePath, '--icon', windowsIcon.get().asFile.absolutePath,
-         '--app-version', version.toString().replaceFirst(/-.*/, ''), '--vendor', 'Fog of War Labs', '--description', 'SC4J',
-         '--add-launcher', windowsConsoleProgramName + '=' + consoleLauncherFile.absolutePath]
-    } as CommandLineArgumentProvider)
+    argumentProviders.add(
+        {
+            ['--type', 'app-image', '--name', windowsProgramName, '--dest', imageDirectory.parentFile.absolutePath,
+             '--input', inputDirectory.absolutePath, '--main-jar', launcherJar().name, '--main-class', launcherMainClass.get(),
+             '--runtime-image', javaRuntimeImage.get().asFile.absolutePath, '--icon', windowsIcon.get().asFile.absolutePath,
+             '--app-version', version.toString().replaceFirst(/-.*/, ''), '--vendor', 'Fog of War Labs', '--description', 'SC4J',
+             '--add-launcher', windowsConsoleProgramName + '=' + consoleLauncherFile.absolutePath]
+        } as CommandLineArgumentProvider
+    )
     // jpackage writes only into a folder that does not exist.
     doFirst {
         deleteFiles(imageDirectory, inputDirectory)

@@ -62,8 +62,10 @@ tasks.register('distributionTest', Test) {
     }
     dependsOn distribution
     inputs.files(distribution)
-    jvmArgumentProviders.add({
-        ['-Dsc4j.distribution=' + distribution.get().archiveFile.get().asFile.absolutePath]
-    } as CommandLineArgumentProvider)
+    jvmArgumentProviders.add(
+        {
+            ['-Dsc4j.distribution=' + distribution.get().archiveFile.get().asFile.absolutePath]
+        } as CommandLineArgumentProvider
+    )
     shouldRunAfter tasks.named('test')
 }

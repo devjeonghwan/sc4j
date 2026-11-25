@@ -232,7 +232,7 @@ final class LauncherSessionTest {
             });
 
             try (ClientBeaconLink gameRun = launchers.createAliceGame()) {
-                BeaconLinkClient game = (BeaconLinkClient) gameRun.open();
+                BeaconLinkClient game = gameRun.open();
 
                 game.getCommunity().setStatus(PlayerStatus.IN_GAME);
                 LauncherSessionScenario.await(List.of(game), () -> isShown(bob, aliceCode, FriendState.IN_GAME, 2),
@@ -262,7 +262,7 @@ final class LauncherSessionTest {
             launchers.befriendAlice();
 
             try (ClientBeaconLink gameRun = launchers.createAliceGame()) {
-                BeaconLinkClient game = (BeaconLinkClient) gameRun.open();
+                BeaconLinkClient game = gameRun.open();
 
                 game.getCommunity();
                 LauncherSessionScenario.await(List.of(game), () -> isRegistered(game) && alice.getSelf().getDeviceCount() == 2,

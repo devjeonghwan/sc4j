@@ -7,7 +7,6 @@ import org.fogofwarlabs.sc4j.beaconlink.client.ClientBeaconLink;
 import org.fogofwarlabs.sc4j.beaconlink.client.ClientConfiguration;
 import org.fogofwarlabs.sc4j.beaconlink.client.ClientSetup;
 import org.fogofwarlabs.sc4j.beaconlink.client.mapping.MappingProtocol;
-import org.fogofwarlabs.sc4j.beaconlink.client.mapping.PortMapping;
 import org.fogofwarlabs.sc4j.beaconlink.peer.MeshPeer;
 import org.fogofwarlabs.sc4j.beaconlink.peer.account.Account;
 import org.fogofwarlabs.sc4j.beaconlink.peer.account.AccountStore;
@@ -518,13 +517,8 @@ final class LauncherNodeTest {
             try (LauncherNode node = LauncherNode.start(InstallLayout.of(directory.resolve("automatic")), automatic, LOOPBACK, createConfiguration(),
                                                         ProtocolClock.SYSTEM, gateway.createConfiguration().build())) {
                 Assertions.assertNotNull(node);
-                await(() -> node.getPortMapping() != null, "the node maps its port");
-
-                PortMapping mapping = node.getPortMapping();
-
-                Assertions.assertNotNull(mapping);
-                Assertions.assertEquals(node.getLocalAddress().getPort(), mapping.getInternalPort());
-                Assertions.assertEquals(new InetSocketAddress(MAPPED_ADDRESS, automatic.getPort()), mapping.getExternalAddress());
+                await(() -> !gateway.getRequestedLifetimes(MappingProtocol.PCP).isEmpty(), "the router maps the node's port");
+                Assertions.assertNull(node.getPortMapping(), "the loopback address the peers observe chooses no mapping");
             }
 
             await(() -> gateway.getRequestedLifetimes(MappingProtocol.PCP).size() > 1, "the router receives the release");
@@ -648,8 +642,8 @@ final class LauncherNodeTest {
                     // The first sessions meet through the seed; their peers learn the launcher nodes, which the sessions record at their end.
                     try (ClientBeaconLink aliceRun = createLink(aliceFolder, alice, seeds, clock);
                          ClientBeaconLink bobRun = createLink(bobFolder, bob, seeds, clock)) {
-                        BeaconLinkClient aliceSession = (BeaconLinkClient) aliceRun.open();
-                        BeaconLinkClient bobSession = (BeaconLinkClient) bobRun.open();
+                        BeaconLinkClient aliceSession = aliceRun.open();
+                        BeaconLinkClient bobSession = bobRun.open();
                         List<BeaconLinkClient> sessions = List.of(aliceSession, bobSession);
 
                         clock.advanceUntil(sessions, () -> isRegisteredAt(aliceSession, seedAddress) && isRegisteredAt(bobSession, seedAddress),
@@ -669,8 +663,8 @@ final class LauncherNodeTest {
                     // The seed is down: the second sessions start from the peers files and meet through the launcher nodes.
                     try (ClientBeaconLink aliceRun = createLink(aliceFolder, alice, seeds, clock);
                          ClientBeaconLink bobRun = createLink(bobFolder, bob, seeds, clock)) {
-                        BeaconLinkClient aliceSession = (BeaconLinkClient) aliceRun.open();
-                        BeaconLinkClient bobSession = (BeaconLinkClient) bobRun.open();
+                        BeaconLinkClient aliceSession = aliceRun.open();
+                        BeaconLinkClient bobSession = bobRun.open();
                         List<BeaconLinkClient> sessions = List.of(aliceSession, bobSession);
 
                         clock.advanceUntil(sessions, () -> isRegistered(aliceSession) && isRegistered(bobSession),

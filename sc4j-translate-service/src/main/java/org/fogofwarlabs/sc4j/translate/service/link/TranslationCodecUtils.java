@@ -1,18 +1,10 @@
 package org.fogofwarlabs.sc4j.translate.service.link;
 
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
-import org.fogofwarlabs.sc4j.translate.ProtectedSpan;
-import org.fogofwarlabs.sc4j.translate.Translation;
-import org.fogofwarlabs.sc4j.translate.TranslationPriority;
-import org.fogofwarlabs.sc4j.translate.TranslationRequest;
-import org.fogofwarlabs.sc4j.translate.TranslationStatus;
+import org.fogofwarlabs.sc4j.translate.*;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 

@@ -171,8 +171,7 @@ public final class RuntimeSession {
     }
 
     /**
-     * @return the link to the launcher that started the run, or {@code null} while the session has no link: before it connects, when the
-     *         command line names none or when it cannot be connected
+     * @return the link to the launcher that started the run, or {@code null} while the session has no link: before it connects, when the command line names none or when it cannot be connected
      */
     public @Nullable LauncherLinkClient getLauncherLink() {
         return this.launcherLink;

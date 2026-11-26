@@ -1,10 +1,6 @@
 package org.fogofwarlabs.sc4j.translate.service.link;
 
-import org.fogofwarlabs.sc4j.translate.ProtectedSpan;
-import org.fogofwarlabs.sc4j.translate.Translation;
-import org.fogofwarlabs.sc4j.translate.TranslationPriority;
-import org.fogofwarlabs.sc4j.translate.TranslationRequest;
-import org.fogofwarlabs.sc4j.translate.TranslationStatus;
+import org.fogofwarlabs.sc4j.translate.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -20,11 +16,11 @@ import java.util.Locale;
 final class TranslationCodecUtilsTest {
     @Test
     void decode_request_should_return_the_encoded_request() throws IOException {
-        TranslationRequest request = new TranslationRequest.Builder("^1안녕 ^2하세요", Locale.forLanguageTag("zh-Hans-CN"))
-                                                           .addProtectedSpan(0, 2)
-                                                           .addProtectedSpan(5, 7)
-                                                           .setPriority(TranslationPriority.BATCH)
-                                                           .build();
+        TranslationRequest request = new TranslationRequest.Builder("^1안녕 ^2하세요", Locale.forLanguageTag("zh-Hans-CN")).addProtectedSpan(0, 2)
+                                                                                                                      .addProtectedSpan(5, 7)
+                                                                                                                      .setPriority(TranslationPriority.BATCH)
+                                                                                                                      .build();
+
         TranslationRequest decoded = TranslationCodecUtils.decodeRequest(TranslationCodecUtils.encodeRequest(request));
 
         Assertions.assertEquals(request.getText(), decoded.getText());

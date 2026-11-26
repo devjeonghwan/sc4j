@@ -284,6 +284,7 @@ public final class SentencePieceTokenizer implements TextTokenizer {
             starts[count]   = position;
             lengths[count]  = length;
             previous[count] = count - 1;
+
             position += length;
             next[count] = position < normalized.length ? count + 1 : MISSING;
         }
@@ -373,6 +374,7 @@ public final class SentencePieceTokenizer implements TextTokenizer {
             while (start < end) {
                 if (this.startsWithSpaceSymbol(start, end)) {
                     output[outputLength++] = SPACE;
+
                     start += SentencePieceNormalizer.SPACE_SYMBOL.length;
                 } else {
                     output[outputLength++] = this.pieces[start++];

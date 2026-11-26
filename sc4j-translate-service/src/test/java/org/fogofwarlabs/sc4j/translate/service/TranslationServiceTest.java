@@ -13,11 +13,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 /**
  * Tests the translation service with a fake preset: the decision order, protected spans, splitting, the cache, the queue priority, the idle
@@ -80,9 +76,9 @@ final class TranslationServiceTest {
         FakeTranslationPreset preset = new FakeTranslationPreset(LARGE_INPUT_LIMIT);
         String text = "\u0003Hello\u0004  world \u0005!";
         TranslationRequest request = new TranslationRequest.Builder(text, Locale.KOREAN).addProtectedSpan(0, 1)
-                                                                                         .addProtectedSpan(6, 7)
-                                                                                         .addProtectedSpan(15, 16)
-                                                                                         .build();
+                                                                                        .addProtectedSpan(6, 7)
+                                                                                        .addProtectedSpan(15, 16)
+                                                                                        .build();
 
         try (TranslationService service = this.createService(preset, LONG_IDLE_TIME)) {
             Translation translation = translate(service, request);
@@ -111,7 +107,7 @@ final class TranslationServiceTest {
 
         try (TranslationService service = this.createService(preset, LONG_IDLE_TIME)) {
             Translation translation = translate(service, new TranslationRequest.Builder("One two three. Four five. Six seven eight nine ten.",
-                                                                                         Locale.KOREAN).build());
+                                                                                        Locale.KOREAN).build());
 
             Assertions.assertEquals(TranslationStatus.TRANSLATED, translation.getStatus());
             Assertions.assertEquals(List.of("One two three.", "Four five.", "Six seven eight nine", "ten."), preset.getTranslatedTexts());
@@ -242,8 +238,8 @@ final class TranslationServiceTest {
     }
 
     private static @NotNull Translation translate(@NotNull TranslationService service, @NotNull TranslationRequest request) throws ExecutionException,
-                                                                                                                             InterruptedException,
-                                                                                                                             TimeoutException {
+                                                                                                                                   InterruptedException,
+                                                                                                                                   TimeoutException {
         return service.translate(request).get(WAIT_SECONDS, TimeUnit.SECONDS);
     }
 

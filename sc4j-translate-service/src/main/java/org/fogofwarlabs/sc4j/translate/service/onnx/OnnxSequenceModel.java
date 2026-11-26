@@ -1,13 +1,6 @@
 package org.fogofwarlabs.sc4j.translate.service.onnx;
 
-import ai.onnxruntime.NodeInfo;
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OnnxTensorLike;
-import ai.onnxruntime.OnnxValue;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtSession;
-import ai.onnxruntime.TensorInfo;
+import ai.onnxruntime.*;
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.fogofwarlabs.sc4j.base.exception.IgnoreException;
 import org.fogofwarlabs.sc4j.translate.service.model.ModelException;
@@ -272,7 +265,7 @@ public final class OnnxSequenceModel implements SequenceModel {
                 }
 
                 output[outputLength++] = next;
-                token[0] = next;
+                token[0]               = next;
             }
         } finally {
             OrtSession.Result last = previous != first ? previous : null;

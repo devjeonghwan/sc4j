@@ -132,8 +132,7 @@ public final class LauncherLinkClient implements Closeable {
      *
      * @param service the service name
      * @param payload the request payload
-     * @return the future of the response payload; it fails with a {@link LauncherLinkException} when the service answers with a failure, the
-     *         request is longer than a frame may be, or the link closes before the answer
+     * @return the future of the response payload; it fails with a {@link LauncherLinkException} when the service answers with a failure, the request is longer than a frame may be, or the link closes before the answer
      */
     public @NotNull CompletableFuture<byte @NotNull []> request(@NotNull String service, byte @NotNull [] payload) {
         CompletableFuture<byte[]> response = new CompletableFuture<>();

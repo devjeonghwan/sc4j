@@ -22,7 +22,6 @@ import org.fogofwarlabs.sc4j.launcher.ui.ThemeUtils;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.fogofwarlabs.sc4j.translate.ProtectedSpan;
 import org.fogofwarlabs.sc4j.translate.Translation;
-import org.fogofwarlabs.sc4j.translate.TranslationRequest;
 import org.fogofwarlabs.sc4j.translate.TranslationStatus;
 import org.fogofwarlabs.sc4j.translate.Translator;
 import org.jetbrains.annotations.NotNull;
@@ -33,12 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 

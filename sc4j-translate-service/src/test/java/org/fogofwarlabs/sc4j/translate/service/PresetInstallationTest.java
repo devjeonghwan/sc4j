@@ -46,7 +46,7 @@ final class PresetInstallationTest {
     void startServer() throws IOException {
         this.served   = new ConcurrentHashMap<>();
         this.requests = new AtomicInteger();
-        this.server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        this.server   = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
         this.server.createContext("/", exchange -> {
             byte[] contents = this.served.get(exchange.getRequestURI().getPath());
 

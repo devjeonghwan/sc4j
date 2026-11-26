@@ -47,7 +47,7 @@ final class TextSplitter {
 
         for (String word : splitAt(sentence, BreakIterator.getWordInstance(language))) {
             List<String> parts = tokenCounter.applyAsInt(word) <= maximumTokens ? List.of(word)
-                                                                                 : splitAt(word, BreakIterator.getCharacterInstance(language));
+                                                                                : splitAt(word, BreakIterator.getCharacterInstance(language));
 
             for (String part : parts) {
                 if (!current.isEmpty() && tokenCounter.applyAsInt(current + part) > maximumTokens) {

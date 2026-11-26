@@ -1,11 +1,7 @@
 package org.fogofwarlabs.sc4j.translate.service.nllb;
 
 import org.fogofwarlabs.sc4j.translate.service.TranslationTestResources;
-import org.fogofwarlabs.sc4j.translate.service.model.IdentifiedLanguage;
-import org.fogofwarlabs.sc4j.translate.service.model.LanguageIdentifier;
-import org.fogofwarlabs.sc4j.translate.service.model.ModelException;
-import org.fogofwarlabs.sc4j.translate.service.model.PresetFile;
-import org.fogofwarlabs.sc4j.translate.service.model.TranslationModel;
+import org.fogofwarlabs.sc4j.translate.service.model.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

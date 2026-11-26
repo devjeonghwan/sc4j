@@ -3,6 +3,7 @@ plugins {
     id 'application'
     id 'org.fogofwarlabs.sc4j.java'
     id 'org.fogofwarlabs.sc4j.natives'
+    id 'org.fogofwarlabs.sc4j.onnxruntime'
 }
 
 // The engine executable: it reads a mod jar's manifest and settings, loads the mod in its own class loader and runs it.
@@ -13,6 +14,8 @@ dependencies {
     implementation project(':sc4j-beaconlink')
     // The link to the launcher that started the run; a run without it goes on alone.
     implementation project(':sc4j-launcher-link')
+    // The mod's translator: the launcher's translation service over the link, else a local one of the preset the command line names.
+    implementation project(':sc4j-translate-service')
     // The catalog reader (releases and the mod catalog) that a mod may use; the runtime ships it once on the class path the mod class
     // loaders see, so mod jars do not hold it.
     runtimeOnly project(':sc4j-catalog')

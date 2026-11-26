@@ -5,9 +5,12 @@ plugins {
 
 // The translation service behind the contract: the model layer (tokenizer, sequence model, language identifier, translation model), the
 // presets and their installation, the NLLB preset (pure Java SentencePiece and fastText, ONNX Runtime for the encoder and the decoder) and
-// the service with its worker, language decision and cache. It knows no engine and no game.
+// the service with its worker, language decision and cache, and the adapters that carry requests over the launcher link. It knows no engine
+// and no game.
 dependencies {
     api project(':sc4j-translate')
+    // The launcher's translation service and the runtime's translator that sends to it.
+    api project(':sc4j-launcher-link')
 
     // The encoder and decoder inference of the model presets. Its jar carries the native libraries of every platform and unpacks the one of
     // the running platform when the first session opens.

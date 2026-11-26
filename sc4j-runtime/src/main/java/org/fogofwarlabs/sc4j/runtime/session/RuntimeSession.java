@@ -43,6 +43,12 @@ import org.fogofwarlabs.sc4j.manifest.validation.ValidationResult;
 import org.fogofwarlabs.sc4j.manifest.version.EngineVersion;
 import org.fogofwarlabs.sc4j.runtime.cli.ExitCode;
 import org.fogofwarlabs.sc4j.runtime.cli.RuntimeCommandLine;
+import org.fogofwarlabs.sc4j.translate.Translator;
+import org.fogofwarlabs.sc4j.translate.service.TranslationPresetUtils;
+import org.fogofwarlabs.sc4j.translate.service.TranslationService;
+import org.fogofwarlabs.sc4j.translate.service.TranslationStorage;
+import org.fogofwarlabs.sc4j.translate.service.link.LinkTranslator;
+import org.fogofwarlabs.sc4j.translate.service.model.TranslationPreset;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,6 +56,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Runs one mod from its jar, in the runtime sequence:
@@ -64,7 +71,10 @@ import java.util.*;
  * directory the computer records (which is then saved), and validate them against the manifest's schema;</li>
  * <li>create the mod's class loader;</li>
  * <li>create the {@code entry} class;</li>
- * <li>{@link Mod#initialize} with the settings, storage, logger and install folder;</li>
+ * <li>open the mod's translator: over the launcher link when the run has one, which translates with a local service of the preset the
+ * command line names ({@code --translation-preset}) once the link closes; without a link a local service of that preset; else a translator
+ * that answers every request as unavailable. A preset id that SC4J does not offer is logged and gives no local service;</li>
+ * <li>{@link Mod#initialize} with the settings, storage, logger, install folder and translator;</li>
  * <li>{@link Mod#register};</li>
  * <li>close the registration and compute the mod identity;</li>
  * <li>create the mod's replay and save formats with the identity, find the format of a {@code --replay} file among them, create the run's
@@ -74,8 +84,8 @@ import java.util.*;
  * <li>run the main loop ({@link WindowClient});</li>
  * <li>shut down in the reverse order of what was opened.</li>
  * </ol>
- * A {@code --headless} run hands the launch request to the mod's {@link HeadlessRunner} instead of steps 9 and 10. A mod with its own
- * application loop registers a {@link ModApplication}; steps 9 and 10 then run it, and it opens its own window and devices. A failure ends
+ * A {@code --headless} run hands the launch request to the mod's {@link HeadlessRunner} instead of steps 10 and 11. A mod with its own
+ * application loop registers a {@link ModApplication}; steps 10 and 11 then run it, and it opens its own window and devices. A failure ends
  * the sequence with its {@link ExitCode}: command line and settings errors with {@link ExitCode#CONFIGURATION_ERROR}, a mod that cannot be
  * loaded, validated or that refuses the run with {@link ExitCode#MOD_FAILURE}, and a failure while the application runs with
  * {@link ExitCode#RUN_FAILURE}. A mod's refusal is logged with its message; the stack trace is logged for unexpected exceptions and for the
@@ -236,9 +246,10 @@ public final class RuntimeSession {
         ModStorage storage = this.openStorage(install, manifest.getId());
         LoadedMod loaded = this.loadMod(archive);
         Mod mod = loaded.getMod();
+        Translator translator = this.openTranslator(install);
 
         this.initializeMod(mod, new RuntimeModContext(manifest, new RuntimeModSettings(settings), storage, install.getRoot(),
-                                                      this.commandLine.getModArguments(), Logger.of(mod.getClass())));
+                                                      this.commandLine.getModArguments(), Logger.of(mod.getClass()), translator));
 
         RuntimeModRegistration registration = this.registerMod(mod);
         GameDefinition gameDefinition = this.buildGameDefinition(registration);
@@ -297,6 +308,48 @@ public final class RuntimeSession {
         this.launcherLink = client;
         this.shutdownSteps.push(client::close);
         LOGGER.info("LAUNCHER LINK: {0}", socket);
+    }
+
+    /**
+     * Opens the mod's translator: a {@link LinkTranslator} over the launcher link when the session has one, with a local service of the preset
+     * the command line names for the time after the link closes; without a link a local {@link TranslationService} of that preset; else the
+     * unavailable translator. The translator is closed by a shutdown step.
+     *
+     * @param install the install, whose translation storage holds the presets
+     * @return the translator of the run
+     */
+    private @NotNull Translator openTranslator(@NotNull InstallLayout install) {
+        String presetId = this.commandLine.getTranslationPreset();
+        TranslationPreset preset = presetId == null ? null : TranslationPresetUtils.findPreset(presetId);
+        TranslationStorage storage = TranslationStorage.of(install.getUserDataDirectory());
+        Supplier<TranslationService> localFactory = preset == null ? null : () -> new TranslationService(preset, storage);
+        LauncherLinkClient link = this.launcherLink;
+
+        if (presetId != null && preset == null) {
+            LOGGER.warning("TRANSLATION: unknown preset {0}", presetId);
+        }
+
+        if (link != null) {
+            LinkTranslator translator = new LinkTranslator(link, localFactory);
+
+            this.shutdownSteps.push(translator::close);
+            LOGGER.info("TRANSLATION: launcher link, local preset {0}", preset == null ? "none" : preset.getId());
+
+            return translator;
+        }
+
+        if (localFactory != null) {
+            TranslationService service = localFactory.get();
+
+            this.shutdownSteps.push(service::close);
+            LOGGER.info("TRANSLATION: local preset {0}", service.getPreset().getId());
+
+            return service;
+        }
+
+        LOGGER.info("TRANSLATION: none");
+
+        return Translator.unavailable();
     }
 
     /**

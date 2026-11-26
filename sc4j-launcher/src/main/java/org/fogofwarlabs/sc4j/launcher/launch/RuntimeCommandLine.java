@@ -32,6 +32,7 @@ import java.util.Map;
  *     --peers <install>/userdata/beaconlink/peers.json
  *     --no-port-mapping, when the launcher's port mapping setting is off
  *     --launcher-link <install>/userdata/run/launcher-<pid>.sock, when the launcher's link is open
+ *     --translation-preset <preset id>, when the launcher translates with an installed preset
  *}
  * {@code --seeds} is left out while neither seed list exists. Each path is one argument. The token of the launcher's link goes into the
  * environment variable {@value LauncherLinkAddress#TOKEN_ENVIRONMENT_VARIABLE} of the process ({@link #getEnvironment()}), never on the command
@@ -65,6 +66,7 @@ public final class RuntimeCommandLine {
     private static final @NotNull String PEERS_OPTION = "--peers";
     private static final @NotNull String NO_PORT_MAPPING_OPTION = "--no-port-mapping";
     private static final @NotNull String LAUNCHER_LINK_OPTION = "--launcher-link";
+    private static final @NotNull String TRANSLATION_PRESET_OPTION = "--translation-preset";
     private static final @NotNull String QUOTE = "\"";
     private static final @NotNull String ARGUMENT_SEPARATOR = " ";
     private static final @NotNull String WINDOWS_NAME_PREFIX = "windows";
@@ -73,19 +75,20 @@ public final class RuntimeCommandLine {
     /**
      * Creates a {@link RuntimeCommandLine} instance for a mod of an install.
      *
-     * @param install          the install
-     * @param modId            the mod id, which names the settings file, the storage folder and the log folder
-     * @param modJar           the mod jar
-     * @param accountDirectory the folder of the account the game runs with
-     * @param portMapping      whether the game's Beacon.Link sessions map their socket on the router
-     * @param launcherLink     the address of the launcher's link, or {@code null} when the launcher has no link
-     * @param javaHome         the Java runtime that runs the runtime
-     * @param windows          whether the runtime runs on Windows (Java program {@value #WINDOWS_JAVA})
+     * @param install           the install
+     * @param modId             the mod id, which names the settings file, the storage folder and the log folder
+     * @param modJar            the mod jar
+     * @param accountDirectory  the folder of the account the game runs with
+     * @param portMapping       whether the game's Beacon.Link sessions map their socket on the router
+     * @param launcherLink      the address of the launcher's link, or {@code null} when the launcher has no link
+     * @param translationPreset the id of the installed preset the launcher translates with, or {@code null} for none
+     * @param javaHome          the Java runtime that runs the runtime
+     * @param windows           whether the runtime runs on Windows (Java program {@value #WINDOWS_JAVA})
      * @return the created {@link RuntimeCommandLine} instance
      */
     public static @NotNull RuntimeCommandLine create(@NotNull InstallLayout install, @NotNull String modId, @NotNull Path modJar,
                                                      @NotNull Path accountDirectory, boolean portMapping, @Nullable LauncherLinkAddress launcherLink,
-                                                     @NotNull Path javaHome, boolean windows) {
+                                                     @Nullable String translationPreset, @NotNull Path javaHome, boolean windows) {
         List<String> arguments = new ArrayList<>();
         Path settingsFile = install.getSettingsFile(modId);
         Path seedsFile = new NodeListFile(install.getNodesFile()).selectExistingOr(new NodeListFile(install.getSeedsFile())).getPath();
@@ -127,6 +130,11 @@ public final class RuntimeCommandLine {
         if (launcherLink != null) {
             arguments.add(LAUNCHER_LINK_OPTION);
             arguments.add(launcherLink.getSocket().toString());
+        }
+
+        if (translationPreset != null) {
+            arguments.add(TRANSLATION_PRESET_OPTION);
+            arguments.add(translationPreset);
         }
 
         Map<String, String> environment = launcherLink == null ? Map.of()

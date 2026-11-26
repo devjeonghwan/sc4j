@@ -57,7 +57,7 @@ final class RuntimeCommandLineTest {
         Files.createDirectories(install.getSeedsFile().getParent());
         Files.writeString(install.getSeedsFile(), NODE_LIST);
 
-        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "my-mod", jar, getAccountDirectory(install), true, null,
+        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "my-mod", jar, getAccountDirectory(install), true, null, null,
                                                                    root.resolve("java"), true);
 
         Assertions.assertEquals(List.of(java.toString(),
@@ -83,14 +83,14 @@ final class RuntimeCommandLineTest {
         InstallLayout install = InstallLayout.of(directory);
         Path jar = directory.resolve("mods").resolve("demo.jar");
 
-        Assertions.assertFalse(RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, directory, true)
+        Assertions.assertFalse(RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null, directory, true)
                                                  .getArguments().contains("--seeds"),
                                "without a list the peers file is the only seed source");
 
         Files.createDirectories(install.getNodesFile().getParent());
         Files.writeString(install.getNodesFile(), NODE_LIST);
 
-        List<String> arguments = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, directory, true)
+        List<String> arguments = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null, directory, true)
                                                    .getArguments();
 
         Assertions.assertEquals(install.getNodesFile().toString(), arguments.get(arguments.indexOf("--seeds") + 1));
@@ -101,9 +101,9 @@ final class RuntimeCommandLineTest {
         InstallLayout install = InstallLayout.of(directory);
         Path jar = directory.resolve("mods").resolve("demo.jar");
 
-        Assertions.assertFalse(RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, directory, true)
+        Assertions.assertFalse(RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null, directory, true)
                                                  .getArguments().contains("--no-port-mapping"));
-        Assertions.assertEquals("--no-port-mapping", RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), false, null,
+        Assertions.assertEquals("--no-port-mapping", RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), false, null, null,
                                                                                directory, true).getArguments().getLast());
     }
 
@@ -112,8 +112,8 @@ final class RuntimeCommandLineTest {
         InstallLayout install = InstallLayout.of(directory);
         Path jar = directory.resolve("mods").resolve("demo.jar");
         LauncherLinkAddress link = LauncherLinkAddress.create(directory.resolve("userdata").resolve("run").resolve("launcher-1.sock"));
-        RuntimeCommandLine linked = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, link, directory, true);
-        RuntimeCommandLine unlinked = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, directory, true);
+        RuntimeCommandLine linked = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, link, null, directory, true);
+        RuntimeCommandLine unlinked = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null, directory, true);
         List<String> arguments = linked.getArguments();
 
         Assertions.assertEquals(link.getSocket().toString(), arguments.get(arguments.indexOf("--launcher-link") + 1));
@@ -124,11 +124,24 @@ final class RuntimeCommandLineTest {
     }
 
     @Test
+    void create_should_pass_the_translation_preset_only_when_given(@TempDir @NotNull Path directory) {
+        InstallLayout install = InstallLayout.of(directory);
+        Path jar = directory.resolve("mods").resolve("demo.jar");
+        List<String> translated = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, "nllb-200-distilled-600m",
+                                                            directory, true).getArguments();
+        List<String> untranslated = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null, directory, true)
+                                                      .getArguments();
+
+        Assertions.assertEquals("nllb-200-distilled-600m", translated.get(translated.indexOf("--translation-preset") + 1));
+        Assertions.assertFalse(untranslated.contains("--translation-preset"));
+    }
+
+    @Test
     void create_should_use_the_unix_java_program_outside_windows(@TempDir @NotNull Path directory) throws IOException {
         Path jar = directory.resolve("mods").resolve("demo.jar");
         InstallLayout install = InstallLayout.of(directory);
         Path java = writePrograms(install, directory.resolve("jdk"), "java");
-        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null,
+        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null,
                                                                    directory.resolve("jdk"), false);
 
         Assertions.assertEquals(java, commandLine.getProgram());
@@ -145,15 +158,15 @@ final class RuntimeCommandLineTest {
         Path libraries = install.getRuntimeDirectory().resolve("lib");
 
         Files.delete(libraries);
-        Assertions.assertEquals(libraries, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, javaHome, true)
-                                                             .getMissingProgram());
+        Assertions.assertEquals(libraries, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null, javaHome,
+                                                                     true).getMissingProgram());
 
         Files.delete(launchFile);
-        Assertions.assertEquals(launchFile, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, javaHome, true)
-                                                              .getMissingProgram());
+        Assertions.assertEquals(launchFile, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null, javaHome,
+                                                                      true).getMissingProgram());
 
         Files.delete(java);
-        Assertions.assertEquals(java, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, javaHome, true)
+        Assertions.assertEquals(java, RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null, javaHome, true)
                                                         .getMissingProgram());
     }
 
@@ -162,7 +175,7 @@ final class RuntimeCommandLineTest {
         Path root = directory.resolve("SC4J Install");
         Path jar = root.resolve("mods").resolve("my-mod.jar");
         InstallLayout install = InstallLayout.of(root);
-        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "my-mod", jar, getAccountDirectory(install), true, null,
+        RuntimeCommandLine commandLine = RuntimeCommandLine.create(install, "my-mod", jar, getAccountDirectory(install), true, null, null,
                                                                    root.resolve("java"), true);
         String text = commandLine.describe();
         String java = root.resolve("java").resolve("bin").resolve("java.exe").toString();

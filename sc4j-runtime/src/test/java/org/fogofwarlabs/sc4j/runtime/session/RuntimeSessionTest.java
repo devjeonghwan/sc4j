@@ -19,6 +19,7 @@ import org.fogofwarlabs.sc4j.manifest.test.TestJarUtils;
 import org.fogofwarlabs.sc4j.runtime.RuntimeMain;
 import org.fogofwarlabs.sc4j.runtime.cli.ExitCode;
 import org.fogofwarlabs.sc4j.testmod.*;
+import org.fogofwarlabs.sc4j.translate.service.nllb.NllbPreset;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -186,6 +187,25 @@ final class RuntimeSessionTest {
         Assertions.assertEquals(ExitCode.SUCCESS, run(install, "--headless", "--launcher-link", socket.toString()));
         Assertions.assertTrue(Files.readString(install.getLogDirectory(MOD_ID).resolve(Logging.FILE_NAME)).contains("LAUNCHER LINK: none"));
         Assertions.assertTrue(Files.isRegularFile(install.getStorageDirectory(MOD_ID).resolve(HeadlessMod.RUN_FILE)));
+    }
+
+    @Test
+    void run_should_give_the_mod_an_unavailable_translator_without_an_installed_preset(@TempDir @NotNull Path directory) throws IOException {
+        InstallLayout install = createInstall(directory.resolve("install"), MANIFEST.formatted("0.1", HeadlessMod.class.getName()), true, true);
+        Path translationFile = install.getStorageDirectory(MOD_ID).resolve(HeadlessMod.TRANSLATION_FILE);
+        Path logFile = install.getLogDirectory(MOD_ID).resolve(Logging.FILE_NAME);
+
+        Assertions.assertEquals(ExitCode.SUCCESS, run(install, "--headless"));
+        Assertions.assertEquals("UNAVAILABLE", Files.readString(translationFile));
+        Assertions.assertTrue(Files.readString(logFile).contains("TRANSLATION: none"));
+
+        Assertions.assertEquals(ExitCode.SUCCESS, run(install, "--headless", "--translation-preset", "unknown-preset"));
+        Assertions.assertEquals("UNAVAILABLE", Files.readString(translationFile));
+        Assertions.assertTrue(Files.readString(logFile).contains("TRANSLATION: unknown preset unknown-preset"));
+
+        Assertions.assertEquals(ExitCode.SUCCESS, run(install, "--headless", "--translation-preset", NllbPreset.ID));
+        Assertions.assertEquals("UNAVAILABLE", Files.readString(translationFile), "a preset that is not installed translates nothing");
+        Assertions.assertTrue(Files.readString(logFile).contains("TRANSLATION: local preset " + NllbPreset.ID));
     }
 
     @Test

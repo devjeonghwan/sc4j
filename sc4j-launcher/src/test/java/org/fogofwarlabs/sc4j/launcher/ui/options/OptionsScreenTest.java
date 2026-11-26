@@ -4,6 +4,9 @@ import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
@@ -12,10 +15,15 @@ import org.fogofwarlabs.sc4j.launcher.i18n.LauncherTexts;
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodePingResult;
 import org.fogofwarlabs.sc4j.launcher.peer.LauncherNodeRunner;
+import org.fogofwarlabs.sc4j.launcher.translation.LauncherTranslation;
 import org.fogofwarlabs.sc4j.launcher.ui.LauncherFxScenario;
+import org.fogofwarlabs.sc4j.launcher.ui.LauncherShell;
 import org.fogofwarlabs.sc4j.launcher.ui.ThemeUtils;
 import org.fogofwarlabs.sc4j.launcher.ui.Tone;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
+import org.fogofwarlabs.sc4j.translate.service.TranslationPresetUtils;
+import org.fogofwarlabs.sc4j.translate.service.TranslationStorage;
+import org.fogofwarlabs.sc4j.translate.service.model.TranslationPreset;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
@@ -23,8 +31,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -32,7 +42,9 @@ import java.util.function.Consumer;
  * Tests the Settings screen offscreen: two columns of equal width, the launcher panel's fields stacked one per row on the left (the version
  * first, the update source last) and the Beacon.Link panel with the peer list under it on the right, with one header height, the same room
  * right of the header controls as above and below them and on every side of the peer footer; Peers shows and hides the list and keeps the
- * header heights, and Ping asks for the listed peers and marks every row as being pinged until the results come.
+ * header heights, and Ping asks for the listed peers and marks every row as being pinged until the results come. Under the launcher panel the
+ * chat translation panel lists the offered presets with their state, Download shows the licence before anything is downloaded, and the
+ * model choice reports the chosen preset.
  */
 final class OptionsScreenTest {
     private static final @NotNull String VERSION = "1.1.0";
@@ -51,16 +63,20 @@ final class OptionsScreenTest {
                                                                                 ConfiguredNode.of("seed.example.net", NODE_PORT + 1, null));
 
     /**
-     * Records the pinged peers and holds their results back.
+     * Records the pinged peers, holding their results back, the chosen translation presets and the opened addresses.
      */
     private static final class PingActions implements OptionsScreen.Actions {
         private final @NotNull List<@NotNull ConfiguredNode> pinged;
+        private final @NotNull List<@Nullable String> chosenPresets;
+        private final @NotNull List<@NotNull String> opened;
 
         /**
          * Creates a {@link PingActions} instance.
          */
         private PingActions() {
-            this.pinged = new ArrayList<>();
+            this.pinged        = new ArrayList<>();
+            this.chosenPresets = new ArrayList<>();
+            this.opened        = new ArrayList<>();
         }
 
         @Override
@@ -79,6 +95,16 @@ final class OptionsScreenTest {
         @Override
         public void onPingNodes(@NotNull List<@NotNull ConfiguredNode> nodes, @NotNull Consumer<@NotNull List<@NotNull NodePingResult>> results) {
             this.pinged.addAll(nodes);
+        }
+
+        @Override
+        public void onTranslationPresetChanged(@Nullable String presetId) {
+            this.chosenPresets.add(presetId);
+        }
+
+        @Override
+        public void onOpenWebsite(@NotNull String address) {
+            this.opened.add(address);
         }
     }
 
@@ -111,7 +137,23 @@ final class OptionsScreenTest {
 
     private static @NotNull OptionsScreen createScreen(@NotNull LauncherTexts texts, @NotNull Path directory, @NotNull PingActions actions,
                                                        @NotNull UpdateView view) {
-        return new OptionsScreen(texts, null, false, view, NODES, null, new LauncherNodeRunner(InstallLayout.of(directory)), actions);
+        return createScreen(createShell(texts, directory), texts, directory, actions, view);
+    }
+
+    private static @NotNull OptionsScreen createScreen(@NotNull LauncherShell shell, @NotNull LauncherTexts texts, @NotNull Path directory,
+                                                       @NotNull PingActions actions, @NotNull UpdateView view) {
+        InstallLayout install = InstallLayout.of(directory);
+        LauncherTranslation translation = new LauncherTranslation(TranslationStorage.of(install.getUserDataDirectory()),
+                                                                  TranslationPresetUtils.getPresets());
+
+        return new OptionsScreen(shell, texts, null, false, view, NODES, null, new LauncherNodeRunner(install), translation, actions);
+    }
+
+    private static @NotNull LauncherShell createShell(@NotNull LauncherTexts texts, @NotNull Path directory) {
+        return new LauncherShell(texts, InstallLayout.of(directory), 1, section -> {
+        }, () -> {
+        }, () -> {
+        });
     }
 
     private static @NotNull Bounds getSceneBounds(@NotNull Node node) {
@@ -159,8 +201,9 @@ final class OptionsScreenTest {
             Assertions.assertTrue(leftBounds.getMaxX() < rightBounds.getMinX(), "the launcher column is on the left");
             Assertions.assertEquals(SCENE_WIDTH, rightBounds.getMaxX() - leftBounds.getMinX(), TOLERANCE, "the columns fill the width");
 
-            // The launcher panel on the left: version, language, sound and update source, one field per row.
-            Assertions.assertEquals(List.of(texts.get("settings.launcher")), listPanelTitles(left));
+            // The launcher panel on the left: version, language, sound and update source, one field per row; the chat translation panel
+            // under it.
+            Assertions.assertEquals(List.of(texts.get("settings.launcher"), texts.get("settings.translation")), listPanelTitles(left));
             Assertions.assertEquals(List.of(view.getVersionField(), fields.get(1), fields.get(2), view.getSourceField()), fields);
 
             for (int index = 1; index < fields.size(); index++) {
@@ -201,6 +244,65 @@ final class OptionsScreenTest {
                 Assertions.assertEquals(height, header.getHeight(), "the Beacon.Link header keeps its height on toggle " + toggle);
                 Assertions.assertEquals(shown ? 3 : 2, LauncherFxScenario.assertHeaderInsets(root), "the shown headers have one height");
             }
+
+            return null;
+        });
+    }
+
+    @Test
+    void translation_panel_shows_the_licence_before_a_download_and_reports_the_chosen_model(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
+        TranslationPreset preset = TranslationPresetUtils.getPresets().getFirst();
+        PingActions actions = new PingActions();
+
+        LauncherFxScenario.run(() -> {
+            LauncherShell shell = createShell(texts, directory);
+            OptionsScreen screen = createScreen(shell, texts, directory, actions, createUpdateView(texts));
+            Parent root = shell.getRoot();
+            ComboBox<?> choice;
+
+            ThemeUtils.apply(new Scene(root, SCENE_WIDTH, SCENE_HEIGHT), UiLanguage.ENGLISH);
+            shell.show(LauncherShell.Section.SETTINGS, screen.getRoot());
+            root.applyCss();
+            root.layout();
+
+            // The preset is listed with its state, and only Download is offered for a preset that is not installed.
+            Assertions.assertEquals(1, countShownLabels(root, preset.getDisplayName()));
+            Assertions.assertEquals(1, countShownLabels(root, texts.get("translation.missing")));
+            Assertions.assertTrue(root.lookupAll(".button").stream()
+                                      .noneMatch(node -> node instanceof Button button && texts.get("translation.delete").equals(button.getText()) &&
+                                                         LauncherFxScenario.isShown(button)), "Delete is offered for an installed preset only");
+
+            // Download shows the licence and the size first; Cancel closes it with nothing downloaded.
+            LauncherFxScenario.findButton(root, texts.get("translation.download")).fire();
+            root.applyCss();
+            root.layout();
+
+            Node dialog = root.lookup(".modal-scrim");
+
+            Assertions.assertNotNull(dialog, "Download asks first");
+            Assertions.assertTrue(dialog.lookupAll(".hyperlink").stream()
+                                        .anyMatch(link -> link instanceof Hyperlink hyperlink && preset.getLicenseName().equals(hyperlink.getText())));
+            ((Hyperlink) dialog.lookup(".hyperlink")).fire();
+            Assertions.assertEquals(List.of(preset.getLicenseAddress().toString()), actions.opened);
+            LauncherFxScenario.findButton(dialog, texts.get("translation.cancel")).fire();
+            root.applyCss();
+            root.layout();
+
+            Assertions.assertNull(root.lookup(".modal-scrim"));
+            Assertions.assertNull(screen.getRoot().lookupAll(".progress-bar").stream().filter(LauncherFxScenario::isShown).findFirst().orElse(null),
+                                  "nothing downloads");
+            Assertions.assertFalse(Files.exists(TranslationStorage.of(InstallLayout.of(directory).getUserDataDirectory()).getPresetFolder(preset)));
+
+            // The model choice offers Off and the presets and reports the chosen one.
+            choice = (ComboBox<?>) screen.getRoot().lookupAll(".combo-box").stream()
+                                         .filter(node -> node instanceof ComboBox<?> box && box.getItems().size() == 2)
+                                         .findFirst()
+                                         .orElseThrow();
+            choice.getSelectionModel().select(1);
+            choice.getSelectionModel().select(0);
+
+            Assertions.assertEquals(Arrays.asList(preset.getId(), null), actions.chosenPresets);
 
             return null;
         });

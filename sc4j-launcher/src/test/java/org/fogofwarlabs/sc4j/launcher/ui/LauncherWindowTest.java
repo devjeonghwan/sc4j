@@ -374,7 +374,8 @@ final class LauncherWindowTest {
                 Stage stage = new Stage();
                 LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
                 }, folder -> {
-                }, new LauncherNodeRunner(install), account -> LauncherSession.open(install, account, VERSION, Platform::runLater), NO_SOUND);
+                }, new LauncherNodeRunner(install), account -> LauncherSession.open(install, account, VERSION, Platform::runLater), NO_SOUND,
+                                                           null);
                 Rectangle2D firstScreen = createScreen(FIRST_SCALE);
                 Rectangle2D changedScreen = createScreen(CHANGED_SCALE);
 
@@ -420,7 +421,7 @@ final class LauncherWindowTest {
             Stage stage = new Stage();
             LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
             }, folder -> {
-            }, new LauncherNodeRunner(install), account -> LauncherSession.open(install, account, VERSION, Platform::runLater), NO_SOUND);
+            }, new LauncherNodeRunner(install), account -> LauncherSession.open(install, account, VERSION, Platform::runLater), NO_SOUND, null);
 
             window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 
@@ -458,7 +459,7 @@ final class LauncherWindowTest {
                     sessions.add(session);
 
                     return session;
-                }, NO_SOUND);
+                }, NO_SOUND, null);
 
                 shown.set(stage);
                 window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
@@ -545,7 +546,7 @@ final class LauncherWindowTest {
                     sessions.add(session);
 
                     return session;
-                }, NO_SOUND);
+                }, NO_SOUND, null);
 
                 window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
                 LauncherFxScenario.findButton(layRoot(stage), texts.get("accounts.log.in")).fire();
@@ -588,7 +589,7 @@ final class LauncherWindowTest {
             Stage stage = new Stage();
             LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
             }, folder -> {
-            }, new LauncherNodeRunner(install), account -> session, NO_SOUND);
+            }, new LauncherNodeRunner(install), account -> session, NO_SOUND, null);
 
             window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
             LauncherFxScenario.findButton(layRoot(stage), texts.get("accounts.log.in")).fire();
@@ -622,7 +623,7 @@ final class LauncherWindowTest {
             Stage stage = new Stage();
             LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
             }, folder -> {
-            }, new LauncherNodeRunner(install), account -> session, sounds::incrementAndGet);
+            }, new LauncherNodeRunner(install), account -> session, sounds::incrementAndGet, null);
             List<ChannelView> channels = List.of(new ChannelView(ChannelChat.SHARED_CHANNEL, 2, List.of()), new ChannelView("Ladder", 2, List.of()));
             List<ChatEntryView> entries = new ArrayList<>();
 
@@ -682,7 +683,7 @@ final class LauncherWindowTest {
             Stage stage = new Stage();
             LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
             }, folder -> {
-            }, new LauncherNodeRunner(install), account -> session, NO_SOUND);
+            }, new LauncherNodeRunner(install), account -> session, NO_SOUND, null);
 
             window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
             LauncherFxScenario.findButton(layRoot(stage), texts.get("accounts.log.in")).fire();
@@ -729,7 +730,7 @@ final class LauncherWindowTest {
             Stage stage = new Stage();
             LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
             }, folder -> {
-            }, new LauncherNodeRunner(install), account -> session, NO_SOUND);
+            }, new LauncherNodeRunner(install), account -> session, NO_SOUND, null);
 
             window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
             LauncherFxScenario.findButton(layRoot(stage), texts.get("accounts.log.in")).fire();
@@ -782,7 +783,7 @@ final class LauncherWindowTest {
             Stage stage = new Stage();
             LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
             }, folder -> {
-            }, new LauncherNodeRunner(install), account -> session, sounds::incrementAndGet);
+            }, new LauncherNodeRunner(install), account -> session, sounds::incrementAndGet, null);
 
             window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
             LauncherFxScenario.findButton(layRoot(stage), texts.get("accounts.log.in")).fire();
@@ -823,7 +824,7 @@ final class LauncherWindowTest {
             Stage stage = new Stage();
             LauncherWindow window = new LauncherWindow(stage, install, VERSION, address -> {
             }, folder -> {
-            }, new LauncherNodeRunner(install), account -> session, NO_SOUND);
+            }, new LauncherNodeRunner(install), account -> session, NO_SOUND, null);
 
             window.fitDisplay(FIRST_SCALE, new Rectangle2D(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
             LauncherFxScenario.findButton(layRoot(stage), texts.get("accounts.log.in")).fire();

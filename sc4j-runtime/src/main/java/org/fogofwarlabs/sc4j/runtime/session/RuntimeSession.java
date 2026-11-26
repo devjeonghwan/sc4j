@@ -25,6 +25,9 @@ import org.fogofwarlabs.sc4j.engine.replay.ReplayFormat;
 import org.fogofwarlabs.sc4j.engine.replay.ReplayFormatFactory;
 import org.fogofwarlabs.sc4j.engine.save.SaveFormat;
 import org.fogofwarlabs.sc4j.engine.save.SaveFormatFactory;
+import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkAddress;
+import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkClient;
+import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkException;
 import org.fogofwarlabs.sc4j.manifest.ManifestException;
 import org.fogofwarlabs.sc4j.manifest.ModArchive;
 import org.fogofwarlabs.sc4j.manifest.ModManifest;
@@ -54,7 +57,9 @@ import java.util.*;
  * <li>open the log, check the command line and paths, read the account folder the command line names ({@code --account}) and start using
  * it, which keeps it from being deleted while the run lasts but never from other runs, and read the seeds it names ({@code --seeds},
  * {@code --seed});</li>
- * <li>read and validate the manifest, and check the engine version;</li>
+ * <li>read and validate the manifest, and check the engine version; once the log is open, connect to the launcher that started the run when
+ * the command line names its link ({@code --launcher-link}, with the token of the environment variable
+ * {@value LauncherLinkAddress#TOKEN_ENVIRONMENT_VARIABLE}); a link that cannot be connected is logged and the run goes on without it;</li>
  * <li>read the saved settings (the mod's own and the shared ones), fill an empty directory setting that declares {@code detect} with the
  * directory the computer records (which is then saved), and validate them against the manifest's schema;</li>
  * <li>create the mod's class loader;</li>
@@ -139,6 +144,7 @@ public final class RuntimeSession {
     private final @NotNull ClassLoader modParent;
 
     private final @NotNull Deque<IgnoreException.@NotNull Callback> shutdownSteps;
+    private @Nullable LauncherLinkClient launcherLink;
 
     /**
      * Creates a {@link RuntimeSession} instance.
@@ -151,6 +157,15 @@ public final class RuntimeSession {
         this.modParent   = modParent;
 
         this.shutdownSteps = new ArrayDeque<>();
+        this.launcherLink  = null;
+    }
+
+    /**
+     * @return the link to the launcher that started the run, or {@code null} while the session has no link: before it connects, when the
+     *         command line names none or when it cannot be connected
+     */
+    public @Nullable LauncherLinkClient getLauncherLink() {
+        return this.launcherLink;
     }
 
     /**
@@ -215,6 +230,7 @@ public final class RuntimeSession {
         }
 
         LOGGER.info("MOD: {0} {1} (engine {2}, entry {3})", manifest.getId(), manifest.getVersion(), manifest.getEngine(), manifest.getEntry());
+        this.connectLauncherLink();
 
         SettingValues settings = this.readSettings(install, manifest);
         ModStorage storage = this.openStorage(install, manifest.getId());
@@ -247,6 +263,40 @@ public final class RuntimeSession {
 
             LOGGER.warning("LOG FILE DISABLED: {0} ({1})", directory, exception.getMessage());
         }
+    }
+
+    /**
+     * Connects to the launcher's link that the command line names, with the token of the environment; a link that cannot be connected is logged
+     * and the session goes on without it.
+     */
+    private void connectLauncherLink() {
+        Path socket = this.commandLine.getLauncherLink();
+
+        if (socket == null) {
+            return;
+        }
+
+        String tokenText = System.getenv(LauncherLinkAddress.TOKEN_ENVIRONMENT_VARIABLE);
+
+        if (tokenText == null) {
+            LOGGER.warning("LAUNCHER LINK: none, the environment variable {0} is missing", LauncherLinkAddress.TOKEN_ENVIRONMENT_VARIABLE);
+
+            return;
+        }
+
+        LauncherLinkClient client;
+
+        try {
+            client = LauncherLinkClient.connect(LauncherLinkAddress.of(socket, tokenText), EngineVersion.SC4J_VERSION);
+        } catch (IllegalArgumentException | LauncherLinkException exception) {
+            LOGGER.warning("LAUNCHER LINK: none, {0}", exception.getMessage());
+
+            return;
+        }
+
+        this.launcherLink = client;
+        this.shutdownSteps.push(client::close);
+        LOGGER.info("LAUNCHER LINK: {0}", socket);
     }
 
     /**

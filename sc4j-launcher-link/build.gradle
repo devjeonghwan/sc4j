@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+    id 'org.fogofwarlabs.sc4j.java'
+}
+
+// The local channel between the launcher and the runtimes it starts: a Unix domain socket, the hello with the token and the SC4J version,
+// the frames, and named services with requests, responses and events. It knows no feature and uses the JDK and the generic base only.
+dependencies {
+    api project(':sc4j-base')
+}

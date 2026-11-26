@@ -687,6 +687,7 @@ def publishedModules = [
     'sc4j-beaconlink-peer'    : 'Beacon.Link peer library of SC4J: the node roles that the launcher, the runtime and the node program run.',
     'sc4j-beaconlink'         : 'Beacon.Link client of SC4J: node sessions, rooms, participant channels and the overlay that a mod plays over.',
     'sc4j-catalog'            : 'SC4J catalog reader: GitHub releases, release versions, the check for a newer release and the mod catalog.',
+    'sc4j-launcher-link'      : 'SC4J launcher link: the local channel between the launcher and the runtimes it starts, with named services.',
     'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.'
 ]
 // Inside this build the coordinates of the published modules (as the mod plugin names them) resolve to their projects.

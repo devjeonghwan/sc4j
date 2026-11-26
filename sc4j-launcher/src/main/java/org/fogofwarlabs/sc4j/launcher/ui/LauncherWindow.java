@@ -48,6 +48,7 @@ import org.fogofwarlabs.sc4j.launcher.launch.RuntimeCommandLine;
 import org.fogofwarlabs.sc4j.launcher.launch.RuntimeListener;
 import org.fogofwarlabs.sc4j.launcher.launch.RuntimeProcess;
 import org.fogofwarlabs.sc4j.launcher.launch.RuntimeRun;
+import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkAddress;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodePingResult;
 import org.fogofwarlabs.sc4j.launcher.nodes.NodePinger;
 import org.fogofwarlabs.sc4j.launcher.peer.LauncherNodeRunner;
@@ -299,6 +300,7 @@ public final class LauncherWindow {
     private final @NotNull LauncherNodeRunner nodeRunner;
     private final @NotNull Function<@NotNull Account, @NotNull LauncherSessionView> openSession;
     private final @NotNull Runnable playChatSound;
+    private final @Nullable LauncherLinkAddress launcherLink;
     private final @NotNull LauncherSettingsFile settingsFile;
     private final @NotNull NodeListFile nodesFile;
     private final @NotNull NodeListFile seedsFile;
@@ -364,11 +366,12 @@ public final class LauncherWindow {
      * @param nodeRunner    the launcher's Beacon.Link node, shown and set up on the Settings screen
      * @param openSession   opens the session of the account the user logs in to
      * @param playChatSound plays the chat notification sound
+     * @param launcherLink  the address of the launcher's link that the started runtimes connect to, or {@code null} when the launcher has none
      */
     public LauncherWindow(@NotNull Stage stage, @NotNull InstallLayout install, @NotNull String version,
                           @NotNull Consumer<@NotNull String> showDocument, @NotNull Consumer<@NotNull Path> openFolder,
                           @NotNull LauncherNodeRunner nodeRunner, @NotNull Function<@NotNull Account, @NotNull LauncherSessionView> openSession,
-                          @NotNull Runnable playChatSound) {
+                          @NotNull Runnable playChatSound, @Nullable LauncherLinkAddress launcherLink) {
         ReleaseClient releaseClient = new ReleaseClient(ReleaseClient.GITHUB_API);
 
         this.stage           = stage;
@@ -379,6 +382,7 @@ public final class LauncherWindow {
         this.nodeRunner      = nodeRunner;
         this.openSession     = openSession;
         this.playChatSound   = playChatSound;
+        this.launcherLink    = launcherLink;
         this.settingsFile    = new LauncherSettingsFile(install.getLauncherSettingsFile());
         this.nodesFile       = new NodeListFile(install.getNodesFile());
         this.seedsFile       = new NodeListFile(install.getSeedsFile());
@@ -1639,7 +1643,7 @@ public final class LauncherWindow {
         }
 
         RuntimeCommandLine commandLine = RuntimeCommandLine.create(this.install, manifest.getId(), entry.getJar(), chosen.getDirectory(),
-                                                                   this.nodeRunner.getSettings().isPortMapping(),
+                                                                   this.nodeRunner.getSettings().isPortMapping(), this.launcherLink,
                                                                    RuntimeCommandLine.getLauncherJavaHome(), RuntimeCommandLine.isWindows());
         String failure = null;
         String settingsText = "";

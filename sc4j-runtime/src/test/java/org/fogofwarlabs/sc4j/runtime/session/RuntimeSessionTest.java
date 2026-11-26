@@ -40,8 +40,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 /**
- * Tests the runtime sequence against test mod jars: a normal run with its reverse shutdown, the exit code of each kind of failure, and the
- * Beacon.Link of a run, which only its command line describes: offered only with a seed source, a game started without the launcher reaches
+ * Tests the runtime sequence against test mod jars: a normal run with its reverse shutdown, the exit code of each kind of failure, a run that
+ * goes on without the launcher link it cannot connect, and the Beacon.Link of a run, which only its command line describes: offered only with a seed source, a game started without the launcher reaches
  * a node on 127.0.0.1 with its account and keeps the node in its peers file, and two games of one account run at once as two connections
  * while the account cannot be deleted.
  */
@@ -176,6 +176,16 @@ final class RuntimeSessionTest {
         Assertions.assertEquals(ExitCode.MOD_FAILURE, run(nothing, "--headless"));
         Assertions.assertTrue(Files.readString(nothing.getLogDirectory(MOD_ID).resolve(Logging.FILE_NAME))
                                    .contains("registered no first scene, headless runner or application"));
+    }
+
+    @Test
+    void run_should_go_on_without_a_launcher_link_that_cannot_be_connected(@TempDir @NotNull Path directory) throws IOException {
+        InstallLayout install = createInstall(directory.resolve("install"), MANIFEST.formatted("0.1", HeadlessMod.class.getName()), true, true);
+        Path socket = directory.resolve("launcher-1.sock");
+
+        Assertions.assertEquals(ExitCode.SUCCESS, run(install, "--headless", "--launcher-link", socket.toString()));
+        Assertions.assertTrue(Files.readString(install.getLogDirectory(MOD_ID).resolve(Logging.FILE_NAME)).contains("LAUNCHER LINK: none"));
+        Assertions.assertTrue(Files.isRegularFile(install.getStorageDirectory(MOD_ID).resolve(HeadlessMod.RUN_FILE)));
     }
 
     @Test

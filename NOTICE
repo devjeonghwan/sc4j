@@ -87,6 +87,12 @@ OpenJDK Java runtime (an image of the JDK that builds the package, made with its
   GNU General Public License 2 with the Classpath Exception. Text: licenses/GPL-2.0-with-Classpath-Exception.txt. The image carries
   the licence texts and notices of the JDK and of its third-party parts in java/legal/, and its vendor and version in java/release.
 
+ONNX Runtime 1.31.1 (com.microsoft.onnxruntime:onnxruntime, with the native libraries of the package's platform only; launcher,
+runtime, development install)
+  MIT License. Text: licenses/ONNX-Runtime-MIT.txt. Its third-party notices are in the jar (ThirdPartyNotices.txt).
+  The translation models that the launcher downloads on request are not part of the distributions; the launcher shows each model's
+  licence before its download.
+
 JetBrains Java Annotations 23.0.0 (org.jetbrains:annotations; every distribution with a Java class path)
   Apache License 2.0 (LICENSE).
 

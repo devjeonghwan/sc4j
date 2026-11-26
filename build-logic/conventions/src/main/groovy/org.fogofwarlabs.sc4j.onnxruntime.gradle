@@ -1,0 +1,40 @@
+// The ONNX Runtime jar of an application distribution with the native libraries of the package's platform only (PACKAGE_PLATFORM of the
+// root project): the runtime class path, which the distribution's lib/ and the start scripts take, gets the jar through
+// OnnxRuntimePlatformTransform; the tests keep the jar as published. ONNX Runtime has no macOS x64 libraries, so a package for it has none.
+
+import org.fogofwarlabs.sc4j.gradle.conventions.OnnxRuntimePlatformTransform
+
+def onnxRuntimePlatforms = ['windows-x64': 'win-x64', 'linux-x64': 'linux-x64', 'linux-arm64': 'linux-aarch64', 'macos-x64': 'osx-x64',
+                            'macos-arm64': 'osx-aarch64']
+def packagePlatform = rootProject.ext.PACKAGE_PLATFORM
+def onnxRuntimePlatform = onnxRuntimePlatforms[packagePlatform]
+if (onnxRuntimePlatform == null) {
+    throw new GradleException('No ONNX Runtime platform is known for the package platform ' + packagePlatform + '.')
+}
+
+// Whether the native libraries of a jar's ONNX Runtime are those of the package's platform only; a jar without them counts as one with all.
+def platformNatives = Attribute.of('org.fogofwarlabs.sc4j.onnxruntime.platformNatives', Boolean)
+
+dependencies {
+    attributesSchema {
+        attribute(platformNatives)
+    }
+    artifactTypes.getByName('jar') {
+        attributes.attribute(platformNatives, false)
+    }
+    registerTransform(OnnxRuntimePlatformTransform) {
+        from.attribute(platformNatives, false).attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'jar')
+        to.attribute(platformNatives, true).attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'jar')
+        parameters {
+            platform = onnxRuntimePlatform
+        }
+    }
+}
+
+plugins.withId('java') {
+    configurations.named('runtimeClasspath') {
+        attributes {
+            attribute(platformNatives, true)
+        }
+    }
+}

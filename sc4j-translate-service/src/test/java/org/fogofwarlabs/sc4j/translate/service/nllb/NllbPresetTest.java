@@ -67,7 +67,8 @@ final class NllbPresetTest {
             Assertions.assertTrue(file.getAddress().toString().startsWith("https://huggingface.co/"), file.getName());
         }
 
-        Assertions.assertEquals(Set.of(NllbPreset.ENCODER_FILE, NllbPreset.DECODER_FILE, NllbPreset.TOKENIZER_FILE, NllbPreset.IDENTIFIER_FILE), names);
+        Assertions.assertEquals(Set.of(NllbPreset.MODEL_FILE, NllbPreset.CONFIG_FILE, NllbPreset.VOCABULARY_FILE, NllbPreset.TOKENIZER_FILE,
+                                       NllbPreset.IDENTIFIER_FILE), names);
     }
 
     @Test
@@ -76,8 +77,10 @@ final class NllbPresetTest {
         Path folder = TranslationTestResources.requirePresetFolder(NllbPreset.ID);
 
         try (TranslationModel model = preset.createTranslationModel(folder); LanguageIdentifier identifier = preset.createLanguageIdentifier(folder)) {
-            String korean = model.translate("Let's play another game.", Locale.ENGLISH, Locale.KOREAN);
-            String english = model.translate("안녕하세요, 같이 게임 하실 분?", Locale.KOREAN, Locale.ENGLISH);
+            List<String> batch = model.translate(List.of(new TranslationInput("Let's play another game.", Locale.ENGLISH, Locale.KOREAN),
+                                                         new TranslationInput("안녕하세요, 같이 게임 하실 분?", Locale.KOREAN, Locale.ENGLISH)));
+            String korean = batch.get(0);
+            String english = batch.get(1);
 
             Assertions.assertTrue(korean.codePoints().anyMatch(codePoint -> Character.UnicodeScript.of(codePoint) == Character.UnicodeScript.HANGUL),
                                   korean);

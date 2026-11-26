@@ -3,7 +3,6 @@ plugins {
     id 'application'
     id 'org.fogofwarlabs.sc4j.java'
     id 'org.fogofwarlabs.sc4j.natives'
-    id 'org.fogofwarlabs.sc4j.onnxruntime'
 }
 
 // The engine executable: it reads a mod jar's manifest and settings, loads the mod in its own class loader and runs it.
@@ -20,8 +19,10 @@ dependencies {
     // loaders see, so mod jars do not hold it.
     runtimeOnly project(':sc4j-catalog')
 
-    // The native libraries of the engine client (LWJGL, FFmpeg through JavaCPP) for lib/natives of the distribution.
+    // The native libraries of the engine client (LWJGL, FFmpeg through JavaCPP) and of the translation service (CTranslate2) for lib/natives
+    // of the distribution.
     nativeLibraries project(path: ':sc4j-engine-client', configuration: 'nativeLibraries')
+    nativeLibraries project(path: ':sc4j-translate-service', configuration: 'nativeLibraries')
 
     // Test mod jars (org.fogofwarlabs.sc4j.manifest.test.TestJarUtils).
     testImplementation testFixtures(project(':sc4j-mod-manifest'))

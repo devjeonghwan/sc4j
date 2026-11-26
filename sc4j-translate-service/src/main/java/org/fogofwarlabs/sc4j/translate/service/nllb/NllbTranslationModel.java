@@ -1,31 +1,25 @@
 package org.fogofwarlabs.sc4j.translate.service.nllb;
 
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
-import org.fogofwarlabs.sc4j.translate.service.model.ModelException;
-import org.fogofwarlabs.sc4j.translate.service.model.SequenceModel;
-import org.fogofwarlabs.sc4j.translate.service.model.TranslationModel;
-import org.fogofwarlabs.sc4j.translate.service.sentencepiece.SentencePieceTokenizer;
+import org.fogofwarlabs.sc4j.translate.service.model.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 /**
- * Translates with an NLLB model: the input is the source language token, the SentencePiece pieces of the text and the end token; the
- * output starts with the forced target language token. Model ids are the SentencePiece ids plus the fairseq offset {@code 1}, with the
- * fairseq special tokens {@code <s>}, {@code <pad>}, {@code </s>} and {@code <unk>} at {@code 0} to {@code 3} and the language tokens after
- * the vocabulary.
+ * Translates with an NLLB model: the input of a text is its source language token, its SentencePiece pieces and the end token; the output
+ * starts with the target language token, which is removed before the pieces are joined to text. The language tokens are the FLORES-200
+ * codes, such as {@code kor_Hang}.
  */
 public final class NllbTranslationModel implements TranslationModel {
     /**
-     * The token that starts the decoder input and ends a sequence, {@code </s>}.
+     * The token that ends a sequence.
      */
-    public static final int END_TOKEN = 2;
+    public static final @NotNull String END_TOKEN = "</s>";
 
-    private static final int FAIRSEQ_OFFSET = 1;
-    private static final int UNKNOWN_TOKEN = 3;
-    private static final int FIRST_PIECE_TOKEN = 4;
-    private static final int SENTENCEPIECE_UNKNOWN_ID = 0;
     private static final int MAXIMUM_INPUT_TOKENS = 512;
     /**
      * The output length allowed per input token, and the output tokens allowed beyond that, which end a greedy decoding that repeats itself.
@@ -34,9 +28,19 @@ public final class NllbTranslationModel implements TranslationModel {
     private static final int EXTRA_OUTPUT_TOKENS = 16;
     private static final int LANGUAGE_AND_END_TOKENS = 2;
 
-    private final @NotNull SentencePieceTokenizer tokenizer;
+    private static @NotNull String findLanguageToken(@NotNull Locale language) {
+        String code = NllbLanguages.findCode(language);
+
+        if (code == null) {
+            throw Exceptions.newIllegalArgumentException("NLLB does not support the language {0}", language);
+        }
+
+        return code;
+    }
+
+
+    private final @NotNull TextTokenizer tokenizer;
     private final @NotNull SequenceModel sequenceModel;
-    private final int languageTokenBase;
 
     /**
      * Creates a {@link NllbTranslationModel} instance that owns a sequence model.
@@ -44,10 +48,9 @@ public final class NllbTranslationModel implements TranslationModel {
      * @param tokenizer     the SentencePiece tokenizer of the model
      * @param sequenceModel the encoder and decoder, closed with this model
      */
-    public NllbTranslationModel(@NotNull SentencePieceTokenizer tokenizer, @NotNull SequenceModel sequenceModel) {
-        this.tokenizer         = tokenizer;
-        this.sequenceModel     = sequenceModel;
-        this.languageTokenBase = tokenizer.getPieceCount() + FAIRSEQ_OFFSET;
+    public NllbTranslationModel(@NotNull TextTokenizer tokenizer, @NotNull SequenceModel sequenceModel) {
+        this.tokenizer     = tokenizer;
+        this.sequenceModel = sequenceModel;
     }
 
     /**
@@ -70,52 +73,52 @@ public final class NllbTranslationModel implements TranslationModel {
     }
 
     /**
-     * Translates a text that fits {@link #getMaximumInputTokens()}; longer input is cut there.
+     * Translates a batch of texts that fit {@link #getMaximumInputTokens()}; longer input is cut there.
+     * <p>
+     * The output of a text is limited to twice its input tokens and a fixed margin, the target language token included.
      *
-     * @param text   the text
-     * @param source the language of the text, one the preset supports
-     * @param target the language to translate into, one the preset supports
-     * @return the translated text
+     * @param inputs the texts with their languages
+     * @return the translated texts, in the order of the inputs
      * @throws ModelException           if the inference fails
      * @throws IllegalArgumentException if the preset does not support a language
      */
     @Override
-    public @NotNull String translate(@NotNull String text, @NotNull Locale source, @NotNull Locale target) throws ModelException {
-        int sourceToken = this.findLanguageToken(source);
-        int targetToken = this.findLanguageToken(target);
-        int[] pieces = this.tokenizer.encode(text);
-        int pieceCount = Math.min(pieces.length, MAXIMUM_INPUT_TOKENS - LANGUAGE_AND_END_TOKENS);
-        int[] input = new int[pieceCount + LANGUAGE_AND_END_TOKENS];
+    public @NotNull List<@NotNull String> translate(@NotNull List<@NotNull TranslationInput> inputs) throws ModelException {
+        String[][] sources = new String[inputs.size()][];
+        String[][] targetPrefixes = new String[inputs.size()][];
+        int[] outputLimits = new int[inputs.size()];
+        int maximumLength = 0;
 
-        input[0] = sourceToken;
+        for (int index = 0; index < sources.length; index++) {
+            TranslationInput input = inputs.get(index);
+            String sourceToken = findLanguageToken(input.getSource());
+            String targetToken = findLanguageToken(input.getTarget());
+            String[] pieces = this.tokenizer.encode(input.getText());
+            int pieceCount = Math.min(pieces.length, MAXIMUM_INPUT_TOKENS - LANGUAGE_AND_END_TOKENS);
+            String[] source = new String[pieceCount + LANGUAGE_AND_END_TOKENS];
 
-        for (int index = 0; index < pieceCount; index++) {
-            input[index + 1] = pieces[index] == SENTENCEPIECE_UNKNOWN_ID ? UNKNOWN_TOKEN : pieces[index] + FAIRSEQ_OFFSET;
+            source[0] = sourceToken;
+            System.arraycopy(pieces, 0, source, 1, pieceCount);
+            source[pieceCount + 1] = END_TOKEN;
+
+            sources[index]        = source;
+            targetPrefixes[index] = new String[]{targetToken};
+            outputLimits[index]   = source.length * OUTPUT_TOKENS_PER_INPUT_TOKEN + EXTRA_OUTPUT_TOKENS;
+            maximumLength         = Math.max(maximumLength, outputLimits[index]);
         }
 
-        input[pieceCount + 1] = END_TOKEN;
+        String[][] outputs = this.sequenceModel.generate(sources, targetPrefixes, maximumLength);
+        List<String> translations = new ArrayList<>(outputs.length);
 
-        int[] output = this.sequenceModel.generate(input, targetToken, input.length * OUTPUT_TOKENS_PER_INPUT_TOKEN + EXTRA_OUTPUT_TOKENS);
-        int[] outputPieces = new int[output.length];
-        int outputPieceCount = 0;
+        // The batch decodes to the longest limit; each output is cut to its own, as if it were decoded alone.
+        for (int index = 0; index < outputs.length; index++) {
+            String[] output = outputs[index];
+            int start = output.length > 0 && output[0].equals(targetPrefixes[index][0]) ? 1 : 0;
 
-        for (int token : output) {
-            if (token >= FIRST_PIECE_TOKEN && token < this.languageTokenBase) {
-                outputPieces[outputPieceCount++] = token - FAIRSEQ_OFFSET;
-            }
+            translations.add(this.tokenizer.decode(Arrays.copyOfRange(output, start, Math.max(start, Math.min(output.length, outputLimits[index])))));
         }
 
-        return this.tokenizer.decode(Arrays.copyOf(outputPieces, outputPieceCount));
-    }
-
-    private int findLanguageToken(@NotNull Locale language) {
-        String code = NllbLanguages.findCode(language);
-
-        if (code == null) {
-            throw Exceptions.newIllegalArgumentException("NLLB does not support the language {0}", language);
-        }
-
-        return this.languageTokenBase + NllbLanguages.findIndex(code);
+        return translations;
     }
 
     /**

@@ -262,13 +262,32 @@ public final class SentencePieceTokenizer implements TextTokenizer {
     }
 
     /**
-     * Converts text to token ids.
+     * Converts text to pieces.
      *
      * @param text the text
-     * @return the token ids, empty when the text has nothing but spaces
+     * @return the pieces, empty when the text has nothing but spaces
      */
     @Override
-    public int @NotNull [] encode(@NotNull String text) {
+    public @NotNull String @NotNull [] encode(@NotNull String text) {
+        int[] ids = this.encodeIds(text);
+        String[] encoded = new String[ids.length];
+
+        for (int index = 0; index < ids.length; index++) {
+            int start = this.offsets[ids[index]];
+
+            encoded[index] = new String(this.pieces, start, this.offsets[ids[index] + 1] - start, StandardCharsets.UTF_8);
+        }
+
+        return encoded;
+    }
+
+    /**
+     * Converts text to piece ids.
+     *
+     * @param text the text
+     * @return the piece ids, empty when the text has nothing but spaces
+     */
+    public int @NotNull [] encodeIds(@NotNull String text) {
         byte[] normalized = this.normalizer.normalize(text.getBytes(StandardCharsets.UTF_8));
         int capacity = normalized.length;
         int[] starts = new int[capacity];
@@ -344,13 +363,35 @@ public final class SentencePieceTokenizer implements TextTokenizer {
     }
 
     /**
-     * Converts token ids to text; ids of control tokens and of the unknown token give no text.
+     * Converts pieces to text; control pieces, the unknown piece and pieces outside the vocabulary give no text.
      *
-     * @param tokens the token ids
+     * @param pieces the pieces
      * @return the text
      */
     @Override
-    public @NotNull String decode(int @NotNull [] tokens) {
+    public @NotNull String decode(@NotNull String @NotNull [] pieces) {
+        int[] ids = new int[pieces.length];
+        int idCount = 0;
+
+        for (String piece : pieces) {
+            byte[] text = piece.getBytes(StandardCharsets.UTF_8);
+            int id = this.findPiece(text, 0, text.length);
+
+            if (id != MISSING) {
+                ids[idCount++] = id;
+            }
+        }
+
+        return this.decodeIds(Arrays.copyOf(ids, idCount));
+    }
+
+    /**
+     * Converts piece ids to text; ids of control pieces and of the unknown piece give no text.
+     *
+     * @param tokens the piece ids
+     * @return the text
+     */
+    public @NotNull String decodeIds(int @NotNull [] tokens) {
         byte[] output = new byte[0];
         int outputLength = 0;
 

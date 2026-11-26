@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -19,7 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * A preset whose model marks texts as translated ({@code [ko>en] text}) and whose identifier answers from a table, else English, recording
  * what they do.
- * Its codes are the two-letter languages of {@link #LANGUAGES}; a token is a word, plus the language and end tokens.
+ * Its codes are the two-letter languages of {@link #LANGUAGES}; a token is a word, plus the language and end tokens. Each call of the model
+ * translates one batch.
  */
 public final class FakeTranslationPreset implements TranslationPreset {
     /**
@@ -35,6 +37,7 @@ public final class FakeTranslationPreset implements TranslationPreset {
     private final int maximumInputTokens;
     private final @NotNull Map<@NotNull String, @NotNull IdentifiedLanguage> identified;
     private final @NotNull List<@NotNull String> translatedTexts;
+    private final @NotNull List<@NotNull List<@NotNull String>> batches;
     private final @NotNull List<@NotNull String> identifiedTexts;
     private final @NotNull AtomicInteger modelLoads;
     private final @NotNull AtomicInteger modelCloses;
@@ -61,6 +64,7 @@ public final class FakeTranslationPreset implements TranslationPreset {
         this.maximumInputTokens = maximumInputTokens;
         this.identified         = new ConcurrentHashMap<>();
         this.translatedTexts    = new CopyOnWriteArrayList<>();
+        this.batches            = new CopyOnWriteArrayList<>();
         this.identifiedTexts    = new CopyOnWriteArrayList<>();
         this.modelLoads         = new AtomicInteger();
         this.modelCloses        = new AtomicInteger();
@@ -101,6 +105,13 @@ public final class FakeTranslationPreset implements TranslationPreset {
      */
     public @NotNull List<@NotNull String> getTranslatedTexts() {
         return this.translatedTexts;
+    }
+
+    /**
+     * @return the texts of each call of the model, in order
+     */
+    public @NotNull List<@NotNull List<@NotNull String>> getBatches() {
+        return this.batches;
     }
 
     /**
@@ -186,7 +197,7 @@ public final class FakeTranslationPreset implements TranslationPreset {
             }
 
             @Override
-            public @NotNull String translate(@NotNull String text, @NotNull Locale source, @NotNull Locale target) throws ModelException {
+            public @NotNull List<@NotNull String> translate(@NotNull List<@NotNull TranslationInput> inputs) throws ModelException {
                 CountDownLatch latch = FakeTranslationPreset.this.blocker;
 
                 try {
@@ -199,9 +210,18 @@ public final class FakeTranslationPreset implements TranslationPreset {
                     throw new ModelException("The fake model was interrupted", exception);
                 }
 
-                FakeTranslationPreset.this.translatedTexts.add(text);
+                List<String> texts = new ArrayList<>(inputs.size());
+                List<String> translations = new ArrayList<>(inputs.size());
 
-                return "[" + source.getLanguage() + ">" + target.getLanguage() + "] " + text;
+                for (TranslationInput input : inputs) {
+                    texts.add(input.getText());
+                    translations.add("[" + input.getSource().getLanguage() + ">" + input.getTarget().getLanguage() + "] " + input.getText());
+                }
+
+                FakeTranslationPreset.this.translatedTexts.addAll(texts);
+                FakeTranslationPreset.this.batches.add(texts);
+
+                return translations;
             }
 
             @Override

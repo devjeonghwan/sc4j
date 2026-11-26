@@ -227,6 +227,11 @@ final class TranslationServiceTest {
         CompletableFuture<Translation> queued = service.translate(new TranslationRequest.Builder("queued text", Locale.KOREAN).build());
         Thread closer = Thread.ofPlatform().start(service::close);
 
+        // The closer waits for the worker only after it marked the service closed.
+        while (closer.getState() != Thread.State.TIMED_WAITING) {
+            Thread.onSpinWait();
+        }
+
         blocker.countDown();
         closer.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS));
 

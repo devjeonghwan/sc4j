@@ -227,6 +227,13 @@ public final class TranslationService implements Translator, AutoCloseable {
                 break;
             }
 
+            // A request taken after close began is answered as close answers the queued ones.
+            if (this.closed) {
+                task.future.complete(createUntranslated(task.request, null, TranslationStatus.UNAVAILABLE));
+
+                continue;
+            }
+
             this.lastRequestNanos = System.nanoTime();
 
             Translation translation;

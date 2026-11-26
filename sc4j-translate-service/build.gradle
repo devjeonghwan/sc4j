@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+    id 'org.fogofwarlabs.sc4j.java'
+}
+
+// The translation service behind the contract: the model layer (tokenizer, sequence model, language identifier, translation model), the
+// presets and their installation, the NLLB preset (pure Java SentencePiece and fastText, ONNX Runtime for the encoder and the decoder) and
+// the service with its worker, language decision and cache. It knows no engine and no game.
+dependencies {
+    api project(':sc4j-translate')
+
+    // The encoder and decoder inference of the model presets. Its jar carries the native libraries of every platform and unpacks the one of
+    // the running platform when the first session opens.
+    implementation 'com.microsoft.onnxruntime:onnxruntime:1.31.1'
+}
+
+// The tests that need the files of a preset read them from <folder>/<preset id>/, the folder named by the Gradle property
+// sc4j.translation.presets; without it they are skipped.
+tasks.withType(Test).configureEach {
+    systemProperty 'sc4j.translation.presets', providers.gradleProperty('sc4j.translation.presets').getOrElse('')
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+}

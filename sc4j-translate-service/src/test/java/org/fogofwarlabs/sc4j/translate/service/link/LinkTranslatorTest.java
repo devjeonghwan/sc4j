@@ -4,6 +4,7 @@ import org.fogofwarlabs.sc4j.base.exception.Exceptions;
 import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkAddress;
 import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkClient;
 import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkServer;
+import org.fogofwarlabs.sc4j.launcher.link.SocketTempDirFactory;
 import org.fogofwarlabs.sc4j.translate.Translation;
 import org.fogofwarlabs.sc4j.translate.TranslationRequest;
 import org.fogofwarlabs.sc4j.translate.TranslationStatus;
@@ -36,7 +37,7 @@ final class LinkTranslatorTest {
     private static final @NotNull Duration IDLE_TIME = Duration.ofMinutes(10);
     private static final long TIMEOUT_SECONDS = 10L;
 
-    @TempDir
+    @TempDir(factory = SocketTempDirFactory.class)
     Path folder;
 
     private static @NotNull Translation translate(@NotNull Translator translator, @NotNull TranslationRequest request) throws Exception {

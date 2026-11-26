@@ -36,7 +36,7 @@ final class LauncherLinkAddressTest {
 
     @Test
     void is_socket_path_supported_should_accept_only_paths_within_the_limit(@TempDir @NotNull Path directory) {
-        Assertions.assertTrue(LauncherLinkAddress.isSocketPathSupported(directory.resolve(SOCKET_NAME)));
+        Assertions.assertTrue(LauncherLinkAddress.isSocketPathSupported(directory.getRoot().resolve(SOCKET_NAME)));
         Assertions.assertFalse(LauncherLinkAddress.isSocketPathSupported(directory.resolve("x".repeat(LauncherLinkAddress.MAXIMUM_SOCKET_PATH_LENGTH))));
     }
 }

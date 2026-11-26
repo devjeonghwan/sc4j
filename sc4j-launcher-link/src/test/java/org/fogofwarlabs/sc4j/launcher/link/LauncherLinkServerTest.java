@@ -42,7 +42,7 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void request_should_reach_the_handler_of_its_service_and_return_its_response(@TempDir @NotNull Path directory) throws Exception {
+    void request_should_reach_the_handler_of_its_service_and_return_its_response(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
             server.register(ECHO_SERVICE, payload -> CompletableFuture.completedFuture(toBytes("echo " + new String(payload, StandardCharsets.UTF_8))));
 
@@ -57,7 +57,7 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void request_should_fail_with_the_message_of_a_failed_handler_and_of_an_unknown_service(@TempDir @NotNull Path directory) throws Exception {
+    void request_should_fail_with_the_message_of_a_failed_handler_and_of_an_unknown_service(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
             server.register(FAILING_SERVICE, payload -> CompletableFuture.failedFuture(Exceptions.newIllegalStateException("no model")));
             server.register(ECHO_SERVICE, payload -> {
@@ -80,7 +80,7 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void register_should_reject_a_second_handler_of_a_service(@TempDir @NotNull Path directory) throws IOException {
+    void register_should_reject_a_second_handler_of_a_service(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws IOException {
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
             server.register(ECHO_SERVICE, CompletableFuture::completedFuture);
 
@@ -89,7 +89,7 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void publish_should_send_the_event_to_every_client(@TempDir @NotNull Path directory) throws Exception {
+    void publish_should_send_the_event_to_every_client(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION);
              LauncherLinkClient first = LauncherLinkClient.connect(server.getAddress(), VERSION);
              LauncherLinkClient second = LauncherLinkClient.connect(server.getAddress(), VERSION)) {
@@ -109,7 +109,7 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void connect_should_be_refused_with_a_wrong_token_or_another_version(@TempDir @NotNull Path directory) throws IOException {
+    void connect_should_be_refused_with_a_wrong_token_or_another_version(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws IOException {
         Path socket = directory.resolve(SOCKET_NAME);
 
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(socket), VERSION)) {
@@ -125,7 +125,7 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void server_should_close_a_connection_that_sends_an_oversized_frame(@TempDir @NotNull Path directory) throws IOException {
+    void server_should_close_a_connection_that_sends_an_oversized_frame(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws IOException {
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION);
              SocketChannel channel = SocketChannel.open(StandardProtocolFamily.UNIX)) {
             channel.connect(UnixDomainSocketAddress.of(server.getAddress().getSocket()));
@@ -149,7 +149,7 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void request_should_fail_when_its_payload_or_the_response_is_oversized(@TempDir @NotNull Path directory) throws Exception {
+    void request_should_fail_when_its_payload_or_the_response_is_oversized(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
         byte[] oversized = new byte[LinkFrame.MAXIMUM_FRAME_LENGTH];
 
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
@@ -164,7 +164,7 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void open_should_replace_a_stale_socket_file_and_close_should_delete_it(@TempDir @NotNull Path directory) throws IOException {
+    void open_should_replace_a_stale_socket_file_and_close_should_delete_it(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws IOException {
         Path socket = directory.resolve("run").resolve(SOCKET_NAME);
 
         Files.createDirectories(socket.getParent());

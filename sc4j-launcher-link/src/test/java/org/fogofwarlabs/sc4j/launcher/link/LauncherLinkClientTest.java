@@ -28,7 +28,7 @@ final class LauncherLinkClientTest {
     }
 
     @Test
-    void client_should_fail_pending_requests_and_run_close_listeners_when_the_server_closes(@TempDir @NotNull Path directory) throws Exception {
+    void client_should_fail_pending_requests_and_run_close_listeners_when_the_server_closes(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
         CompletableFuture<Void> closeSeen = new CompletableFuture<>();
         CompletableFuture<Void> requestReceived = new CompletableFuture<>();
         LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION);
@@ -56,7 +56,7 @@ final class LauncherLinkClientTest {
     }
 
     @Test
-    void close_should_fail_pending_requests_and_run_each_close_listener_once(@TempDir @NotNull Path directory) throws Exception {
+    void close_should_fail_pending_requests_and_run_each_close_listener_once(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
         AtomicInteger closeCount = new AtomicInteger();
         AtomicInteger lateCloseCount = new AtomicInteger();
 
@@ -78,7 +78,7 @@ final class LauncherLinkClientTest {
     }
 
     @Test
-    void connect_should_fail_without_a_server(@TempDir @NotNull Path directory) {
+    void connect_should_fail_without_a_server(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) {
         LauncherLinkAddress address = LauncherLinkAddress.create(directory.resolve(SOCKET_NAME));
 
         Assertions.assertThrows(LauncherLinkException.class, () -> LauncherLinkClient.connect(address, VERSION));

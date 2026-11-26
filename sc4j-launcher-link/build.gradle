@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'java-test-fixtures'
     id 'org.fogofwarlabs.sc4j.java'
 }
 
@@ -7,4 +8,8 @@ plugins {
 // the frames, and named services with requests, responses and events. It knows no feature and uses the JDK and the generic base only.
 dependencies {
     api project(':sc4j-base')
+
+    // The temporary folders of the tests that bind sockets (SocketTempDirFactory).
+    testFixturesApi platform("org.junit:junit-bom:5.11.4")
+    testFixturesApi "org.junit.jupiter:junit-jupiter-api"
 }

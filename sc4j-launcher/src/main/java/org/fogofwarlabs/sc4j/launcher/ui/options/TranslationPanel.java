@@ -160,8 +160,11 @@ final class TranslationPanel {
     private final @NotNull LauncherTranslation translation;
     private final @NotNull OptionsScreen.Actions actions;
 
+    private final @NotNull PresetOption off;
     private final @NotNull ComboBox<PresetOption> choice;
     private final @NotNull List<@NotNull PresetRow> rows;
+    private @NotNull List<@NotNull TranslationPreset> listedPresets;
+    private boolean listing;
     private final @NotNull VBox root;
     private final @NotNull Timeline refresh;
 
@@ -175,8 +178,6 @@ final class TranslationPanel {
      */
     TranslationPanel(@NotNull LauncherShell shell, @NotNull LauncherTexts texts, @NotNull LauncherTranslation translation,
                      @NotNull OptionsScreen.Actions actions) {
-        PresetOption off = new PresetOption(null, texts.get("translation.none"));
-        String chosen = translation.getChosenPreset();
         VBox body;
 
         this.shell       = shell;
@@ -184,25 +185,19 @@ final class TranslationPanel {
         this.translation = translation;
         this.actions     = actions;
 
-        this.choice = ComponentUtils.createComboBox(ControlWidth.M);
-        this.rows   = new ArrayList<>();
-
-        this.choice.getItems().add(off);
-        this.choice.setValue(off);
+        this.off           = new PresetOption(null, texts.get("translation.none"));
+        this.choice        = ComponentUtils.createComboBox(ControlWidth.M);
+        this.rows          = new ArrayList<>();
+        this.listedPresets = List.of();
+        this.listing       = false;
 
         for (TranslationPreset preset : translation.getPresets()) {
-            PresetOption option = new PresetOption(preset, preset.getDisplayName());
-
-            this.choice.getItems().add(option);
             this.rows.add(new PresetRow(preset));
-
-            if (preset.getId().equals(chosen)) {
-                this.choice.setValue(option);
-            }
         }
 
+        this.listChoices();
         this.choice.valueProperty().addListener((observable, previous, current) -> {
-            if (current != null) {
+            if (current != null && !this.listing) {
                 this.actions.onTranslationPresetChanged(current.preset == null ? null : current.preset.getId());
             }
         });
@@ -248,6 +243,52 @@ final class TranslationPanel {
     private void refreshRows() {
         for (PresetRow row : this.rows) {
             row.refresh();
+        }
+
+        this.listChoices();
+    }
+
+    /**
+     * Lists Off and the installed presets that are not downloading in the model choice, with the chosen preset selected when it is listed
+     * and Off otherwise; the list is rebuilt only when the installed presets change, and rebuilding reports no choice.
+     */
+    private void listChoices() {
+        List<TranslationPreset> installed = new ArrayList<>();
+
+        for (TranslationPreset preset : this.translation.getPresets()) {
+            PresetDownload running = this.translation.getDownload(preset);
+
+            if ((running == null || !running.isRunning()) && this.translation.isInstalled(preset)) {
+                installed.add(preset);
+            }
+        }
+
+        if (installed.equals(this.listedPresets) && !this.choice.getItems().isEmpty()) {
+            return;
+        }
+
+        String chosen = this.translation.getChosenPreset();
+        PresetOption selected = this.off;
+
+        this.listedPresets = List.copyOf(installed);
+        this.listing       = true;
+
+        try {
+            this.choice.getItems().setAll(this.off);
+
+            for (TranslationPreset preset : installed) {
+                PresetOption option = new PresetOption(preset, preset.getDisplayName());
+
+                this.choice.getItems().add(option);
+
+                if (preset.getId().equals(chosen)) {
+                    selected = option;
+                }
+            }
+
+            this.choice.setValue(selected);
+        } finally {
+            this.listing = false;
         }
     }
 
@@ -312,7 +353,7 @@ final class TranslationPanel {
                 this.shell.closeDialog(dialog);
 
                 if (preset.getId().equals(this.translation.getChosenPreset())) {
-                    this.choice.setValue(this.choice.getItems().getFirst());
+                    this.actions.onTranslationPresetChanged(null);
                 }
 
                 this.refreshRows();

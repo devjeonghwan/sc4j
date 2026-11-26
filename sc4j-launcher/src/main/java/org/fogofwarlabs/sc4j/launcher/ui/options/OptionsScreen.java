@@ -142,6 +142,8 @@ public final class OptionsScreen {
     private final @NotNull Label message;
     private final @NotNull Label nodeCount;
     private final @NotNull Button ping;
+    private final @NotNull Button moveUp;
+    private final @NotNull Button moveDown;
     private final @NotNull GridPane root;
 
     private final @NotNull Map<@NotNull ConfiguredNode, @NotNull NodePingResult> pingResults;
@@ -178,6 +180,8 @@ public final class OptionsScreen {
         this.message   = ComponentUtils.createLabel("", "field-message");
         this.nodeCount = ComponentUtils.createLabel(texts.formatCount("nodes.count", nodes.size()), "text-caption");
         this.ping      = ComponentUtils.createSmallButton(texts.get("nodes.ping"), ButtonRole.SECONDARY);
+        this.moveUp    = ComponentUtils.createSmallButton(texts.get("nodes.move.up"), ButtonRole.SECONDARY);
+        this.moveDown  = ComponentUtils.createSmallButton(texts.get("nodes.move.down"), ButtonRole.SECONDARY);
 
         this.nodeList.getItems().setAll(nodes);
         this.nodeList.setCellFactory(view -> new ListItemCell<>(this::createNodeItem));
@@ -277,7 +281,7 @@ public final class OptionsScreen {
         this.ping.setDisable(this.editor.getNodes().isEmpty());
         this.ping.setOnAction(event -> this.pingNodes());
         panel = ComponentUtils.createPanelWithFooter(this.texts.get("nodes.title"), body, ComponentUtils.createPanelFooter(this.createEditor()),
-                                                     this.nodeCount, this.ping);
+                                                     this.nodeCount, this.moveUp, this.moveDown, this.ping);
         ComponentUtils.fillHeight(panel);
 
         return panel;
@@ -289,10 +293,8 @@ public final class OptionsScreen {
         Button add = ComponentUtils.createButton(this.texts.get("nodes.add"), ButtonRole.PRIMARY);
         Button update = ComponentUtils.createButton(this.texts.get("nodes.update"), ButtonRole.SECONDARY);
         Button remove = ComponentUtils.createButton(this.texts.get("nodes.remove"), ButtonRole.DANGER);
-        Button moveUp = ComponentUtils.createButton(this.texts.get("nodes.move.up"), ButtonRole.SECONDARY);
-        Button moveDown = ComponentUtils.createButton(this.texts.get("nodes.move.down"), ButtonRole.SECONDARY);
         HBox fields = ComponentUtils.createRow(Spacing.S, hostField, portField);
-        HBox buttons = ComponentUtils.createRow(Spacing.S, add, update, remove, ComponentUtils.createGrowingSpacer(), moveUp, moveDown);
+        HBox buttons = ComponentUtils.createRow(Spacing.S, add, update, remove);
         VBox editorView = ComponentUtils.createColumn(Spacing.S, fields, buttons, this.message);
 
         ComponentUtils.setControlWidth(this.port, ControlWidth.S);
@@ -301,8 +303,8 @@ public final class OptionsScreen {
         this.message.setManaged(false);
         update.disableProperty().bind(this.nodeList.getSelectionModel().selectedItemProperty().isNull());
         remove.disableProperty().bind(this.nodeList.getSelectionModel().selectedItemProperty().isNull());
-        moveUp.disableProperty().bind(this.nodeList.getSelectionModel().selectedItemProperty().isNull());
-        moveDown.disableProperty().bind(this.nodeList.getSelectionModel().selectedItemProperty().isNull());
+        this.moveUp.disableProperty().bind(this.nodeList.getSelectionModel().selectedItemProperty().isNull());
+        this.moveDown.disableProperty().bind(this.nodeList.getSelectionModel().selectedItemProperty().isNull());
 
         add.setOnAction(event -> {
             ConfiguredNode node = this.readEntry(NodeListEditor.NEW_ENTRY);
@@ -326,8 +328,8 @@ public final class OptionsScreen {
                 this.saveNodes(this.editor.remove(index), -1);
             }
         });
-        moveUp.setOnAction(event -> this.moveSelected(-1));
-        moveDown.setOnAction(event -> this.moveSelected(1));
+        this.moveUp.setOnAction(event -> this.moveSelected(-1));
+        this.moveDown.setOnAction(event -> this.moveSelected(1));
 
         HBox.setHgrow(hostField, Priority.ALWAYS);
         HBox.setHgrow(editorView, Priority.ALWAYS);

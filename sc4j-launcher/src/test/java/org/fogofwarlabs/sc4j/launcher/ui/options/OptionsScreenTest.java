@@ -23,6 +23,10 @@ import org.fogofwarlabs.sc4j.launcher.ui.Tone;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.fogofwarlabs.sc4j.translate.service.TranslationPresetUtils;
 import org.fogofwarlabs.sc4j.translate.service.TranslationStorage;
+import org.fogofwarlabs.sc4j.translate.service.model.LanguageIdentifier;
+import org.fogofwarlabs.sc4j.translate.service.model.ModelException;
+import org.fogofwarlabs.sc4j.translate.service.model.PresetFile;
+import org.fogofwarlabs.sc4j.translate.service.model.TranslationModel;
 import org.fogofwarlabs.sc4j.translate.service.model.TranslationPreset;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,10 +36,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 /**
@@ -51,6 +57,11 @@ final class OptionsScreenTest {
     private static final @NotNull String SOURCE = "owner/sc4j";
     private static final double SCENE_WIDTH = 1280;
     private static final double SCENE_HEIGHT = 800;
+    private static final double MINIMUM_WINDOW_WIDTH = 1100;
+    private static final double MINIMUM_WINDOW_HEIGHT = 720;
+    private static final @NotNull String SMALL_PRESET_ID = "small";
+    private static final @NotNull String SMALL_PRESET_FILE = "model.bin";
+    private static final int SMALL_PRESET_SIZE = 16;
     private static final int PEER_TOGGLES = 4;
     private static final @NotNull String NEWER_VERSION = "1.2.0";
     private static final double TOLERANCE = 1;
@@ -108,6 +119,58 @@ final class OptionsScreenTest {
         }
     }
 
+    private static final class SmallPreset implements TranslationPreset {
+        @Override
+        public @NotNull String getId() {
+            return SMALL_PRESET_ID;
+        }
+
+        @Override
+        public @NotNull String getDisplayName() {
+            return "Small";
+        }
+
+        @Override
+        public @NotNull String getLicenseName() {
+            return "Test";
+        }
+
+        @Override
+        public @NotNull URI getLicenseAddress() {
+            return URI.create("https://example.org/license");
+        }
+
+        @Override
+        public @NotNull List<@NotNull PresetFile> getFiles() {
+            return List.of(new PresetFile(SMALL_PRESET_FILE, URI.create("https://example.org/model.bin"), SMALL_PRESET_SIZE, ""));
+        }
+
+        @Override
+        public @NotNull List<@NotNull Locale> getSupportedLanguages() {
+            return List.of(Locale.ENGLISH);
+        }
+
+        @Override
+        public @Nullable String findCode(@NotNull Locale language) {
+            return null;
+        }
+
+        @Override
+        public @Nullable Locale findLanguage(@NotNull String code) {
+            return null;
+        }
+
+        @Override
+        public @NotNull TranslationModel createTranslationModel(@NotNull Path folder) throws ModelException {
+            throw new ModelException("The small preset has no model.");
+        }
+
+        @Override
+        public @Nullable LanguageIdentifier createLanguageIdentifier(@NotNull Path folder) {
+            return null;
+        }
+    }
+
     @BeforeAll
     static void startToolkit() {
         LauncherFxScenario.startToolkit();
@@ -142,11 +205,24 @@ final class OptionsScreenTest {
 
     private static @NotNull OptionsScreen createScreen(@NotNull LauncherShell shell, @NotNull LauncherTexts texts, @NotNull Path directory,
                                                        @NotNull PingActions actions, @NotNull UpdateView view) {
+        return createScreen(shell, texts, directory, actions, view, TranslationPresetUtils.getPresets());
+    }
+
+    private static @NotNull OptionsScreen createScreen(@NotNull LauncherShell shell, @NotNull LauncherTexts texts, @NotNull Path directory,
+                                                       @NotNull PingActions actions, @NotNull UpdateView view,
+                                                       @NotNull List<@NotNull TranslationPreset> presets) {
         InstallLayout install = InstallLayout.of(directory);
-        LauncherTranslation translation = new LauncherTranslation(TranslationStorage.of(install.getUserDataDirectory()),
-                                                                  TranslationPresetUtils.getPresets());
+        LauncherTranslation translation = new LauncherTranslation(TranslationStorage.of(install.getUserDataDirectory()), presets);
 
         return new OptionsScreen(shell, texts, null, false, view, NODES, null, new LauncherNodeRunner(install), translation, actions);
+    }
+
+    private static @NotNull ComboBox<?> findModelChoice(@NotNull Node root, @NotNull LauncherTexts texts) {
+        return (ComboBox<?>) root.lookupAll(".combo-box").stream()
+                                 .filter(node -> node instanceof ComboBox<?> box && !box.getItems().isEmpty() &&
+                                                 texts.get("translation.none").equals(box.getItems().getFirst().toString()))
+                                 .findFirst()
+                                 .orElseThrow();
     }
 
     private static @NotNull LauncherShell createShell(@NotNull LauncherTexts texts, @NotNull Path directory) {
@@ -294,15 +370,10 @@ final class OptionsScreenTest {
                                   "nothing downloads");
             Assertions.assertFalse(Files.exists(TranslationStorage.of(InstallLayout.of(directory).getUserDataDirectory()).getPresetFolder(preset)));
 
-            // The model choice offers Off and the presets and reports the chosen one.
-            choice = (ComboBox<?>) screen.getRoot().lookupAll(".combo-box").stream()
-                                         .filter(node -> node instanceof ComboBox<?> box && box.getItems().size() == 2)
-                                         .findFirst()
-                                         .orElseThrow();
-            choice.getSelectionModel().select(1);
-            choice.getSelectionModel().select(0);
+            // A preset that is not installed is not offered in the model choice.
+            choice = findModelChoice(screen.getRoot(), texts);
 
-            Assertions.assertEquals(Arrays.asList(preset.getId(), null), actions.chosenPresets);
+            Assertions.assertEquals(1, choice.getItems().size(), "only Off is offered");
 
             return null;
         });
@@ -329,5 +400,63 @@ final class OptionsScreenTest {
 
             return null;
         });
+    }
+
+    @Test
+    void model_choice_offers_the_installed_presets_and_reports_the_chosen_one(@TempDir @NotNull Path directory) throws Exception {
+        LauncherTexts texts = LauncherTexts.of(UiLanguage.ENGLISH);
+        TranslationPreset preset = new SmallPreset();
+        Path folder = TranslationStorage.of(InstallLayout.of(directory).getUserDataDirectory()).getPresetFolder(preset);
+        PingActions actions = new PingActions();
+
+        Files.createDirectories(folder);
+        Files.write(folder.resolve(SMALL_PRESET_FILE), new byte[SMALL_PRESET_SIZE]);
+
+        LauncherFxScenario.run(() -> {
+            LauncherShell shell = createShell(texts, directory);
+            OptionsScreen screen = createScreen(shell, texts, directory, actions, createUpdateView(texts), List.of(preset));
+            ComboBox<?> choice = findModelChoice(screen.getRoot(), texts);
+
+            Assertions.assertEquals(2, choice.getItems().size(), "Off and the installed preset are offered");
+            choice.getSelectionModel().select(1);
+            choice.getSelectionModel().select(0);
+
+            Assertions.assertEquals(Arrays.asList(SMALL_PRESET_ID, null), actions.chosenPresets);
+
+            return null;
+        });
+    }
+
+    @Test
+    void showing_the_peer_list_keeps_the_columns_inside_the_smallest_window(@TempDir @NotNull Path directory) throws Exception {
+        for (UiLanguage language : UiLanguage.values()) {
+            LauncherTexts texts = LauncherTexts.of(language);
+
+            LauncherFxScenario.run(() -> {
+                LauncherShell shell = createShell(texts, directory);
+                OptionsScreen screen = createScreen(shell, texts, directory, new PingActions(), createUpdateView(texts));
+                Parent root = shell.getRoot();
+                GridPane grid = screen.getRoot();
+
+                ThemeUtils.apply(new Scene(root, MINIMUM_WINDOW_WIDTH, MINIMUM_WINDOW_HEIGHT), language);
+                shell.show(LauncherShell.Section.SETTINGS, grid);
+                root.applyCss();
+                root.layout();
+
+                double width = grid.getWidth();
+                double leftWidth = ((Region) grid.getChildren().getFirst()).getWidth();
+
+                LauncherFxScenario.findButton(root, texts.get("beaconlink.advanced.show")).fire();
+                root.applyCss();
+                root.layout();
+
+                Assertions.assertTrue(grid.minWidth(-1) <= width, language + ": the peer list fits the screen width");
+                Assertions.assertEquals(width, grid.getWidth(), TOLERANCE, language + ": the screen keeps its width");
+                Assertions.assertEquals(leftWidth, ((Region) grid.getChildren().getFirst()).getWidth(), TOLERANCE,
+                                        language + ": the launcher column keeps its width");
+
+                return null;
+            });
+        }
     }
 }

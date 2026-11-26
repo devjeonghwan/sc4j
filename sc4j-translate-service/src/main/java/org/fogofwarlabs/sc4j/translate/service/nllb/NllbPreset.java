@@ -177,7 +177,7 @@ public final class NllbPreset implements TranslationPreset {
     @Override
     public @Nullable LanguageIdentifier createLanguageIdentifier(@NotNull Path folder) throws ModelException {
         try {
-            return FastTextLanguageIdentifier.open(folder.resolve(IDENTIFIER_FILE));
+            return new NllbLanguageIdentifier(FastTextLanguageIdentifier.open(folder.resolve(IDENTIFIER_FILE)));
         } catch (IOException exception) {
             throw new ModelException(Exceptions.format("Cannot read the language identifier of {0}: {1}", ID, exception.getMessage()), exception);
         }

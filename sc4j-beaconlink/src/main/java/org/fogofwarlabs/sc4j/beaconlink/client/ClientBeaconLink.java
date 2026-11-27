@@ -24,7 +24,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,26 +77,7 @@ public final class ClientBeaconLink implements BeaconLink, Closeable {
      * @return the created {@link ClientBeaconLink} instance
      */
     public static @NotNull ClientBeaconLink createWithoutPeer(@NotNull ClientSetup setup, @NotNull ModIdentity identity) {
-        return createWithoutPeer(setup, identity, List.of());
-    }
-
-    /**
-     * Creates a {@link ClientBeaconLink} instance whose sessions run no embedded peer, with the default timings, the system clock and a
-     * socket on any local address and port: the launcher's, whose node is the computer's peer. Each session checks the operating system's
-     * firewall for the process's executable and further programs, such as the program the launcher starts games with
-     * ({@link InboundFirewall#createDefault()}, {@link ClientConfiguration.Builder#setAdditionalFirewallPrograms}); one allow request covers
-     * all of them.
-     *
-     * @param setup            the account, seeds and shared peers file
-     * @param identity         the mod identity the sessions show
-     * @param firewallPrograms the executables of the further programs the firewall check covers, absolute paths
-     * @return the created {@link ClientBeaconLink} instance
-     */
-    public static @NotNull ClientBeaconLink createWithoutPeer(@NotNull ClientSetup setup, @NotNull ModIdentity identity,
-                                                              @NotNull List<@NotNull Path> firewallPrograms) {
-        ClientConfiguration configuration = new ClientConfiguration.Builder().setFirewall(InboundFirewall.createDefault())
-                                                                             .setAdditionalFirewallPrograms(firewallPrograms)
-                                                                             .build();
+        ClientConfiguration configuration = new ClientConfiguration.Builder().setFirewall(InboundFirewall.createDefault()).build();
 
         return new ClientBeaconLink(setup, identity, configuration, null, new InetSocketAddress(0), ProtocolClock.SYSTEM);
     }

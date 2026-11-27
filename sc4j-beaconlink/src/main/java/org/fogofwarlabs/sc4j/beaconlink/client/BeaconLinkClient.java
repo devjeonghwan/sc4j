@@ -47,7 +47,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.random.RandomGenerator;
 
@@ -109,8 +108,7 @@ import java.util.random.RandomGenerator;
  * <p>
  * The session settles what it knows of its network's direct connections ({@link #getConnectivity()}) from its port mapping and the public
  * addresses its registered nodes observed. When the configuration names a firewall, the session checks on a thread of its own whether the
- * firewall lets other computers start connections to the process's executable and to the configuration's further programs
- * ({@link ClientConfiguration#getAdditionalFirewallPrograms()}), logs it and exposes the combined state ({@link #getFirewallState()}); the
+ * firewall lets other computers start connections to the process's executable, logs it and exposes it ({@link #getFirewallState()}); the
  * owner shows it and may ask the user to allow them ({@link #requestFirewallAllow()}).
  * <p>
  * The session is single-threaded: the owner calls {@link #poll()} from its loop.
@@ -118,11 +116,6 @@ import java.util.random.RandomGenerator;
 public final class BeaconLinkClient implements BeaconLinkSession {
     private static final @NotNull Logger LOGGER = Logger.of(BeaconLinkClient.class);
     private static final @NotNull String FIREWALL_THREAD_NAME = "sc4j-beaconlink-firewall";
-    /**
-     * The firewall states that win when the checks of several programs are combined, the first one found first.
-     */
-    private static final @NotNull List<@NotNull FirewallState> FIREWALL_STATE_PRIORITY = List.of(FirewallState.BLOCKED, FirewallState.NO_RULE,
-                                                                                                 FirewallState.UNKNOWN, FirewallState.ALLOWED);
     private static final int DATAGRAMS_PER_POLL = 256;
     private static final long REQUEST_NUMBER_MASK = 0xffffffffL;
     /**
@@ -258,50 +251,6 @@ public final class BeaconLinkClient implements BeaconLinkSession {
         }
     }
 
-    /**
-     * Lists the programs the firewall check of a configuration covers: the process's executable, when the operating system tells it, and the
-     * configuration's further programs, each once.
-     *
-     * @return the programs' absolute paths, empty when the configuration names no firewall
-     */
-    private static @NotNull List<@NotNull Path> findFirewallPrograms(@NotNull ClientConfiguration configuration) {
-        if (configuration.getFirewall() == null) {
-            return List.of();
-        }
-
-        List<Path> programs = new ArrayList<>();
-        Path current = InboundFirewall.findCurrentProgram();
-
-        if (current != null) {
-            programs.add(current.normalize());
-        }
-
-        for (Path program : configuration.getAdditionalFirewallPrograms()) {
-            Path normalized = program.toAbsolutePath().normalize();
-
-            if (!programs.contains(normalized)) {
-                programs.add(normalized);
-            }
-        }
-
-        return List.copyOf(programs);
-    }
-
-    /**
-     * Combines the firewall states of several programs: {@link FirewallState#BLOCKED} if one is blocked, else {@link FirewallState#NO_RULE}
-     * if one has no rule, else {@link FirewallState#UNKNOWN} if one was not read, else {@link FirewallState#ALLOWED} if one is allowed, else
-     * {@link FirewallState#NOT_NEEDED}.
-     */
-    private static @NotNull FirewallState combineFirewallStates(@NotNull Collection<@NotNull FirewallState> states) {
-        for (FirewallState state : FIREWALL_STATE_PRIORITY) {
-            if (states.contains(state)) {
-                return state;
-            }
-        }
-
-        return FirewallState.NOT_NEEDED;
-    }
-
 
     private final @NotNull ClientConfiguration configuration;
     private final @NotNull ProtocolClock clock;
@@ -325,8 +274,7 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     private final @NotNull ReplayGuard<@NotNull IdentityKey> signalGuard;
     private final @NotNull CoordinateEstimator coordinates;
     private final @NotNull ConnectivityCheck connectivityCheck;
-    private final @NotNull List<@NotNull Path> firewallPrograms;
-    private final @NotNull Map<@NotNull Path, @NotNull FirewallState> firewallStates;
+    private final @Nullable Path firewallProgram;
     private final @NotNull AtomicReference<@NotNull FirewallState> firewallState;
 
     private final @NotNull List<@NotNull NodeSession> nodes;
@@ -399,10 +347,9 @@ public final class BeaconLinkClient implements BeaconLinkSession {
         this.signalGuard       = new ReplayGuard<>(REPLAY_WINDOW_MILLIS, SIGNAL_REPLAY_CAPACITY, SIGNAL_REPLAY_SENDER_CAPACITY);
         this.coordinates       = new CoordinateEstimator(random);
         this.connectivityCheck = new ConnectivityCheck();
-        this.firewallPrograms  = findFirewallPrograms(configuration);
-        this.firewallStates    = new ConcurrentHashMap<>();
+        this.firewallProgram   = configuration.getFirewall() == null ? null : InboundFirewall.findCurrentProgram();
         this.firewallState     = new AtomicReference<>(configuration.getFirewall() == null ? FirewallState.NOT_NEEDED
-                                                                                           : this.firewallPrograms.isEmpty() ? FirewallState.UNKNOWN : FirewallState.CHECKING);
+                                                                                           : this.firewallProgram == null ? FirewallState.UNKNOWN : FirewallState.CHECKING);
 
         this.nodes      = new ArrayList<>();
         this.knownNodes = knownNodes;
@@ -447,9 +394,10 @@ public final class BeaconLinkClient implements BeaconLinkSession {
         }
 
         InboundFirewall firewall = configuration.getFirewall();
+        Path program = this.firewallProgram;
 
-        if (firewall != null && !this.firewallPrograms.isEmpty()) {
-            Thread.ofVirtual().name(FIREWALL_THREAD_NAME).start(() -> this.checkFirewall(firewall));
+        if (firewall != null && program != null) {
+            Thread.ofVirtual().name(FIREWALL_THREAD_NAME).start(() -> this.checkFirewall(firewall, program));
         }
     }
 
@@ -574,7 +522,7 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     }
 
     /**
-     * @return what the firewall does with connections that other computers start to this process's executable and the configuration's further programs, combined ({@link FirewallState#BLOCKED} if it blocks one, else {@link FirewallState#NO_RULE} if it has no rule for one, else {@link FirewallState#UNKNOWN} if the rules of one were not read, else {@link FirewallState#ALLOWED} if it allows one, else {@link FirewallState#NOT_NEEDED}); {@link FirewallState#CHECKING} while the rules are read or an allow request runs; may be called from any thread
+     * @return what the firewall does with connections that other computers start to this process's executable; {@link FirewallState#CHECKING} while the rules are read or an allow request runs; may be called from any thread
      */
     public @NotNull FirewallState getFirewallState() {
         return this.firewallState.get();
@@ -1061,55 +1009,42 @@ public final class BeaconLinkClient implements BeaconLinkSession {
     }
 
     /**
-     * Asks the user, on a thread of its own, to allow connections that other computers start to the checked programs that the firewall has no
-     * rule for or blocks, in one request ({@link InboundFirewall#requestAllow}), then checks the firewall again. Does nothing unless the
-     * combined state is {@link FirewallState#NO_RULE} or {@link FirewallState#BLOCKED}. May be called from any thread.
+     * Asks the user, on a thread of its own, to allow connections that other computers start to this process's executable
+     * ({@link InboundFirewall#requestAllow}), then checks the firewall again. Does nothing unless the firewall has no rule for the executable or
+     * blocks it. May be called from any thread.
      */
     public void requestFirewallAllow() {
         InboundFirewall firewall = this.configuration.getFirewall();
+        Path program = this.firewallProgram;
         FirewallState current = this.firewallState.get();
 
-        if (firewall == null || current != FirewallState.NO_RULE && current != FirewallState.BLOCKED ||
+        if (firewall == null || program == null || current != FirewallState.NO_RULE && current != FirewallState.BLOCKED ||
             !this.firewallState.compareAndSet(current, FirewallState.CHECKING)) {
             return;
         }
 
-        List<Path> programs = new ArrayList<>();
-
-        for (Path program : this.firewallPrograms) {
-            FirewallState state = this.firewallStates.get(program);
-
-            if (state == FirewallState.NO_RULE || state == FirewallState.BLOCKED) {
-                programs.add(program);
-            }
-        }
-
-        LOGGER.info("BEACON.LINK: firewall allow requested for {0}", programs);
+        LOGGER.info("BEACON.LINK: firewall allow requested for {0}", program);
         Thread.ofVirtual().name(FIREWALL_THREAD_NAME).start(() -> {
-            firewall.requestAllow(programs);
-            this.checkFirewall(firewall);
+            firewall.requestAllow(List.of(program));
+            this.checkFirewall(firewall, program);
         });
     }
 
     /**
-     * Checks what the firewall does with connections that other computers start to each checked program, logs it and sets the combined state.
+     * Checks what the firewall does with connections that other computers start to the executable, and logs it.
      */
-    private void checkFirewall(@NotNull InboundFirewall firewall) {
-        for (Path program : this.firewallPrograms) {
-            FirewallState state = firewall.check(program);
+    private void checkFirewall(@NotNull InboundFirewall firewall, @NotNull Path program) {
+        FirewallState state = firewall.check(program);
 
-            switch (state) {
-                case ALLOWED -> LOGGER.info("BEACON.LINK: firewall allows {0}", program);
-                case NO_RULE -> LOGGER.info("BEACON.LINK: firewall has no inbound rule for {0}", program);
-                case BLOCKED -> LOGGER.info("BEACON.LINK: firewall blocks {0}", program);
-                case UNKNOWN -> LOGGER.info("BEACON.LINK: firewall rules for {0} not read", program);
-                default -> LOGGER.debug("BEACON.LINK: firewall needs no check for {0}", program);
-            }
-
-            this.firewallStates.put(program, state);
+        switch (state) {
+            case ALLOWED -> LOGGER.info("BEACON.LINK: firewall allows {0}", program);
+            case NO_RULE -> LOGGER.info("BEACON.LINK: firewall has no inbound rule for {0}", program);
+            case BLOCKED -> LOGGER.info("BEACON.LINK: firewall blocks {0}", program);
+            case UNKNOWN -> LOGGER.info("BEACON.LINK: firewall rules for {0} not read", program);
+            default -> LOGGER.debug("BEACON.LINK: firewall needs no check for {0}", program);
         }
 
-        this.firewallState.set(combineFirewallStates(this.firewallStates.values()));
+        this.firewallState.set(state);
     }
 
     /**

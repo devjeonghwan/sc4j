@@ -2,15 +2,14 @@ package org.fogofwarlabs.sc4j.translate.service.link;
 
 import org.fogofwarlabs.sc4j.base.log.Logger;
 import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkClient;
-import org.fogofwarlabs.sc4j.translate.Translation;
-import org.fogofwarlabs.sc4j.translate.TranslationRequest;
-import org.fogofwarlabs.sc4j.translate.TranslationStatus;
-import org.fogofwarlabs.sc4j.translate.Translator;
+import org.fogofwarlabs.sc4j.translate.*;
 import org.fogofwarlabs.sc4j.translate.service.TranslationService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -20,12 +19,15 @@ import java.util.function.Supplier;
  * the first such request from its factory, so that the models are loaded in the runtime only without a launcher; without a factory those
  * requests answer {@link TranslationStatus#UNAVAILABLE}. A request that the launcher answers with a failure while the link is open, or whose
  * answer cannot be read, answers {@link TranslationStatus#UNAVAILABLE} too.
+ * <p>
+ * A request's {@link TranslationContext} is sent whole the first time its id is used on the link, later requests carry the id only. When
+ * the launcher does not know an id, the request is sent again with the whole context.
  */
 public final class LinkTranslator implements Translator, AutoCloseable {
     private static final @NotNull Logger LOGGER = Logger.of(LinkTranslator.class);
 
-    private static @NotNull CompletableFuture<@NotNull Translation> answerUnavailable(@NotNull TranslationRequest request) {
-        return CompletableFuture.completedFuture(Translation.untranslated(request.getText(), null, TranslationStatus.UNAVAILABLE));
+    private static @NotNull Translation createUnavailable(@NotNull TranslationRequest request) {
+        return Translation.untranslated(request.getText(), null, TranslationStatus.UNAVAILABLE);
     }
 
 
@@ -33,6 +35,7 @@ public final class LinkTranslator implements Translator, AutoCloseable {
     private final @Nullable Supplier<@NotNull TranslationService> localFactory;
 
     private final @NotNull Object lock;
+    private final @NotNull Set<@NotNull String> sentContextIds;
     private @Nullable TranslationService local;
     private boolean closed;
 
@@ -46,9 +49,10 @@ public final class LinkTranslator implements Translator, AutoCloseable {
         this.link         = link;
         this.localFactory = localFactory;
 
-        this.lock   = new Object();
-        this.local  = null;
-        this.closed = false;
+        this.lock           = new Object();
+        this.sentContextIds = new HashSet<>();
+        this.local          = null;
+        this.closed         = false;
     }
 
     /**
@@ -74,23 +78,59 @@ public final class LinkTranslator implements Translator, AutoCloseable {
 
         CompletableFuture<Translation> answer = new CompletableFuture<>();
 
-        this.link.request(TranslationLinkService.SERVICE_NAME, TranslationCodecUtils.encodeRequest(request)).whenComplete((payload, failure) -> {
+        this.send(request, false, answer);
+
+        return answer;
+    }
+
+    /**
+     * Sends a request to the launcher and completes the answer with its translation. The context goes whole when it is resent or its id
+     * was not sent on the link before; a request whose context the launcher does not know is sent once more with the whole context.
+     */
+    private void send(@NotNull TranslationRequest request, boolean resent, @NotNull CompletableFuture<@NotNull Translation> answer) {
+        TranslationContext context = request.getContext();
+        CompletableFuture<byte[]> response;
+
+        // The request is written under the lock, so that the launcher reads a whole context before the requests that carry its id.
+        synchronized (this.lock) {
+            boolean fullContext = context != null && (this.sentContextIds.add(context.getId()) || resent);
+
+            response = this.link.request(TranslationLinkService.SERVICE_NAME, TranslationCodecUtils.encodeRequest(request, fullContext));
+        }
+
+        response.whenComplete((payload, failure) -> {
             if (failure == null) {
-                try {
-                    answer.complete(TranslationCodecUtils.decodeTranslation(payload));
-                } catch (IOException exception) {
-                    LOGGER.warning("TRANSLATION: the launcher's answer cannot be read: {0}", exception.getMessage());
-                    answer.complete(Translation.untranslated(request.getText(), null, TranslationStatus.UNAVAILABLE));
-                }
+                this.receive(request, resent, payload, answer);
             } else if (this.link.isClosed()) {
                 this.translateLocally(request).thenAccept(answer::complete);
             } else {
                 LOGGER.warning("TRANSLATION: the launcher failed a request: {0}", failure.getMessage());
-                answer.complete(Translation.untranslated(request.getText(), null, TranslationStatus.UNAVAILABLE));
+                answer.complete(createUnavailable(request));
             }
         });
+    }
 
-        return answer;
+    private void receive(@NotNull TranslationRequest request, boolean resent, byte @NotNull [] payload,
+                         @NotNull CompletableFuture<@NotNull Translation> answer) {
+        Translation translation;
+
+        try {
+            translation = TranslationCodecUtils.decodeAnswer(payload);
+        } catch (IOException exception) {
+            LOGGER.warning("TRANSLATION: the launcher's answer cannot be read: {0}", exception.getMessage());
+            answer.complete(createUnavailable(request));
+
+            return;
+        }
+
+        if (translation != null) {
+            answer.complete(translation);
+        } else if (resent) {
+            LOGGER.warning("TRANSLATION: the launcher does not keep the context of a request");
+            answer.complete(createUnavailable(request));
+        } else {
+            this.send(request, true, answer);
+        }
     }
 
     private @NotNull CompletableFuture<@NotNull Translation> translateLocally(@NotNull TranslationRequest request) {
@@ -98,7 +138,7 @@ public final class LinkTranslator implements Translator, AutoCloseable {
 
         synchronized (this.lock) {
             if (this.closed || this.localFactory == null) {
-                return answerUnavailable(request);
+                return CompletableFuture.completedFuture(createUnavailable(request));
             }
 
             if (this.local == null) {

@@ -33,7 +33,7 @@ final class LauncherLinkClientTest {
         CompletableFuture<Void> requestReceived = new CompletableFuture<>();
         LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION);
 
-        server.register(WAITING_SERVICE, payload -> {
+        server.register(WAITING_SERVICE, (session, payload) -> {
             requestReceived.complete(null);
 
             return new CompletableFuture<>();
@@ -61,7 +61,7 @@ final class LauncherLinkClientTest {
         AtomicInteger lateCloseCount = new AtomicInteger();
 
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
-            server.register(WAITING_SERVICE, payload -> new CompletableFuture<>());
+            server.register(WAITING_SERVICE, (session, payload) -> new CompletableFuture<>());
 
             LauncherLinkClient client = LauncherLinkClient.connect(server.getAddress(), VERSION);
             CompletableFuture<byte[]> pending = client.request(WAITING_SERVICE, new byte[0]);

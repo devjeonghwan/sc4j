@@ -241,7 +241,7 @@ public final class OptionsScreen {
     }
 
     private @NotNull VBox createLauncherPanel(@Nullable UiLanguage language, boolean chatSoundMuted, boolean highPerformanceGpu,
-                                             boolean highPerformanceGpuShown, @NotNull UpdateView updateView) {
+                                              boolean highPerformanceGpuShown, @NotNull UpdateView updateView) {
         ComboBox<LanguageOption> choice = ComponentUtils.createComboBox(ControlWidth.M);
         CheckBox mute = new CheckBox(this.texts.get("settings.chat.sound.mute"));
         CheckBox gpu = new CheckBox(this.texts.get("settings.gpu.high.performance"));

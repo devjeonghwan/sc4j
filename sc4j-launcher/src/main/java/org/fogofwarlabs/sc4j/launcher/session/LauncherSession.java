@@ -165,7 +165,7 @@ public final class LauncherSession implements LauncherSessionView {
         ClientSetup setup = ClientSetup.of(account, seeds, install.getBeaconLinkDirectory().resolve(PeerStore.FILE_NAME));
 
         RuntimeFirewall firewall = RuntimeFirewall.create(RuntimeCommandLine.getJavaProgram(RuntimeCommandLine.getLauncherJavaHome(),
-                                                                                         RuntimeCommandLine.isWindows()));
+                                                                                            RuntimeCommandLine.isWindows()));
 
         return start(account, ClientBeaconLink.createWithoutPeer(setup, createIdentity(launcherVersion)), firewall, publisher);
     }

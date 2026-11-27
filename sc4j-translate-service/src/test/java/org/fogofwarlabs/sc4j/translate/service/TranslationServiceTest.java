@@ -98,8 +98,8 @@ final class TranslationServiceTest {
 
         try (TranslationService service = new TranslationService(preset, options, this.folder.resolve("presets"), null, LONG_IDLE_TIME)) {
             Translation translation = translate(service, new TranslationRequest.Builder("Good game. Want a rematch?  Sure!", Locale.KOREAN)
-                                                             .setContext(context)
-                                                             .build());
+                    .setContext(context)
+                    .build());
 
             Assertions.assertEquals(List.of("Good game. Want a rematch?  Sure!"), preset.getTranslatedTexts());
             Assertions.assertEquals("[en>ko] Good game. Want a rematch?  Sure!", translation.getTranslatedText());
@@ -161,8 +161,8 @@ final class TranslationServiceTest {
         TranslationRequest plain = new TranslationRequest.Builder("See you later", Locale.KOREAN).build();
         TranslationRequest withContext = new TranslationRequest.Builder("See you later", Locale.KOREAN).setContext(context).build();
         TranslationRequest sameContext = new TranslationRequest.Builder("See you later", Locale.KOREAN)
-                                                 .setContext(new TranslationContext.Builder().setTextKind("chat message").build())
-                                                 .build();
+                .setContext(new TranslationContext.Builder().setTextKind("chat message").build())
+                .build();
         TranslationRequest withOtherContext = new TranslationRequest.Builder("See you later", Locale.KOREAN).setContext(otherContext).build();
         FakeTranslationPreset preset = new FakeTranslationPreset(LARGE_INPUT_LIMIT);
 

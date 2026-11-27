@@ -36,9 +36,9 @@ final class LinkTranslatorTest {
     private static final @NotNull Duration IDLE_TIME = Duration.ofMinutes(10);
     private static final long TIMEOUT_SECONDS = 10L;
     private static final @NotNull TranslationContext CONTEXT = new TranslationContext.Builder().setTextKind("chat message")
-                                                                                              .setDescription("Short messages between players.")
-                                                                                              .addGlossaryEntry("tower", Locale.ENGLISH, "Tower")
-                                                                                              .build();
+                                                                                               .setDescription("Short messages between players.")
+                                                                                               .addGlossaryEntry("tower", Locale.ENGLISH, "Tower")
+                                                                                               .build();
 
     @TempDir(factory = SocketTempDirFactory.class)
     Path folder;

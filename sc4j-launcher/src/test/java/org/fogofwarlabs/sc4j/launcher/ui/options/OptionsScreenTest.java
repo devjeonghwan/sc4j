@@ -338,9 +338,9 @@ final class OptionsScreenTest {
             root.applyCss();
             root.layout();
 
-            // The preset is listed with its state, and only Download is offered for a preset that is not installed.
+            // Each preset is listed with its state, and only Download is offered for a preset that is not installed.
             Assertions.assertEquals(1, countShownLabels(root, preset.getDisplayName()));
-            Assertions.assertEquals(1, countShownLabels(root, texts.get("translation.missing")));
+            Assertions.assertEquals(TranslationPresetUtils.getPresets().size(), countShownLabels(root, texts.get("translation.missing")));
             Assertions.assertTrue(root.lookupAll(".button").stream()
                                       .noneMatch(node -> node instanceof Button button && texts.get("translation.delete").equals(button.getText()) &&
                                                          LauncherFxScenario.isShown(button)), "Delete is offered for an installed preset only");

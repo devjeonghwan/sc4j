@@ -9,7 +9,8 @@ import java.util.List;
 
 /**
  * Reads whether the computer's firewall lets other computers start connections to a program, and asks the user to allow them. A process
- * checks and asks for its own executable ({@link #findCurrentProgram()}), whichever launcher or Java runtime started it.
+ * checks and asks for its own executable ({@link #findCurrentProgram()}), whichever launcher or Java runtime started it, and may add programs it
+ * starts.
  * <p>
  * On Windows the inbound rules of Windows Firewall are read without elevation; the allow request runs one elevated process that the user
  * approves. Other operating systems report {@link FirewallState#NOT_NEEDED}.

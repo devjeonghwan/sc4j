@@ -7,11 +7,15 @@ import org.fogofwarlabs.sc4j.beaconlink.protocol.identity.PlayerStamp;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
+import java.util.List;
+
 /**
  * Holds the timings of a Beacon.Link client: how often and how long a request is sent, when a node that failed is tried again, the requested
  * registration lifetime, the lifetime and refresh of a published room, the community values (the player stamp difficulty, the lifetime and
  * refresh of a presence and the chat rate), the port mapping of the session socket on the router and the firewall the session checks, both
- * off unless set. {@link #createDefault()} gives the values of a normal run without port mapping and firewall check.
+ * off unless set, with the further programs the firewall check covers. {@link #createDefault()} gives the values of a normal run without port
+ * mapping and firewall check.
  */
 public final class ClientConfiguration {
     private static final long DEFAULT_RESEND_MILLIS = 1_000L;
@@ -48,6 +52,7 @@ public final class ClientConfiguration {
 
         private @Nullable PortMappingConfiguration portMapping;
         private @Nullable InboundFirewall firewall;
+        private @NotNull List<@NotNull Path> additionalFirewallPrograms;
 
         /**
          * Creates a {@link Builder} instance with the default values.
@@ -67,8 +72,9 @@ public final class ClientConfiguration {
             this.chatBurst              = DEFAULT_CHAT_BURST;
             this.chatRate               = DEFAULT_CHAT_RATE;
 
-            this.portMapping = null;
-            this.firewall    = null;
+            this.portMapping                = null;
+            this.firewall                   = null;
+            this.additionalFirewallPrograms = List.of();
         }
 
         /**
@@ -228,6 +234,19 @@ public final class ClientConfiguration {
         }
 
         /**
+         * Sets the programs a session checks and asks to allow with the firewall beside its process's executable, such as the program of a
+         * game that the process starts; a program that is the process's executable counts once.
+         *
+         * @param additionalFirewallPrograms the programs' executables, absolute paths
+         * @return this instance for chaining
+         */
+        public @NotNull Builder setAdditionalFirewallPrograms(@NotNull List<@NotNull Path> additionalFirewallPrograms) {
+            this.additionalFirewallPrograms = List.copyOf(additionalFirewallPrograms);
+
+            return this;
+        }
+
+        /**
          * Builds a {@link ClientConfiguration} instance from the values set.
          *
          * @return the built {@link ClientConfiguration} instance
@@ -264,6 +283,7 @@ public final class ClientConfiguration {
 
     private final @Nullable PortMappingConfiguration portMapping;
     private final @Nullable InboundFirewall firewall;
+    private final @NotNull List<@NotNull Path> additionalFirewallPrograms;
 
     private ClientConfiguration(@NotNull Builder builder) {
         if (builder.resendMillis <= 0L || builder.requestAttempts <= 0 || builder.retryMillis <= 0L) {
@@ -303,8 +323,9 @@ public final class ClientConfiguration {
         this.chatBurst              = builder.chatBurst;
         this.chatRate               = builder.chatRate;
 
-        this.portMapping = builder.portMapping;
-        this.firewall    = builder.firewall;
+        this.portMapping                = builder.portMapping;
+        this.firewall                   = builder.firewall;
+        this.additionalFirewallPrograms = builder.additionalFirewallPrograms;
     }
 
     /**
@@ -396,5 +417,12 @@ public final class ClientConfiguration {
      */
     public @Nullable InboundFirewall getFirewall() {
         return this.firewall;
+    }
+
+    /**
+     * @return the programs a session checks and asks to allow with the firewall beside its process's executable, absolute paths
+     */
+    public @NotNull List<@NotNull Path> getAdditionalFirewallPrograms() {
+        return this.additionalFirewallPrograms;
     }
 }

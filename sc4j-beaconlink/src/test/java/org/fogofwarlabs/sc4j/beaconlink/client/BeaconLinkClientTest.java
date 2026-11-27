@@ -39,14 +39,16 @@ import java.nio.channels.DatagramChannel;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.SplittableRandom;
 
 /**
  * Tests the Beacon.Link client against real nodes on 127.0.0.1, directly and behind every emulated NAT type: registration with the observed
  * address and its refresh, the connections of one account up to the node's limit, room publication, update and withdrawal, searches by mod
  * identity, several nodes with one that dies, two federated nodes, the failure reasons, the rejection of datagrams that answer no waiting
- * request, the port mapping offered once a node observed its address, and the firewall check of the process's executable.
+ * request, the port mapping offered once a node observed its address, and the firewall check of the process's executable and further programs.
  */
 final class BeaconLinkClientTest {
     private static final @NotNull ModIdentity IDENTITY = ClientScenario.createIdentity("1.0.0");
@@ -112,6 +114,47 @@ final class BeaconLinkClientTest {
         @Override
         public synchronized boolean requestAllow(@NotNull List<@NotNull Path> programs) {
             this.requests.add(programs);
+
+            return true;
+        }
+    }
+
+    /**
+     * Answers each check with the state of the checked program, allows the requested programs, and records the checked and requested programs.
+     */
+    private static final class ProgramFirewall implements InboundFirewall {
+        private final @NotNull Map<@NotNull Path, @NotNull FirewallState> states;
+        private final @NotNull List<@NotNull Path> checked;
+        private final @NotNull List<@NotNull List<@NotNull Path>> requests;
+
+        private ProgramFirewall(@NotNull Map<@NotNull Path, @NotNull FirewallState> states) {
+            this.states   = new HashMap<>(states);
+            this.checked  = new ArrayList<>();
+            this.requests = new ArrayList<>();
+        }
+
+        private synchronized @NotNull List<@NotNull Path> getChecked() {
+            return List.copyOf(this.checked);
+        }
+
+        private synchronized @NotNull List<@NotNull List<@NotNull Path>> getRequests() {
+            return List.copyOf(this.requests);
+        }
+
+        @Override
+        public synchronized @NotNull FirewallState check(@NotNull Path program) {
+            this.checked.add(program);
+
+            return this.states.getOrDefault(program, FirewallState.UNKNOWN);
+        }
+
+        @Override
+        public synchronized boolean requestAllow(@NotNull List<@NotNull Path> programs) {
+            this.requests.add(List.copyOf(programs));
+
+            for (Path program : programs) {
+                this.states.put(program, FirewallState.ALLOWED);
+            }
 
             return true;
         }
@@ -277,6 +320,56 @@ final class BeaconLinkClientTest {
                                 "a session without a firewall checks nothing");
 
         client.close();
+    }
+
+    @Test
+    void session_checks_further_programs_and_requests_the_allow_of_those_the_firewall_stops() throws IOException {
+        Path program = InboundFirewall.findCurrentProgram();
+
+        Assertions.assertNotNull(program);
+
+        Path game = Path.of("game", "bin", "java.exe").toAbsolutePath();
+        ProgramFirewall firewall = new ProgramFirewall(Map.of(program, FirewallState.ALLOWED, game, FirewallState.NO_RULE));
+        UdpDatagramEndpoint endpoint = UdpDatagramEndpoint.open(new InetSocketAddress(ClientScenario.LOOPBACK, 0));
+        ClientConfiguration.Builder builder = new ClientConfiguration.Builder().setFirewall(firewall).setAdditionalFirewallPrograms(List.of(game, program));
+        BeaconLinkClient client = this.openConfiguredClient(builder, List.of(), endpoint);
+
+        this.scenario.await(() -> client.getFirewallState() == FirewallState.NO_RULE, "the firewall check ends");
+        client.requestFirewallAllow();
+        this.scenario.await(() -> client.getFirewallState() == FirewallState.ALLOWED, "the allow request ends");
+
+        Assertions.assertEquals(List.of(program, game, program, game), firewall.getChecked(), "the executable named again is checked once");
+        Assertions.assertEquals(List.of(List.of(game)), firewall.getRequests(), "one request names only the program without a rule");
+
+        client.close();
+    }
+
+    @Test
+    void firewall_state_combines_the_states_of_the_checked_programs() throws IOException {
+        Path program = InboundFirewall.findCurrentProgram();
+
+        Assertions.assertNotNull(program);
+
+        Path game = Path.of("game", "bin", "java.exe").toAbsolutePath();
+        List<List<FirewallState>> cases = List.of(List.of(FirewallState.NO_RULE, FirewallState.BLOCKED, FirewallState.BLOCKED),
+                                                  List.of(FirewallState.UNKNOWN, FirewallState.NO_RULE, FirewallState.NO_RULE),
+                                                  List.of(FirewallState.ALLOWED, FirewallState.UNKNOWN, FirewallState.UNKNOWN),
+                                                  List.of(FirewallState.NOT_NEEDED, FirewallState.ALLOWED, FirewallState.ALLOWED),
+                                                  List.of(FirewallState.NOT_NEEDED, FirewallState.NOT_NEEDED, FirewallState.NOT_NEEDED));
+
+        for (List<FirewallState> states : cases) {
+            ProgramFirewall firewall = new ProgramFirewall(Map.of(program, states.get(0), game, states.get(1)));
+            UdpDatagramEndpoint endpoint = UdpDatagramEndpoint.open(new InetSocketAddress(ClientScenario.LOOPBACK, 0));
+            ClientConfiguration.Builder builder = new ClientConfiguration.Builder().setFirewall(firewall).setAdditionalFirewallPrograms(List.of(game));
+            BeaconLinkClient client = this.openConfiguredClient(builder, List.of(), endpoint);
+
+            this.scenario.await(() -> firewall.getChecked().size() == 2 && client.getFirewallState() != FirewallState.CHECKING,
+                                "the firewall check ends");
+
+            Assertions.assertEquals(states.get(2), client.getFirewallState(), states::toString);
+
+            client.close();
+        }
     }
 
     @Test

@@ -17,6 +17,7 @@ import org.fogofwarlabs.sc4j.engine.net.beaconlink.community.*;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.community.chat.ChannelChat;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.community.chat.ChatEntry;
 import org.fogofwarlabs.sc4j.engine.net.beaconlink.community.chat.ChatEntryKind;
+import org.fogofwarlabs.sc4j.launcher.launch.RuntimeCommandLine;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
 import org.fogofwarlabs.sc4j.manifest.version.EngineVersion;
 import org.fogofwarlabs.sc4j.manifest.version.ModVersion;
@@ -24,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -141,7 +143,8 @@ public final class LauncherSession implements LauncherSessionView {
 
     /**
      * Logs a launcher in: starts the session of an account of an install, with the install's seeds (the user's node list once saved, else the
-     * shipped seed list) and its shared peers file, without an embedded peer.
+     * shipped seed list) and its shared peers file, without an embedded peer. The session's firewall check covers the Java program the launcher
+     * starts the runtime with ({@link RuntimeCommandLine#getJavaProgram}) beside the launcher's executable.
      *
      * @param install         the install
      * @param account         the account
@@ -161,8 +164,9 @@ public final class LauncherSession implements LauncherSessionView {
         }
 
         ClientSetup setup = ClientSetup.of(account, seeds, install.getBeaconLinkDirectory().resolve(PeerStore.FILE_NAME));
+        Path runtimeProgram = RuntimeCommandLine.getJavaProgram(RuntimeCommandLine.getLauncherJavaHome(), RuntimeCommandLine.isWindows());
 
-        return start(account, ClientBeaconLink.createWithoutPeer(setup, createIdentity(launcherVersion)), publisher);
+        return start(account, ClientBeaconLink.createWithoutPeer(setup, createIdentity(launcherVersion), List.of(runtimeProgram)), publisher);
     }
 
     /**

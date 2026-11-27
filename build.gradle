@@ -41,17 +41,45 @@ ext {
     LWJGL_NATIVES = "natives-" + OS + (ARCH == "arm64" ? "-arm64" : "")
     // The platform classifier of the JavaCPP native libraries, which name macOS "macosx".
     JAVACPP_PLATFORM = (OS == "macos" ? "macosx" : OS) + "-" + ARCH
+    // One JavaCPP version for every JavaCPP library of the build (FFmpeg, CTranslate2).
+    JAVACPP_VERSION = '1.5.13'
+    // The CTranslate2 binding of the translation service and the JavaCPP platforms it has native libraries for.
+    CTRANSLATE2_VERSION = '4.9.1-1'
+    CTRANSLATE2_PLATFORMS = ['windows-x86_64', 'linux-x86_64', 'linux-arm64', 'macosx-arm64']
     // The platform of the user package built here, in its file name and launcher/package-platform.txt: windows-x64, linux-x64, linux-arm64,
     // macos-x64 or macos-arm64. The launcher updates only from a package of its own platform.
     PACKAGE_PLATFORM = OS + "-" + (ARCH == "x86_64" ? "x64" : "arm64")
 }
+
+// The libraries of the organization (group org.fogofwarlabs, such as ctranslate2-java) come from Maven Central, their snapshots from its
+// snapshot repository. The Gradle property sc4j.mavenLocal takes them from the local Maven repository first, for a library built and
+// published there with publishToMavenLocal.
+def organizationGroup = 'org.fogofwarlabs'
+def useMavenLocal = providers.gradleProperty('sc4j.mavenLocal').isPresent()
 
 allprojects {
     group = 'org.fogofwarlabs.sc4j'
     version = "$project.version"
 
     repositories {
+        if (useMavenLocal) {
+            mavenLocal {
+                content {
+                    includeGroup organizationGroup
+                }
+            }
+        }
         mavenCentral()
+        maven {
+            name = 'mavenCentralSnapshots'
+            url = 'https://central.sonatype.com/repository/maven-snapshots/'
+            mavenContent {
+                snapshotsOnly()
+            }
+            content {
+                includeGroup organizationGroup
+            }
+        }
     }
 }
 
@@ -196,8 +224,8 @@ configure((apiModules + publishedTestFixtureModules).unique().collect { name -> 
 // The Java runtime of the user package: an image of the JDK that runs this build, made with that JDK's own jlink, with the modules that the
 // launcher, the runtime and the mods use: what jdeps finds in their jars and in the JavaFX modules (which stay in launcher/lib/javafx), and
 // the charsets and locale data they look up by name.
-def javaRuntimeModules = ['java.base', 'java.desktop', 'java.logging', 'java.management', 'java.net.http', 'java.xml', 'jdk.unsupported',
-                          'jdk.charsets', 'jdk.localedata']
+def javaRuntimeModules = ['java.base', 'java.desktop', 'java.management', 'java.net.http', 'java.xml', 'jdk.unsupported', 'jdk.charsets',
+                          'jdk.localedata']
 // The languages of mod texts.
 def javaRuntimeLocales = ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'zh']
 def javaRuntimeHome = providers.systemProperty('java.home').get()
@@ -690,8 +718,8 @@ def publishedModules = [
     'sc4j-catalog'            : 'SC4J catalog reader: GitHub releases, release versions, the check for a newer release and the mod catalog.',
     'sc4j-launcher-link'      : 'SC4J launcher link: the local channel between the launcher and the runtimes it starts, with named services.',
     'sc4j-translate'          : 'SC4J translation contract: the translator of texts shown to the player, its requests and its answers.',
-    'sc4j-translate-service'  : 'SC4J translation service: model presets and their download, the NLLB preset over ONNX Runtime, the worker with ' +
-                                'its cache and the service on the launcher link.',
+    'sc4j-translate-service'  : 'SC4J translation service: model presets and their download, the NLLB preset over CTranslate2, the worker with ' +
+                                'its batches and cache and the service on the launcher link.',
     'sc4j-runtime'            : 'SC4J runtime: reads a mod jar, loads the mod in its own class loader and runs it in a window or headless.'
 ]
 // Inside this build the coordinates of the published modules (as the mod plugin names them) resolve to their projects.

@@ -3,7 +3,7 @@ plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'org.fogofwarlabs.sc4j.java'
-    id 'org.fogofwarlabs.sc4j.onnxruntime'
+    id 'org.fogofwarlabs.sc4j.natives'
 }
 
 // The launcher: lists the mod jars of the install, edits their pre-run settings and starts the runtime as a
@@ -21,6 +21,9 @@ dependencies {
     implementation project(':sc4j-catalog')
     implementation project(':sc4j-launcher-link')
     implementation project(':sc4j-translate-service')
+
+    // The native libraries of the translation service (CTranslate2 and JavaCPP) for lib/natives of the distribution.
+    nativeLibraries project(path: ':sc4j-translate-service', configuration: 'nativeLibraries')
 
     // Test mod jars (org.fogofwarlabs.sc4j.manifest.test.TestJarUtils).
     testImplementation testFixtures(project(':sc4j-mod-manifest'))

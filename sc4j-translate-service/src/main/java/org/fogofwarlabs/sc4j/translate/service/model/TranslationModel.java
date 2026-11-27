@@ -2,11 +2,11 @@ package org.fogofwarlabs.sc4j.translate.service.model;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Locale;
+import java.util.List;
 
 /**
- * Translates text between the languages of a loaded preset. It owns the native resources of its sequence model until it is closed and is
- * used by one thread at a time.
+ * Translates texts between the languages of a loaded preset, a batch of texts with their own languages in one call. It owns the native
+ * resources of its sequence model until it is closed and is used by one thread at a time.
  */
 public interface TranslationModel extends AutoCloseable {
     /**
@@ -23,16 +23,14 @@ public interface TranslationModel extends AutoCloseable {
     int countTokens(@NotNull String text);
 
     /**
-     * Translates a text that fits {@link #getMaximumInputTokens()}; longer input is cut there.
+     * Translates a batch of texts that fit {@link #getMaximumInputTokens()}; longer input is cut there.
      *
-     * @param text   the text
-     * @param source the language of the text, one the preset supports
-     * @param target the language to translate into, one the preset supports
-     * @return the translated text
+     * @param inputs the texts with their languages
+     * @return the translated texts, in the order of the inputs
      * @throws ModelException           if the inference fails
      * @throws IllegalArgumentException if the preset does not support a language
      */
-    @NotNull String translate(@NotNull String text, @NotNull Locale source, @NotNull Locale target) throws ModelException;
+    @NotNull List<@NotNull String> translate(@NotNull List<@NotNull TranslationInput> inputs) throws ModelException;
 
     /**
      * Releases the native resources.

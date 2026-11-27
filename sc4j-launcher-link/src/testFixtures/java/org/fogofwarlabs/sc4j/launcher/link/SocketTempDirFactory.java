@@ -29,7 +29,7 @@ public final class SocketTempDirFactory implements TempDirFactory {
     @Override
     public @NotNull Path createTempDirectory(@NotNull AnnotatedElementContext elementContext, @NotNull ExtensionContext extensionContext) throws IOException {
         Path parent = Files.isDirectory(UNIX_TEMPORARY_FOLDER) && UNIX_TEMPORARY_FOLDER.isAbsolute() ? UNIX_TEMPORARY_FOLDER
-                                                                                                      : Path.of(System.getProperty("java.io.tmpdir"));
+                                                                                                     : Path.of(System.getProperty("java.io.tmpdir"));
 
         return Files.createTempDirectory(parent, PREFIX);
     }

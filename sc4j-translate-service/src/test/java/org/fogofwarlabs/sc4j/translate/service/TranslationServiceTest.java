@@ -11,13 +11,14 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.*;
 
 /**
- * Tests the translation service with a fake preset: the decision order, protected spans, splitting, the cache, the queue priority, the idle
- * close of the models and the answers when the models are missing or the service is closed.
+ * Tests the translation service with a fake preset: the decision order, protected spans, splitting, the cache, the queue priority, the
+ * batches, the idle close of the models and the answers when the models are missing or the service is closed.
  */
 final class TranslationServiceTest {
     private static final int LARGE_INPUT_LIMIT = 512;
@@ -163,6 +164,101 @@ final class TranslationServiceTest {
             CompletableFuture.allOf(first, batch, chat).get(WAIT_SECONDS, TimeUnit.SECONDS);
 
             Assertions.assertEquals(List.of("first text", "chat text", "batch text"), preset.getTranslatedTexts());
+        }
+    }
+
+    @Test
+    void translate_should_translate_the_queued_requests_of_one_priority_in_one_batch() throws Exception {
+        FakeTranslationPreset preset = new FakeTranslationPreset(LARGE_INPUT_LIMIT);
+        CountDownLatch blocker = new CountDownLatch(1);
+
+        preset.setBlocker(blocker);
+
+        try (TranslationService service = this.createService(preset, LONG_IDLE_TIME)) {
+            CompletableFuture<Translation> first = service.translate(new TranslationRequest.Builder("first text", Locale.KOREAN).build());
+
+            // The worker waits inside the first batch while the others queue.
+            while (preset.getModelLoads() == 0) {
+                Thread.onSpinWait();
+            }
+
+            CompletableFuture<Translation> alpha = service.translate(new TranslationRequest.Builder("alpha text", Locale.KOREAN).build());
+            CompletableFuture<Translation> gamma = service.translate(new TranslationRequest.Builder("gamma text", Locale.KOREAN)
+                                                                             .setPriority(TranslationPriority.BATCH)
+                                                                             .build());
+            CompletableFuture<Translation> beta = service.translate(new TranslationRequest.Builder("beta text. Second one.", Locale.JAPANESE).build());
+
+            blocker.countDown();
+            CompletableFuture.allOf(first, alpha, gamma, beta).get(WAIT_SECONDS, TimeUnit.SECONDS);
+
+            Assertions.assertEquals(List.of(List.of("first text"), List.of("alpha text", "beta text.", "Second one."), List.of("gamma text")),
+                                    preset.getBatches());
+            Assertions.assertEquals("[en>ko] alpha text", alpha.get().getTranslatedText());
+            Assertions.assertEquals("[en>ja] beta text.[en>ja] Second one.", beta.get().getTranslatedText());
+            Assertions.assertEquals("[en>ko] gamma text", gamma.get().getTranslatedText());
+        }
+    }
+
+    @Test
+    void translate_should_end_a_batch_at_the_maximum_runs() throws Exception {
+        FakeTranslationPreset preset = new FakeTranslationPreset(LARGE_INPUT_LIMIT);
+        CountDownLatch blocker = new CountDownLatch(1);
+        List<CompletableFuture<Translation>> futures = new ArrayList<>();
+
+        preset.setBlocker(blocker);
+
+        try (TranslationService service = this.createService(preset, LONG_IDLE_TIME)) {
+            futures.add(service.translate(new TranslationRequest.Builder("first text", Locale.KOREAN).build()));
+
+            while (preset.getModelLoads() == 0) {
+                Thread.onSpinWait();
+            }
+
+            for (int index = 0; index < TranslationService.MAXIMUM_BATCH_RUNS + 2; index++) {
+                futures.add(service.translate(new TranslationRequest.Builder("text " + index, Locale.KOREAN).build()));
+            }
+
+            blocker.countDown();
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).get(WAIT_SECONDS, TimeUnit.SECONDS);
+
+            Assertions.assertEquals(List.of(1, TranslationService.MAXIMUM_BATCH_RUNS, 2), preset.getBatches().stream().map(List::size).toList());
+        }
+    }
+
+    @Test
+    void translate_should_answer_cached_runs_without_the_model_and_translate_a_repeated_run_once() throws Exception {
+        TranslationRequest cached = new TranslationRequest.Builder("See you later", Locale.KOREAN).build();
+
+        try (TranslationService service = this.createService(new FakeTranslationPreset(LARGE_INPUT_LIMIT), LONG_IDLE_TIME)) {
+            translate(service, cached);
+        }
+
+        FakeTranslationPreset preset = new FakeTranslationPreset(LARGE_INPUT_LIMIT);
+        CountDownLatch blocker = new CountDownLatch(1);
+
+        preset.setBlocker(blocker);
+
+        try (TranslationService service = this.createService(preset, LONG_IDLE_TIME)) {
+            CompletableFuture<Translation> first = service.translate(new TranslationRequest.Builder("first text", Locale.KOREAN).build());
+
+            while (preset.getModelLoads() == 0) {
+                Thread.onSpinWait();
+            }
+
+            CompletableFuture<Translation> again = service.translate(cached);
+            CompletableFuture<Translation> repeated = service.translate(new TranslationRequest.Builder("Good game", Locale.KOREAN).build());
+            CompletableFuture<Translation> mixed = service.translate(new TranslationRequest.Builder("\u0003See you later\u0004Good game", Locale.KOREAN)
+                                                                             .addProtectedSpan(0, 1)
+                                                                             .addProtectedSpan(14, 15)
+                                                                             .build());
+
+            blocker.countDown();
+            CompletableFuture.allOf(first, again, repeated, mixed).get(WAIT_SECONDS, TimeUnit.SECONDS);
+
+            Assertions.assertEquals(List.of(List.of("first text"), List.of("Good game")), preset.getBatches());
+            Assertions.assertEquals("[en>ko] See you later", again.get().getTranslatedText());
+            Assertions.assertEquals("[en>ko] Good game", repeated.get().getTranslatedText());
+            Assertions.assertEquals("\u0003[en>ko] See you later\u0004[en>ko] Good game", mixed.get().getTranslatedText());
         }
     }
 

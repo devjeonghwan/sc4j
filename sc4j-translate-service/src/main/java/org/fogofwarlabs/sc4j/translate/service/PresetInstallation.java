@@ -247,8 +247,7 @@ public final class PresetInstallation {
      *
      * @return {@code true} if the copy has the file's checksum, {@code false} otherwise
      */
-    private boolean isCopyValid(@NotNull Path copy, @NotNull PresetFile file, long installedBefore, long total, @NotNull ProgressListener listener)
-            throws IOException {
+    private boolean isCopyValid(@NotNull Path copy, @NotNull PresetFile file, long installedBefore, long total, @NotNull ProgressListener listener) throws IOException {
         MessageDigest digest = createDigest();
         long read;
 

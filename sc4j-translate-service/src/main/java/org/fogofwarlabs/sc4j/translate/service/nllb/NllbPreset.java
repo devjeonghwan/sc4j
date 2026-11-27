@@ -54,10 +54,10 @@ public final class NllbPreset implements TranslationPreset {
     private static final @NotNull String IDENTIFIER_REVISION =
             "https://huggingface.co/facebook/fasttext-language-identification/resolve/3af127d4124fc58b75666f3594bb5143b9757e78/";
     private static final @NotNull PresetFile TOKENIZER = new PresetFile(TOKENIZER_FILE, URI.create(TOKENIZER_REVISION + TOKENIZER_FILE), 4_852_054L,
-                                                                         "14bb8dfb35c0ffdea7bc01e56cea38b9e3d5efcdcb9c251d6b40538e1aab555a");
+                                                                        "14bb8dfb35c0ffdea7bc01e56cea38b9e3d5efcdcb9c251d6b40538e1aab555a");
     private static final @NotNull PresetFile IDENTIFIER = new PresetFile(IDENTIFIER_FILE, URI.create(IDENTIFIER_REVISION + "model.bin"),
-                                                                          1_176_355_829L,
-                                                                          "8ded5749a2ad79ae9ab7c9190c7c8b97ff20d54ad8b9527ffa50107238fc7f6a");
+                                                                         1_176_355_829L,
+                                                                         "8ded5749a2ad79ae9ab7c9190c7c8b97ff20d54ad8b9527ffa50107238fc7f6a");
     private static final @NotNull String DISTILLED_600M_REVISION =
             "https://huggingface.co/fogofwarlabs/nllb-200-distilled-600M-ct2-int8/resolve/6790bbb31d215f6cbdc3155b06d90c4b22d90716/";
     private static final @NotNull String DISTILLED_1_3B_REVISION =

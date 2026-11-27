@@ -104,7 +104,8 @@ public final class NllbTranslationModel implements TranslationModel {
             sources[index]        = source;
             targetPrefixes[index] = new String[]{targetToken};
             outputLimits[index]   = source.length * OUTPUT_TOKENS_PER_INPUT_TOKEN + EXTRA_OUTPUT_TOKENS;
-            maximumLength         = Math.max(maximumLength, outputLimits[index]);
+
+            maximumLength = Math.max(maximumLength, outputLimits[index]);
         }
 
         String[][] outputs = this.sequenceModel.generate(sources, targetPrefixes, maximumLength);

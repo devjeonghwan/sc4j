@@ -14,15 +14,13 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Tests the launcher link server with clients in the same process over a socket in a temporary folder: requests and their responses or
- * failures, unknown services, the sessions of the clients, events to every client, refused hellos, oversized frames and the socket file.
+ * failures, unknown services, events to every client, refused hellos, oversized frames and the socket file.
  */
 final class LauncherLinkServerTest {
     private static final @NotNull String VERSION = "0.1.0-TEST";
@@ -46,8 +44,7 @@ final class LauncherLinkServerTest {
     @Test
     void request_should_reach_the_handler_of_its_service_and_return_its_response(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
-            server.register(ECHO_SERVICE,
-                            (session, payload) -> CompletableFuture.completedFuture(toBytes("echo " + new String(payload, StandardCharsets.UTF_8))));
+            server.register(ECHO_SERVICE, payload -> CompletableFuture.completedFuture(toBytes("echo " + new String(payload, StandardCharsets.UTF_8))));
 
             try (LauncherLinkClient client = LauncherLinkClient.connect(server.getAddress(), VERSION)) {
                 CompletableFuture<byte[]> first = client.request(ECHO_SERVICE, toBytes("one"));
@@ -62,9 +59,8 @@ final class LauncherLinkServerTest {
     @Test
     void request_should_fail_with_the_message_of_a_failed_handler_and_of_an_unknown_service(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
-            server.register(FAILING_SERVICE,
-                            (session, payload) -> CompletableFuture.failedFuture(Exceptions.newIllegalStateException("no model")));
-            server.register(ECHO_SERVICE, (session, payload) -> {
+            server.register(FAILING_SERVICE, payload -> CompletableFuture.failedFuture(Exceptions.newIllegalStateException("no model")));
+            server.register(ECHO_SERVICE, payload -> {
                 throw Exceptions.newIllegalArgumentException("bad payload");
             });
 
@@ -84,48 +80,11 @@ final class LauncherLinkServerTest {
     }
 
     @Test
-    void handlers_should_see_one_session_per_client_and_its_close(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws Exception {
-        List<LinkSession> requested = new CopyOnWriteArrayList<>();
-        CompletableFuture<LinkSession> closed = new CompletableFuture<>();
-
-        try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
-            server.register(ECHO_SERVICE, new LinkRequestHandler() {
-                @Override
-                public @NotNull CompletableFuture<byte @NotNull []> handle(@NotNull LinkSession session, byte @NotNull [] payload) {
-                    requested.add(session);
-
-                    return CompletableFuture.completedFuture(payload);
-                }
-
-                @Override
-                public void onSessionClosed(@NotNull LinkSession session) {
-                    closed.complete(session);
-                }
-            });
-
-            try (LauncherLinkClient second = LauncherLinkClient.connect(server.getAddress(), VERSION)) {
-                try (LauncherLinkClient first = LauncherLinkClient.connect(server.getAddress(), VERSION)) {
-                    first.request(ECHO_SERVICE, toBytes("one")).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                    first.request(ECHO_SERVICE, toBytes("two")).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                    second.request(ECHO_SERVICE, toBytes("three")).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                }
-
-                Assertions.assertSame(requested.get(0), closed.get(TIMEOUT_SECONDS, TimeUnit.SECONDS), "the first client's session closes first");
-            }
-        }
-
-        Assertions.assertSame(requested.get(0), requested.get(1));
-        Assertions.assertNotSame(requested.get(0), requested.get(2));
-        Assertions.assertNotEquals(requested.get(0).getNumber(), requested.get(2).getNumber());
-    }
-
-    @Test
     void register_should_reject_a_second_handler_of_a_service(@TempDir(factory = SocketTempDirFactory.class) @NotNull Path directory) throws IOException {
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
-            server.register(ECHO_SERVICE, (session, payload) -> CompletableFuture.completedFuture(payload));
+            server.register(ECHO_SERVICE, CompletableFuture::completedFuture);
 
-            Assertions.assertThrows(IllegalArgumentException.class,
-                                    () -> server.register(ECHO_SERVICE, (session, payload) -> CompletableFuture.completedFuture(payload)));
+            Assertions.assertThrows(IllegalArgumentException.class, () -> server.register(ECHO_SERVICE, CompletableFuture::completedFuture));
         }
     }
 
@@ -194,7 +153,7 @@ final class LauncherLinkServerTest {
         byte[] oversized = new byte[LinkFrame.MAXIMUM_FRAME_LENGTH];
 
         try (LauncherLinkServer server = LauncherLinkServer.open(LauncherLinkAddress.create(directory.resolve(SOCKET_NAME)), VERSION)) {
-            server.register(ECHO_SERVICE, (session, payload) -> CompletableFuture.completedFuture(oversized));
+            server.register(ECHO_SERVICE, payload -> CompletableFuture.completedFuture(oversized));
 
             try (LauncherLinkClient client = LauncherLinkClient.connect(server.getAddress(), VERSION)) {
                 Assertions.assertInstanceOf(LauncherLinkException.class, awaitFailure(client.request(ECHO_SERVICE, oversized)));

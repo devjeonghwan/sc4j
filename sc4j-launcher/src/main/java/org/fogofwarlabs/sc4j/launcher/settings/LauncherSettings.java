@@ -3,7 +3,6 @@ package org.fogofwarlabs.sc4j.launcher.settings;
 import org.fogofwarlabs.sc4j.catalog.ReleaseCheck;
 import org.fogofwarlabs.sc4j.catalog.ReleaseVersion;
 import org.fogofwarlabs.sc4j.launcher.i18n.UiLanguage;
-import org.fogofwarlabs.sc4j.translate.service.TranslationPresetUtils;
 import org.fogofwarlabs.sc4j.translate.service.model.TranslationDevice;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,11 +21,10 @@ public final class LauncherSettings {
 
     /**
      * The settings before anything is saved: the system language, no last mod, the default window, the default update repository, no
-     * skipped version, the chat sound on, the default translation preset ({@link TranslationPresetUtils#DEFAULT_PRESET_ID}) on the
-     * automatic device, and games on the high-performance GPU.
+     * skipped version, the chat sound on, no translation preset, the automatic translation device and games on the high-performance GPU.
      */
-    public static final @NotNull LauncherSettings DEFAULT = new LauncherSettings(null, null, null, null, null, false,
-                                                                                 TranslationPresetUtils.DEFAULT_PRESET_ID, TranslationDevice.AUTOMATIC, true);
+    public static final @NotNull LauncherSettings DEFAULT = new LauncherSettings(null, null, null, null, null, false, null, TranslationDevice.AUTOMATIC,
+                                                                                 true);
 
     private final @Nullable UiLanguage language;
     private final @Nullable String lastMod;

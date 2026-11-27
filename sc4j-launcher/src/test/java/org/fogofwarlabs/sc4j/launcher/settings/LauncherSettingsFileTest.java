@@ -44,7 +44,7 @@ final class LauncherSettingsFileTest {
         Assertions.assertFalse(LauncherSettings.DEFAULT.isChatSoundMuted(), "the chat sound is on by default");
         Assertions.assertEquals("nllb-200-distilled-600m", read.getTranslationPreset());
         Assertions.assertNull(read.withTranslationPreset(null).getTranslationPreset());
-        Assertions.assertEquals("index-translate-2b", LauncherSettings.DEFAULT.getTranslationPreset(), "the chat is translated by default");
+        Assertions.assertNull(LauncherSettings.DEFAULT.getTranslationPreset(), "the chat is not translated by default");
         Assertions.assertEquals(TranslationDevice.CPU, read.getTranslationDevice());
         Assertions.assertEquals(TranslationDevice.AUTOMATIC, read.withTranslationDevice(TranslationDevice.AUTOMATIC).getTranslationDevice());
         Assertions.assertEquals(TranslationDevice.AUTOMATIC, LauncherSettings.DEFAULT.getTranslationDevice());
@@ -54,18 +54,17 @@ final class LauncherSettingsFileTest {
     }
 
     @Test
-    void write_and_read_should_keep_the_default_preset_unwritten_and_off_as_null(@TempDir @NotNull Path directory) throws IOException {
+    void write_and_read_should_leave_out_the_default_device_and_refuse_an_unknown_one(@TempDir @NotNull Path directory) throws IOException {
         LauncherSettingsFile file = new LauncherSettingsFile(directory.resolve("launcher.json"));
 
         file.write(LauncherSettings.DEFAULT);
 
         Assertions.assertEquals("{\"format\": 1}\n", Files.readString(file.getPath(), StandardCharsets.UTF_8));
-        Assertions.assertEquals("index-translate-2b", file.read().getTranslationPreset());
+        Assertions.assertEquals(TranslationDevice.AUTOMATIC, file.read().getTranslationDevice());
 
-        file.write(LauncherSettings.DEFAULT.withTranslationPreset(null));
+        file.write(LauncherSettings.DEFAULT.withTranslationDevice(TranslationDevice.CPU));
 
-        Assertions.assertEquals("{\"format\": 1, \"translationPreset\": null}\n", Files.readString(file.getPath(), StandardCharsets.UTF_8));
-        Assertions.assertNull(file.read().getTranslationPreset(), "Off stays off");
+        Assertions.assertEquals("{\"format\": 1, \"translationDevice\": \"cpu\"}\n", Files.readString(file.getPath(), StandardCharsets.UTF_8));
 
         Files.writeString(file.getPath(), "{\"format\": 1, \"translationDevice\": \"gpu\"}");
 

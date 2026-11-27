@@ -39,6 +39,14 @@ final class LlamaTextGenerator implements TextGenerator {
     }
 
     /**
+     * @return the number of tokens the sequences of one call of {@link #generate} hold together, their prompts and generated tokens
+     */
+    @Override
+    public int getContextSize() {
+        return this.context.getContextSize();
+    }
+
+    /**
      * @return the number of tokens one sequence holds, its prompt and its generated tokens together
      */
     @Override

@@ -13,8 +13,8 @@ import java.util.Locale;
 
 /**
  * Tests the Index-Translate model with a stand-in generator whose tokens are characters: the plain and the constrained prompts, the
- * glossary entries a prompt takes, the fallback to the plain prompt, the groups of parallel sequences, their output limits and the cleaned
- * outputs.
+ * glossary entries a prompt takes, the fallback to the plain prompt, the groups of parallel sequences that fit the shared context, their
+ * output limits and the cleaned outputs.
  */
 final class IndexTranslationModelTest {
     private static final int LARGE_SEQUENCE_SIZE = 4096;
@@ -22,21 +22,22 @@ final class IndexTranslationModelTest {
     private static final @NotNull String CHAT_END = "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
 
     /**
-     * Records the prompts and limits of each call and answers each prompt with its number in the call, its tokens are its characters.
+     * Records the prompts and limits of each call and answers each prompt with its number in the call, its tokens are its characters. Its
+     * sequences share the whole context.
      */
     private static final class StandInGenerator implements TextGenerator {
         private final int sequenceCount;
-        private final int sequenceContextSize;
+        private final int contextSize;
         private final @NotNull List<@NotNull List<@NotNull String>> calls;
         private final @NotNull List<@NotNull Integer> limits;
         private boolean closed;
 
-        private StandInGenerator(int sequenceCount, int sequenceContextSize) {
-            this.sequenceCount       = sequenceCount;
-            this.sequenceContextSize = sequenceContextSize;
-            this.calls               = new ArrayList<>();
-            this.limits              = new ArrayList<>();
-            this.closed              = false;
+        private StandInGenerator(int sequenceCount, int contextSize) {
+            this.sequenceCount = sequenceCount;
+            this.contextSize   = contextSize;
+            this.calls         = new ArrayList<>();
+            this.limits        = new ArrayList<>();
+            this.closed        = false;
         }
 
         @Override
@@ -45,8 +46,13 @@ final class IndexTranslationModelTest {
         }
 
         @Override
+        public int getContextSize() {
+            return this.contextSize;
+        }
+
+        @Override
         public int getSequenceContextSize() {
-            return this.sequenceContextSize;
+            return this.contextSize;
         }
 
         @Override
@@ -79,8 +85,8 @@ final class IndexTranslationModelTest {
         }
     }
 
-    private static @NotNull String translateOne(@NotNull TranslationInput input, int sequenceContextSize) throws Exception {
-        StandInGenerator generator = new StandInGenerator(1, sequenceContextSize);
+    private static @NotNull String translateOne(@NotNull TranslationInput input, int contextSize) throws Exception {
+        StandInGenerator generator = new StandInGenerator(1, contextSize);
 
         try (IndexTranslationModel model = new IndexTranslationModel(generator)) {
             model.translate(List.of(input));
@@ -156,6 +162,23 @@ final class IndexTranslationModelTest {
         Assertions.assertTrue(generator.closed);
         Assertions.assertEquals("translation", IndexTranslatePromptUtils.cleanOutput("<think>\nthinking\n</think>\n\n translation \n"));
         Assertions.assertEquals("translation", IndexTranslatePromptUtils.cleanOutput("<think> translation"));
+    }
+
+    @Test
+    void translate_should_generate_together_only_the_texts_that_fit_the_shared_context() throws Exception {
+        List<TranslationInput> inputs = List.of(new TranslationInput("a".repeat(100), Locale.ENGLISH, Locale.KOREAN),
+                                                new TranslationInput("b".repeat(100), Locale.ENGLISH, Locale.KOREAN),
+                                                new TranslationInput("c".repeat(620), Locale.ENGLISH, Locale.KOREAN),
+                                                new TranslationInput("d", Locale.ENGLISH, Locale.KOREAN));
+        StandInGenerator generator = new StandInGenerator(4, 2048);
+
+        try (IndexTranslationModel model = new IndexTranslationModel(generator)) {
+            Assertions.assertEquals(4, model.translate(inputs).size());
+        }
+
+        Assertions.assertEquals(List.of(2, 1, 1), generator.calls.stream().map(List::size).toList(),
+                                "the long text does not fit beside the first two, and the last one does not fit beside it");
+        Assertions.assertEquals(List.of(100 * 2 + 16, 620 * 2 + 16, 18), generator.limits);
     }
 
     @Test

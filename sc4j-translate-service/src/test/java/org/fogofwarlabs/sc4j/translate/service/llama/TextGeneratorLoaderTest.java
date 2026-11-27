@@ -68,6 +68,11 @@ final class TextGeneratorLoaderTest {
         }
 
         @Override
+        public int getContextSize() {
+            return 1;
+        }
+
+        @Override
         public int getSequenceContextSize() {
             return 1;
         }

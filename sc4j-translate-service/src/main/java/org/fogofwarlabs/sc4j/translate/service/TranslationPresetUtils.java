@@ -9,14 +9,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Lists the translation presets that SC4J offers for download and finds them by id. The first preset, Index-Translate-2B, is the default.
+ * Lists the translation presets that SC4J offers for download, Index-Translate-2B first, and finds them by id.
  */
 public final class TranslationPresetUtils {
-    /**
-     * The id of the default preset.
-     */
-    public static final @NotNull String DEFAULT_PRESET_ID = IndexTranslatePreset.INDEX_TRANSLATE_2B.getId();
-
     private static final @NotNull List<@NotNull TranslationPreset> PRESETS = List.of(IndexTranslatePreset.INDEX_TRANSLATE_2B,
                                                                                      NllbPreset.DISTILLED_600M, NllbPreset.DISTILLED_1_3B);
 

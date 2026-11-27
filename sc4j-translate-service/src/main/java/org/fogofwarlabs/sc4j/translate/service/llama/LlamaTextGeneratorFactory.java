@@ -10,7 +10,8 @@ import java.util.List;
 
 /**
  * Loads GGUF models with llama.cpp: on the GPU with every layer on every GPU device, on the CPU without any. A context holds
- * {@value #CONTEXT_SIZE} tokens for {@value #SEQUENCE_COUNT} parallel sequences, an equal part each, and runs on
+ * {@value #CONTEXT_SIZE} tokens that up to {@value #SEQUENCE_COUNT} parallel sequences share, so that one long sequence may use most of
+ * them, and runs on
  * {@code min(4, max(1, processors / 4))} threads, so that the generation leaves most processors to the game; it decodes batches of every
  * shape once after it is created, so that the first request does not wait for the GPU kernels.
  * <p>
@@ -24,7 +25,7 @@ public final class LlamaTextGeneratorFactory implements TextGeneratorFactory {
     public static final @NotNull LlamaTextGeneratorFactory INSTANCE = new LlamaTextGeneratorFactory();
 
     /**
-     * The number of tokens of a context, shared by its sequences.
+     * The number of tokens of a context, which its sequences share.
      */
     public static final int CONTEXT_SIZE = 2048;
 
@@ -69,6 +70,7 @@ public final class LlamaTextGeneratorFactory implements TextGeneratorFactory {
         ModelOptions modelOptions = gpu ? new ModelOptions() : new ModelOptions().setGpuLayers(0).setDevices(List.of());
         ContextOptions contextOptions = new ContextOptions().setContextSize(CONTEXT_SIZE)
                                                             .setSequenceCount(SEQUENCE_COUNT)
+                                                            .setUnifiedMemory(true)
                                                             .setThreadCount(threads)
                                                             .setBatchThreadCount(threads);
         LlamaModel model;

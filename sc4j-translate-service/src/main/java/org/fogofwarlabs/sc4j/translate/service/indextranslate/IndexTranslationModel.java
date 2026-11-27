@@ -11,15 +11,18 @@ import java.util.List;
 
 /**
  * Translates with Index-Translate: each text gets a prompt of its own (the constrained instruction when its context gives constraints, else
- * the plain one) and the texts of a batch are generated greedily as parallel sequences, as many at once as the generator takes. The output
- * of a text is limited to twice its tokens and a fixed margin. A constrained prompt that does not leave a sequence room for that output
- * falls back to the plain prompt.
+ * the plain one) and the texts of a batch are generated greedily as parallel sequences. The output of a text is limited to twice its tokens
+ * and a fixed margin. A constrained prompt that does not leave a sequence room for that output falls back to the plain prompt.
+ * <p>
+ * The sequences of one generation share the context of the generator: the texts go in batch order, as many at once as the generator takes
+ * and as fit the context together with their prompts and output limits; a text that does not fit alone is generated alone.
  */
 public final class IndexTranslationModel implements TranslationModel {
     /**
-     * The largest number of tokens of one input; the service splits longer texts at sentence boundaries.
+     * The largest number of tokens of one input; the service splits longer texts at sentence boundaries. With its output limit and a prompt
+     * it fits the shared context of {@link org.fogofwarlabs.sc4j.translate.service.llama.LlamaTextGeneratorFactory#CONTEXT_SIZE} tokens.
      */
-    public static final int MAXIMUM_INPUT_TOKENS = 128;
+    public static final int MAXIMUM_INPUT_TOKENS = 512;
 
     private static final int OUTPUT_TOKENS_PER_INPUT_TOKEN = 2;
     private static final int EXTRA_OUTPUT_TOKENS = 16;
@@ -66,34 +69,44 @@ public final class IndexTranslationModel implements TranslationModel {
     public @NotNull List<@NotNull String> translate(@NotNull List<@NotNull TranslationInput> inputs) throws ModelException {
         List<String> prompts = new ArrayList<>(inputs.size());
         int[] outputLimits = new int[inputs.size()];
+        int[] sequenceSizes = new int[inputs.size()];
 
         for (int index = 0; index < inputs.size(); index++) {
             TranslationInput input = inputs.get(index);
             int outputLimit = this.countTokens(input.getText()) * OUTPUT_TOKENS_PER_INPUT_TOKEN + EXTRA_OUTPUT_TOKENS;
             String prompt = IndexTranslatePromptUtils.createPrompt(input, true);
+            int promptTokens = this.generator.countPromptTokens(prompt);
 
-            if (input.getContext() != null && this.generator.countPromptTokens(prompt) + outputLimit > this.generator.getSequenceContextSize()) {
-                prompt = IndexTranslatePromptUtils.createPrompt(input, false);
+            if (input.getContext() != null && promptTokens + outputLimit > this.generator.getSequenceContextSize()) {
+                prompt       = IndexTranslatePromptUtils.createPrompt(input, false);
+                promptTokens = this.generator.countPromptTokens(prompt);
             }
 
             prompts.add(prompt);
-            outputLimits[index] = outputLimit;
+            outputLimits[index]  = outputLimit;
+            sequenceSizes[index] = promptTokens + outputLimit;
         }
 
         List<String> translations = new ArrayList<>(inputs.size());
-        int groupSize = this.generator.getSequenceCount();
+        int start = 0;
 
-        for (int start = 0; start < prompts.size(); start += groupSize) {
-            int end = Math.min(prompts.size(), start + groupSize);
-            int maximumTokens = 0;
+        while (start < prompts.size()) {
+            int end = start + 1;
+            int maximumTokens = outputLimits[start];
+            int size = sequenceSizes[start];
 
-            for (int index = start; index < end; index++) {
-                maximumTokens = Math.max(maximumTokens, outputLimits[index]);
+            while (end < prompts.size() && end - start < this.generator.getSequenceCount() &&
+                   size + sequenceSizes[end] <= this.generator.getContextSize()) {
+                maximumTokens = Math.max(maximumTokens, outputLimits[end]);
+                size += sequenceSizes[end];
+                end++;
             }
 
             for (String output : this.generator.generate(prompts.subList(start, end), maximumTokens)) {
                 translations.add(IndexTranslatePromptUtils.cleanOutput(output));
             }
+
+            start = end;
         }
 
         return translations;

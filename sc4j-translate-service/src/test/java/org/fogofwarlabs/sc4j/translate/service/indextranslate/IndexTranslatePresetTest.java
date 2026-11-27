@@ -20,6 +20,31 @@ import java.util.Locale;
  */
 final class IndexTranslatePresetTest {
     private static final int LANGUAGE_COUNT = 32;
+    /**
+     * A text of about 330 tokens of mixed sentences.
+     */
+    private static final @NotNull String LONG_TEXT = String.join(" ", List.of(
+            "The library opens at nine in the morning and closes at six in the evening on weekdays.",
+            "On Saturdays it stays open until noon, and on Sundays it is closed.",
+            "Visitors can borrow up to five books at a time for three weeks.",
+            "If a book is returned late, a small fee is charged for every day.",
+            "The reading room on the second floor is quiet and has large windows facing the park.",
+            "Children have their own room with picture books, puzzles and a corner for reading aloud.",
+            "Every Wednesday afternoon a volunteer reads stories to the youngest visitors.",
+            "Students often come in the evening to prepare for their exams together.",
+            "The library also lends laptops, but they must stay inside the building.",
+            "Printing costs ten cents per page in black and white and fifty cents in colour.",
+            "A new collection of travel guides arrived last month, covering cities in Asia, Europe and South America.",
+            "Many readers asked for more audiobooks, so the library now offers them online.",
+            "To use the online service, you only need your library card number and a password.",
+            "The café next to the entrance serves coffee, tea and fresh sandwiches until four o'clock.",
+            "Food is not allowed in the reading rooms, but water bottles with a lid are fine.",
+            "Lost items are kept at the front desk for one month before they are given away.",
+            "Next spring the building will be renovated, and some rooms will be closed for a few weeks.",
+            "During that time, books can still be picked up and returned at the side door.",
+            "The staff thanks everyone for their patience and hopes to see you soon.",
+            "If you have questions, please ask at the front desk or write to us by email."
+    ));
 
     @Test
     void supported_languages_should_map_to_codes_and_back() {
@@ -64,7 +89,6 @@ final class IndexTranslatePresetTest {
         Assertions.assertTrue(model.getAddress().toString().startsWith("https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF/resolve/"));
         Assertions.assertTrue(model.getSha256().matches("[0-9a-f]{64}"));
         Assertions.assertEquals("index-translate-2b", preset.getId());
-        Assertions.assertEquals(preset.getId(), TranslationPresetUtils.DEFAULT_PRESET_ID);
         Assertions.assertSame(preset, TranslationPresetUtils.getPresets().getFirst());
     }
 
@@ -83,6 +107,11 @@ final class IndexTranslatePresetTest {
                 List<String> batch = model.translate(List.of(new TranslationInput("Let's play another game.", Locale.ENGLISH, Locale.KOREAN),
                                                              new TranslationInput("안녕하세요, 같이 게임 하실 분?", Locale.KOREAN, Locale.ENGLISH),
                                                              new TranslationInput("Build a tower here.", Locale.ENGLISH, Locale.KOREAN, context)));
+                String longTranslation = model.translate(List.of(new TranslationInput(LONG_TEXT, Locale.ENGLISH, Locale.KOREAN))).getFirst();
+
+                Assertions.assertTrue(model.countTokens(LONG_TEXT) <= model.getMaximumInputTokens());
+                assertHangul(longTranslation);
+                Assertions.assertTrue(longTranslation.length() > LONG_TEXT.length() / 4, longTranslation);
 
                 assertHangul(batch.get(0));
                 Assertions.assertTrue(batch.get(1).matches(".*[A-Za-z]{3}.*"), batch.get(1));

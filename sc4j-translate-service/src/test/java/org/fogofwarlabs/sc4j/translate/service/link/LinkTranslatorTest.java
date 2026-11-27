@@ -1,7 +1,10 @@
 package org.fogofwarlabs.sc4j.translate.service.link;
 
 import org.fogofwarlabs.sc4j.base.exception.Exceptions;
-import org.fogofwarlabs.sc4j.launcher.link.*;
+import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkAddress;
+import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkClient;
+import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkServer;
+import org.fogofwarlabs.sc4j.launcher.link.SocketTempDirFactory;
 import org.fogofwarlabs.sc4j.translate.*;
 import org.fogofwarlabs.sc4j.translate.service.FakeTranslationPreset;
 import org.fogofwarlabs.sc4j.translate.service.TranslationService;
@@ -14,19 +17,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
- * Tests the translator of a runtime over a launcher link in the same process: requests are answered by the launcher's service, a context
- * crosses each connection once and again when the launcher lost it, a closed link moves the requests to a local service created once, or to
- * {@link TranslationStatus#UNAVAILABLE} without one, and a failure of the launcher's service answers {@link TranslationStatus#UNAVAILABLE}
- * without the local service.
+ * Tests the translator of a runtime over a launcher link in the same process: requests are answered by the launcher's service with their
+ * contexts, a closed link moves the requests to a local service created once, or to {@link TranslationStatus#UNAVAILABLE} without one, and a
+ * failure of the launcher's service answers {@link TranslationStatus#UNAVAILABLE} without the local service.
  */
 final class LinkTranslatorTest {
     private static final @NotNull String VERSION = "0.1.0-TEST";
@@ -39,38 +39,6 @@ final class LinkTranslatorTest {
                                                                                               .setDescription("Short messages between players.")
                                                                                               .addGlossaryEntry("tower", Locale.ENGLISH, "Tower")
                                                                                               .build();
-
-    /**
-     * Passes the requests to the launcher's translation service, recording the payload sizes, and makes the service forget the contexts of
-     * the session before the requests whose index is listed.
-     */
-    private static final class RecordingHandler implements LinkRequestHandler {
-        private final @NotNull TranslationLinkService service;
-        private final @NotNull List<@NotNull Integer> forgetBefore;
-        private final @NotNull List<@NotNull Integer> payloadSizes;
-
-        private RecordingHandler(@NotNull TranslationLinkService service, @NotNull List<@NotNull Integer> forgetBefore) {
-            this.service      = service;
-            this.forgetBefore = forgetBefore;
-            this.payloadSizes = new CopyOnWriteArrayList<>();
-        }
-
-        @Override
-        public @NotNull CompletableFuture<byte @NotNull []> handle(@NotNull LinkSession session, byte @NotNull [] payload) {
-            if (this.forgetBefore.contains(this.payloadSizes.size())) {
-                this.service.onSessionClosed(session);
-            }
-
-            this.payloadSizes.add(payload.length);
-
-            return this.service.handle(session, payload);
-        }
-
-        @Override
-        public void onSessionClosed(@NotNull LinkSession session) {
-            this.service.onSessionClosed(session);
-        }
-    }
 
     @TempDir(factory = SocketTempDirFactory.class)
     Path folder;
@@ -112,42 +80,7 @@ final class LinkTranslatorTest {
     }
 
     @Test
-    void translate_should_send_a_context_once_per_connection() throws Exception {
-        FakeTranslationPreset launcherPreset = this.createPreset();
-        TranslationRequest first = new TranslationRequest.Builder(KOREAN_TEXT, Locale.ENGLISH).setContext(CONTEXT).build();
-        TranslationRequest second = new TranslationRequest.Builder(KOREAN_TEXT + "!", Locale.ENGLISH).setContext(CONTEXT).build();
-
-        try (TranslationService launcherService = this.createService(launcherPreset);
-             LauncherLinkServer server = this.openServer()) {
-            RecordingHandler handler = new RecordingHandler(new TranslationLinkService(launcherService), List.of());
-
-            server.register(TranslationLinkService.SERVICE_NAME, handler);
-
-            try (LauncherLinkClient client = LauncherLinkClient.connect(server.getAddress(), VERSION);
-                 LinkTranslator translator = new LinkTranslator(client, null)) {
-                Assertions.assertEquals(TranslationStatus.TRANSLATED, translate(translator, first).getStatus());
-                Assertions.assertEquals(TranslationStatus.TRANSLATED, translate(translator, second).getStatus());
-            }
-
-            try (LauncherLinkClient client = LauncherLinkClient.connect(server.getAddress(), VERSION);
-                 LinkTranslator translator = new LinkTranslator(client, null)) {
-                Assertions.assertEquals(TranslationStatus.TRANSLATED, translate(translator, second).getStatus());
-            }
-
-            List<Integer> sizes = handler.payloadSizes;
-
-            Assertions.assertEquals(3, sizes.size());
-            Assertions.assertTrue(sizes.get(1) < sizes.get(0), "the second request carries the context id only");
-            Assertions.assertTrue(sizes.get(2) > sizes.get(1), "a new connection gets the whole context again");
-
-            for (TranslationInput input : launcherPreset.getTranslatedInputs()) {
-                Assertions.assertEquals(CONTEXT, input.getContext());
-            }
-        }
-    }
-
-    @Test
-    void translate_should_send_the_context_again_when_the_launcher_lost_it() throws Exception {
+    void translate_should_send_the_context_with_each_request() throws Exception {
         FakeTranslationPreset launcherPreset = this.createPreset();
         TranslationRequest first = new TranslationRequest.Builder(KOREAN_TEXT, Locale.ENGLISH).setContext(CONTEXT).build();
         TranslationRequest second = new TranslationRequest.Builder(KOREAN_TEXT + "!", Locale.ENGLISH).setContext(CONTEXT).build();
@@ -156,20 +89,15 @@ final class LinkTranslatorTest {
              LauncherLinkServer server = this.openServer();
              LauncherLinkClient client = LauncherLinkClient.connect(server.getAddress(), VERSION);
              LinkTranslator translator = new LinkTranslator(client, null)) {
-            RecordingHandler handler = new RecordingHandler(new TranslationLinkService(launcherService), List.of(1));
-
-            server.register(TranslationLinkService.SERVICE_NAME, handler);
+            server.register(TranslationLinkService.SERVICE_NAME, new TranslationLinkService(launcherService));
 
             Assertions.assertEquals(TranslationStatus.TRANSLATED, translate(translator, first).getStatus());
+            Assertions.assertEquals(TranslationStatus.TRANSLATED, translate(translator, second).getStatus());
+            Assertions.assertEquals(2, launcherPreset.getTranslatedInputs().size());
 
-            Translation translation = translate(translator, second);
-            List<Integer> sizes = handler.payloadSizes;
-
-            Assertions.assertEquals(TranslationStatus.TRANSLATED, translation.getStatus());
-            Assertions.assertEquals("[ko>en] " + KOREAN_TEXT + "!", translation.getTranslatedText());
-            Assertions.assertEquals(3, sizes.size(), "the request by id is sent again with the whole context");
-            Assertions.assertTrue(sizes.get(1) < sizes.get(2));
-            Assertions.assertEquals(CONTEXT, launcherPreset.getTranslatedInputs().getLast().getContext());
+            for (TranslationInput input : launcherPreset.getTranslatedInputs()) {
+                Assertions.assertEquals(CONTEXT, input.getContext());
+            }
         }
     }
 
@@ -185,7 +113,7 @@ final class LinkTranslatorTest {
         LauncherLinkServer server = this.openServer();
         CompletableFuture<Void> received = new CompletableFuture<>();
 
-        server.register(TranslationLinkService.SERVICE_NAME, (session, payload) -> {
+        server.register(TranslationLinkService.SERVICE_NAME, payload -> {
             received.complete(null);
 
             return new CompletableFuture<>();
@@ -236,7 +164,7 @@ final class LinkTranslatorTest {
              LauncherLinkClient client = LauncherLinkClient.connect(server.getAddress(), VERSION);
              LinkTranslator translator = new LinkTranslator(client, () -> Assertions.fail("the link is open"))) {
             server.register(TranslationLinkService.SERVICE_NAME,
-                            (session, payload) -> CompletableFuture.failedFuture(Exceptions.newIllegalStateException("no model")));
+                            payload -> CompletableFuture.failedFuture(Exceptions.newIllegalStateException("no model")));
 
             Assertions.assertEquals(TranslationStatus.UNAVAILABLE,
                                     translate(translator, new TranslationRequest.Builder(KOREAN_TEXT, Locale.ENGLISH).build()).getStatus());

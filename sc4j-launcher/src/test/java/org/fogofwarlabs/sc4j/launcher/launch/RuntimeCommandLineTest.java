@@ -2,7 +2,6 @@ package org.fogofwarlabs.sc4j.launcher.launch;
 
 import org.fogofwarlabs.sc4j.launcher.link.LauncherLinkAddress;
 import org.fogofwarlabs.sc4j.manifest.install.InstallLayout;
-import org.fogofwarlabs.sc4j.translate.service.TranslationPresetUtils;
 import org.fogofwarlabs.sc4j.translate.service.model.TranslationDevice;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
@@ -136,10 +135,10 @@ final class RuntimeCommandLineTest {
         InstallLayout install = InstallLayout.of(directory);
         Path jar = directory.resolve("mods").resolve("demo.jar");
         List<String> translated = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null,
-                                                            TranslationPresetUtils.DEFAULT_PRESET_ID, TranslationDevice.AUTOMATIC, directory, true)
+                                                            "index-translate-2b", TranslationDevice.AUTOMATIC, directory, true)
                                                     .getArguments();
         List<String> onCpu = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null,
-                                                       TranslationPresetUtils.DEFAULT_PRESET_ID, TranslationDevice.CPU, directory, true)
+                                                       "index-translate-2b", TranslationDevice.CPU, directory, true)
                                                .getArguments();
         List<String> untranslated = RuntimeCommandLine.create(install, "demo", jar, getAccountDirectory(install), true, null, null,
                                                               TranslationDevice.CPU, directory, true)

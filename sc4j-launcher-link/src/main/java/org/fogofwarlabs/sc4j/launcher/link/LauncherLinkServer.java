@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Serves the named services of the launcher to the runtimes it started, over a Unix domain socket.
@@ -28,8 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * A client's first frame is its hello with the token of the server's {@link LauncherLinkAddress} and its SC4J version; the server closes the
  * connection on another token or version and answers an accepted hello with its own. Each client then sends requests that the
  * {@link LinkRequestHandler} of their service answers with a response or a failure; a request to a service that is not registered fails. A
- * frame of another kind, or one longer than 1 MiB, closes the client's connection. Each accepted client is a {@link LinkSession}; when its
- * connection closes, every registered handler hears of it. {@link #publish} sends an event to every accepted client.
+ * frame of another kind, or one longer than 1 MiB, closes the client's connection. {@link #publish} sends an event to every accepted client.
  * <p>
  * The server accepts clients on a daemon thread of its own and reads each client on another one. Opening replaces a file left at the socket
  * path; closing deletes the socket file.
@@ -97,7 +95,6 @@ public final class LauncherLinkServer implements Closeable {
 
     private final @NotNull Map<@NotNull String, @NotNull LinkRequestHandler> services;
     private final @NotNull Set<@NotNull LinkConnection> clients;
-    private final @NotNull AtomicLong lastSessionNumber;
     private volatile boolean closed;
 
     /**
@@ -112,10 +109,9 @@ public final class LauncherLinkServer implements Closeable {
         this.version = version;
         this.channel = channel;
 
-        this.services          = new ConcurrentHashMap<>();
-        this.clients           = ConcurrentHashMap.newKeySet();
-        this.lastSessionNumber = new AtomicLong();
-        this.closed            = false;
+        this.services = new ConcurrentHashMap<>();
+        this.clients  = ConcurrentHashMap.newKeySet();
+        this.closed   = false;
     }
 
     /**
@@ -186,8 +182,6 @@ public final class LauncherLinkServer implements Closeable {
     }
 
     private void serveClient(@NotNull LinkConnection connection) {
-        LinkSession session = null;
-
         try {
             String refusal = this.findRefusal(connection.read());
 
@@ -196,8 +190,6 @@ public final class LauncherLinkServer implements Closeable {
 
                 return;
             }
-
-            session = new LinkSession(this.lastSessionNumber.incrementAndGet());
 
             // The client is listed before its hello is answered, so that every event published after its connect returns reaches it.
             synchronized (connection) {
@@ -216,7 +208,7 @@ public final class LauncherLinkServer implements Closeable {
                     throw LauncherLinkException.create("A client sent a frame of the kind {0}.", frame.getKind());
                 }
 
-                this.handleRequest(connection, session, frame);
+                this.handleRequest(connection, frame);
                 frame = connection.read();
             }
         } catch (IOException exception) {
@@ -228,20 +220,6 @@ public final class LauncherLinkServer implements Closeable {
             IgnoreException.execute(
                     connection::close
             );
-
-            if (session != null) {
-                this.closeSession(session);
-            }
-        }
-    }
-
-    private void closeSession(@NotNull LinkSession session) {
-        for (LinkRequestHandler handler : this.services.values()) {
-            try {
-                handler.onSessionClosed(session);
-            } catch (RuntimeException exception) {
-                LOGGER.warning("LAUNCHER LINK: a service failed to close {0}: {1}", session, exception.getMessage());
-            }
         }
     }
 
@@ -263,7 +241,7 @@ public final class LauncherLinkServer implements Closeable {
         return this.address.matchesToken(hello.readHelloToken()) ? null : "the token is wrong";
     }
 
-    private void handleRequest(@NotNull LinkConnection connection, @NotNull LinkSession session, @NotNull LinkFrame request) throws IOException {
+    private void handleRequest(@NotNull LinkConnection connection, @NotNull LinkFrame request) throws IOException {
         LinkRequestHandler handler = this.services.get(request.getService());
 
         if (handler == null) {
@@ -276,7 +254,7 @@ public final class LauncherLinkServer implements Closeable {
         CompletableFuture<byte[]> response;
 
         try {
-            response = handler.handle(session, request.getPayload());
+            response = handler.handle(request.getPayload());
         } catch (RuntimeException exception) {
             response = CompletableFuture.failedFuture(exception);
         }

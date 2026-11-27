@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Represents the launcher settings file {@code userdata/launcher.json}:
@@ -39,9 +38,9 @@ import java.util.Objects;
  *}
  * Every field but {@code format} is optional: without {@code language} the launcher follows the operating system's language, without
  * {@code updateRepository} it updates from {@link LauncherSettings#DEFAULT_UPDATE_REPOSITORY}, without {@code skippedVersion} it skips
- * no version, without {@code chatSoundMuted} the chat sound is on, without {@code translationPreset} the chat is translated with the default
- * preset and with {@code "translationPreset": null} it is not translated, without {@code translationDevice} the model runs on the
- * {@code automatic} device, and without {@code highPerformanceGpu} games run on the high-performance GPU.
+ * no version, without {@code chatSoundMuted} the chat sound is on, without {@code translationPreset} the chat is not translated, without
+ * {@code translationDevice} the translation model runs on the {@code automatic} device, and without {@code highPerformanceGpu} games run on
+ * the high-performance GPU.
  */
 public final class LauncherSettingsFile {
     /**
@@ -175,11 +174,10 @@ public final class LauncherSettingsFile {
             throw Exceptions.newIOException("Invalid launcher settings file {0}: chatSoundMuted must be true or false", this.path);
         }
 
-        Object translationPreset = object.containsKey(TRANSLATION_PRESET_FIELD) ? object.get(TRANSLATION_PRESET_FIELD)
-                                                                                : LauncherSettings.DEFAULT.getTranslationPreset();
+        Object translationPreset = object.get(TRANSLATION_PRESET_FIELD);
 
         if (translationPreset != null && !(translationPreset instanceof String)) {
-            throw Exceptions.newIOException("Invalid launcher settings file {0}: translationPreset must be a preset id or null", this.path);
+            throw Exceptions.newIOException("Invalid launcher settings file {0}: translationPreset must be a preset id", this.path);
         }
 
         TranslationDevice translationDevice = readTranslationDevice(this.path, object.get(TRANSLATION_DEVICE_FIELD));
@@ -240,7 +238,7 @@ public final class LauncherSettingsFile {
             object.put(CHAT_SOUND_MUTED_FIELD, true);
         }
 
-        if (!Objects.equals(settings.getTranslationPreset(), LauncherSettings.DEFAULT.getTranslationPreset())) {
+        if (settings.getTranslationPreset() != null) {
             object.put(TRANSLATION_PRESET_FIELD, settings.getTranslationPreset());
         }
 
